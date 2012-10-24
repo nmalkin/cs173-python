@@ -20,7 +20,7 @@
         (get-structured-python
           (parse-python/port port python-path))))))
 
-(define python-path "/home/joe/bin/python")
+(define python-path "python3.2")
 
 (command-line
   #:once-each
