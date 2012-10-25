@@ -2,6 +2,7 @@
 
 (define-type PyExpr
   [PySeq (es : (listof PyExpr))]
+  [PyAssign (targets : (listof PyExpr)) (value : expr)]
   [PyNum (n : number)]
   [PyBool (b : boolean)]
   [PyStr (s : string)]
