@@ -18,7 +18,8 @@ ParselTongue.
   [CLet (x : symbol) (bind : CExp) (body : CExp)]
   [CApp (fun : CExp) (args : (listof CExp))]
   [CFunc (args : (listof symbol)) (body : CExp)]
-  [CPrim1 (prim : symbol) (arg : CExp)])
+  [CPrim1 (prim : symbol) (arg : CExp)]
+  [CPrim2 (prim : symbol) (arg1 : CExp) (arg2 : CExp)])
 
 (define-type CVal
   [VNum (n : number)]
