@@ -7,27 +7,39 @@ ParselTongue.
 
 |#
 
-(define-type CExp
+(require (typed-in racket/base (number->string : (number -> string))))
+
+(define-type CExpr
   [CNum (n : number)]
   [CStr (s : string)]
   [CTrue]
   [CFalse]
-  [CSeq (e1 : CExp) (e2 : CExp)]
-  [CError (e1 : CExp)]
-  [CIf (test : CExp) (then : CExp) (else : CExp)]
+  [CSeq (e1 : CExpr) (e2 : CExpr)]
+  [CAssign (targets : (listof CExpr)) (value : CExpr)]
+  [CError (e1 : CExpr)]
+  [CIf (test : CExpr) (then : CExpr) (else : CExpr)]
   [CId (x : symbol)]
-  [CLet (x : symbol) (bind : CExp) (body : CExp)]
-  [CApp (fun : CExp) (args : (listof CExp))]
-  [CFunc (args : (listof symbol)) (body : CExp)]
-  [CPrim1 (prim : symbol) (arg : CExp)]
-  [CPrim2 (prim : symbol) (arg1 : CExp) (arg2 : CExp)])
+  [CLet (x : symbol) (bind : CExpr) (body : CExpr)]
+  [CApp (fun : CExpr) (args : (listof CExpr))]
+  [CFunc (args : (listof symbol)) (body : CExpr)]
+  [CPrim1 (prim : symbol) (arg : CExpr)]
+  [CPrim2 (prim : symbol) (arg1 : CExpr) (arg2 : CExpr)])
 
 (define-type CVal
   [VNum (n : number)]
   [VStr (s : string)]
   [VTrue]
   [VFalse]
-  [VClosure (env : Env) (args : (listof symbol)) (body : CExp)])
+  [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)])
 
-(define-type-alias Env (hashof symbol CVal))
-
+;; env is a listof hashof's so there are deliniations between closures
+(define-type-alias Env (listof (hashof symbol Address)))
+(define-type-alias Address number)
+(define Address->string number->string)
+(define-type-alias Store (hashof Address CVal))
+(define new-loc
+  (let ([n (box 0)])
+    (lambda ()
+      (begin
+        (set-box! n (add1 (unbox n)))
+        (unbox n)))))
