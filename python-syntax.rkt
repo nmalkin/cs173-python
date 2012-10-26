@@ -1,4 +1,11 @@
 #lang plai-typed
+(define-type ExprContext
+   [Load]
+   [Store]
+   [Del]
+   [AugLoad]
+   [AugStore]
+   [Param])
 
 (define-type PyExpr
   [PySeq (es : (listof PyExpr))]
@@ -6,8 +13,8 @@
   [PyNum (n : number)]
   [PyBool (b : boolean)]
   [PyStr (s : string)]
-  [PyId (x : symbol)]
-  [PyRaise (expr : PyExpr) (cause : PyExpr)]
+  [PyId (x : symbol) (ctx : ExprContext)]
+  [PyRaise (expr : PyExpr)]
   [PyPass]
   [PyIf (test : PyExpr) (body : PyExpr) (orelse : PyExpr)]
   [PyBinOp (left : PyExpr) (op : symbol) (right : PyExpr)]
