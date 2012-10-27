@@ -15,7 +15,10 @@
 
     [CSeq (e1 e2) (type-case Result (interp-env e1 env sto)
                     [v*s (v1 s1) (interp-env e2 env s1)])]
-    [CAssign (ts vs) (v*s (VTrue) sto)]
+    
+    ;; deal with pythonic scope here
+    [CAssign (ts vs) (interp-env vs env sto)]
+                      ; [v*s (va sa) (
     
     [CError (e) (error 'interp (to-string (interp-env e env sto)))]
 
@@ -57,10 +60,12 @@
                                         (interp-env body (bind-args argxs argvs env sa) sa)))]
                           [else (error 'interp "Not a closure")])])]
 
+    ;; lambdas for now, implement real functions later
     [CFunc (args body) (v*s (VClosure (cons (hash empty) env) args body) sto)]
 
     [CPrim1 (prim arg) (type-case Result (interp-env arg env sto)
                          [v*s (varg sarg) (v*s (python-prim1 prim varg) sarg)])]
+    
     ;; implement this
     [CPrim2 (prim arg1 arg2) (type-case Result (interp-env arg1 env sto)
                          [v*s (varg1 sarg1) (v*s (python-prim1 prim varg1) sarg1)])]

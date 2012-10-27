@@ -17,7 +17,7 @@ ParselTongue.
   [CFalse]
   [CNone]
   [CSeq (e1 : CExpr) (e2 : CExpr)]
-  [CAssign (targets : (listof CExpr)) (value : CExpr)]
+  [CAssign (target : CExpr) (value : CExpr)]
   [CError (e1 : CExpr)]
   [CIf (test : CExpr) (then : CExpr) (else : CExpr)]
   [CId (x : symbol)]
