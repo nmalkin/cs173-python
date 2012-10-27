@@ -9,6 +9,7 @@ ParselTongue.
 
 (require (typed-in racket/base (number->string : (number -> string))))
 
+
 (define-type CExpr
   [CNum (n : number)]
   [CStr (s : string)]
@@ -34,6 +35,7 @@ ParselTongue.
 
 ;; env is a listof hashof's so there are deliniations between closures
 (define-type-alias Env (listof (hashof symbol Address)))
+
 (define-type-alias Address number)
 (define Address->string number->string)
 (define-type-alias Store (hashof Address CVal))
@@ -43,3 +45,6 @@ ParselTongue.
       (begin
         (set-box! n (add1 (unbox n)))
         (unbox n)))))
+
+(define-type Result
+  [v*s (v : CVal) (s : Store)])
