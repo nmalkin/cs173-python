@@ -1,6 +1,7 @@
 #lang plai
 
 (require "python-syntax.rkt")
+(require "parse-python.rkt")
 (require racket/match
          racket/list)
 
@@ -12,12 +13,32 @@ structure that you define in python-syntax.rkt
 
 |#
 
+;; given a string from the AST describing the expr context, produce the
+;; corresponding ExprContext object
+(define (expr-context-from-str context-json)
+  (match context-json
+    [(hash-table ('nodetype "Store"))
+     (Store)]
+    [(hash-table ('nodetype "Load"))
+     (Load)]
+    [(hash-table ('nodetype "Del"))
+     (Del)]
+    [(hash-table ('nodetype "AugLoad"))
+     (AugLoad)]
+    [(hash-table ('nodetype "AugStore"))
+     (AugStore)]
+    [(hash-table ('nodetype "Param"))
+     (Param)]))
+
 (define (get-structured-python pyjson)
   (match pyjson
     [(hash-table ('nodetype "Module") ('body expr-list))
      (PySeq (map get-structured-python expr-list))]
+
+
     [(hash-table ('nodetype "Expr") ('value expr))
      (get-structured-python expr)]
+
     [(hash-table ('nodetype "Call")
                  ('keywords keywords) ;; ignoring keywords for now
                  ('kwargs kwargs)     ;; ignoring kwargs for now
@@ -26,12 +47,78 @@ structure that you define in python-syntax.rkt
                  ('func func-expr))
      (PyApp (get-structured-python func-expr)
             (map get-structured-python args-list))]
+
     [(hash-table ('nodetype "Name")
-                 ('ctx _)        ;; ignoring ctx for now
+                 ('ctx ctx)        
                  ('id id))
-     (PyId (string->symbol id))]
+     (PyId (string->symbol id) (expr-context-from-str ctx))]
+
     [(hash-table ('nodetype "Num")
                  ('n n))
      (PyNum n)]
+
+    [(hash-table ('nodetype "Pass"))
+     (PyPass)]
+
+    [(hash-table ('nodetype "Str")
+                 ('s str-value))
+     (PyStr str-value)]
+
+    [(hash-table ('nodetype "Lambda")
+                 ('args args)
+                 ('body body))
+     (PyLam (get-structured-python args)
+            (get-structured-python body))]
+
+    [(hash-table ('nodetype "arguments")
+                 ('args arg-list))
+     (map get-structured-python arg-list)]
+
+    [(hash-table ('nodetype "arg")
+                 ('arg name)) 
+     (string->symbol name)]
+
+    [(hash-table ('nodetype "Assign")
+                 ('value value)
+                 ('targets targets))
+
+     (PyAssign (map get-structured-python targets)
+               (get-structured-python value))]
+
+    [(hash-table ('nodetype "Raise") 
+                 ('exc exc)
+                 ('cause c))
+     (PyRaise (get-structured-python exc))]
+
+    ;[(hash-table ('nodetype "If")
+    ;            ('body body)
+    ;            ('test test)
+    ;            ('orelse orelse))
+
     [_ (error 'parse "Haven't handled a case yet")]))
 
+
+;; tests!
+(print-only-errors true)
+
+(define test-python-path "/usr/local/bin/python3.2")
+(test (get-structured-python (parse-python/string "x = 5" test-python-path))
+      (PySeq
+        (list (PyAssign (list (PyId 'x (Store)))
+                (PyNum 5)))))
+
+(test (get-structured-python (parse-python/string "pass" test-python-path))
+      (PySeq
+        (list (PyPass))))
+
+(test (get-structured-python (parse-python/string "\"string\"" test-python-path))
+      (PySeq
+        (list (PyStr "string"))))
+
+(test (get-structured-python (parse-python/string "raise 5" test-python-path))
+      (PySeq
+        (list (PyRaise (PyNum 5)))))
+
+(test (get-structured-python (parse-python/string "f(x)" test-python-path))
+      (PySeq 
+        (list (PyApp (PyId 'f (Load)) (list (PyId 'x (Load)))))))
