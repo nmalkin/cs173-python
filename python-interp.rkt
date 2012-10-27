@@ -80,4 +80,5 @@
                  env))]))
 
 (define (interp expr)
-  (interp-env expr (list (hash (list))) (hash (list))))
+  (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
+    [v*s (vexpr sexpr) vexpr]))
