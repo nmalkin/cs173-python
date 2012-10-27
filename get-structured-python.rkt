@@ -43,6 +43,14 @@ structure that you define in python-syntax.rkt
               (nodetype->symbol op)
               (get-structured-python r))]
 
+    [(hash-table ('nodetype "Compare")
+                 ('left l)
+                 ('ops ops)
+                 ('comparators c))
+     (PyCompOp (get-structured-python l)
+               (map nodetype->symbol ops)
+               (map get-structured-python c))]
+
     [(hash-table ('nodetype "Name")
                  ('ctx ctx)        
                  ('id id))
@@ -85,11 +93,6 @@ structure that you define in python-syntax.rkt
                  ('cause c))
      (PyRaise (get-structured-python exc))]
 
-    [(hash-table ('nodetype "Compare")
-                 ('left l)
-                 ('ops ops)
-                 ('comparators c))
-     false]
 
     ;[(hash-table ('nodetype "If")
     ;            ('body body)
@@ -126,3 +129,9 @@ structure that you define in python-syntax.rkt
 (test (get-structured-python (parse-python/string "2 + 1" test-python-path))
       (PySeq
         (list (PyBinOp (PyNum 2) 'Add (PyNum 1)))))
+
+(test (get-structured-python (parse-python/string "1 > 2" test-python-path))
+      (PySeq
+        (list (PyCompOp (PyNum 1)
+                        (list 'Gt)
+                        (list (PyNum 2))))))
