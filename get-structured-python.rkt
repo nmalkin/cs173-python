@@ -13,22 +13,9 @@ structure that you define in python-syntax.rkt
 
 |#
 
-;; given a string from the AST describing the expr context, produce the
-;; corresponding ExprContext object
-(define (expr-context-from-str context-json)
-  (match context-json
-    [(hash-table ('nodetype "Store"))
-     (Store)]
-    [(hash-table ('nodetype "Load"))
-     (Load)]
-    [(hash-table ('nodetype "Del"))
-     (Del)]
-    [(hash-table ('nodetype "AugLoad"))
-     (AugLoad)]
-    [(hash-table ('nodetype "AugStore"))
-     (AugStore)]
-    [(hash-table ('nodetype "Param"))
-     (Param)]))
+;; given a node in json form produce a symbol corresponding to its nodename
+(define (nodetype->symbol nodejson)
+  (string->symbol (hash-ref nodejson 'nodetype)))
 
 (define (get-structured-python pyjson)
   (match pyjson
@@ -48,10 +35,18 @@ structure that you define in python-syntax.rkt
      (PyApp (get-structured-python func-expr)
             (map get-structured-python args-list))]
 
+    [(hash-table ('nodetype "BinOp")
+                 ('left l)
+                 ('op op)
+                 ('right r))
+     (PyBinOp (get-structured-python l)
+              (nodetype->symbol op)
+              (get-structured-python r))]
+
     [(hash-table ('nodetype "Name")
                  ('ctx ctx)        
                  ('id id))
-     (PyId (string->symbol id) (expr-context-from-str ctx))]
+     (PyId (string->symbol id) (nodetype->symbol ctx))]
 
     [(hash-table ('nodetype "Num")
                  ('n n))
@@ -90,6 +85,12 @@ structure that you define in python-syntax.rkt
                  ('cause c))
      (PyRaise (get-structured-python exc))]
 
+    [(hash-table ('nodetype "Compare")
+                 ('left l)
+                 ('ops ops)
+                 ('comparators c))
+     false]
+
     ;[(hash-table ('nodetype "If")
     ;            ('body body)
     ;            ('test test)
@@ -104,7 +105,7 @@ structure that you define in python-syntax.rkt
 (define test-python-path "/usr/local/bin/python3.2")
 (test (get-structured-python (parse-python/string "x = 5" test-python-path))
       (PySeq
-        (list (PyAssign (list (PyId 'x (Store)))
+        (list (PyAssign (list (PyId 'x 'Store))
                 (PyNum 5)))))
 
 (test (get-structured-python (parse-python/string "pass" test-python-path))
@@ -121,4 +122,7 @@ structure that you define in python-syntax.rkt
 
 (test (get-structured-python (parse-python/string "f(x)" test-python-path))
       (PySeq 
-        (list (PyApp (PyId 'f (Load)) (list (PyId 'x (Load)))))))
+        (list (PyApp (PyId 'f 'Load) (list (PyId 'x 'Load))))))
+(test (get-structured-python (parse-python/string "2 + 1" test-python-path))
+      (PySeq
+        (list (PyBinOp (PyNum 2) 'Add (PyNum 1)))))

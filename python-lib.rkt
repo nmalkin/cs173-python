@@ -22,8 +22,15 @@ that calls the primitive `print`.
   (CFunc (list 'check-true)
     (CIf (CId 'check-true) (CTrue) (CError (CStr "Assert failed")))))
 
+(define assert-false-lambda
+  (CFunc (list 'check-false)
+    (CIf (CId 'check-false) (CError (CStr "Assert failed")) (CTrue))))
+
 (define true-val
   (CTrue))
+
+(define false-val
+  (CFalse))
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExp)])
@@ -31,9 +38,9 @@ that calls the primitive `print`.
 (define lib-functions
   (list (bind 'print print-lambda)
         (bind 'True true-val)
+        (bind 'False false-val)
         (bind '___assertTrue assert-true-lambda)
-
-))
+        (bind '___assertFalse assert-false-lambda)))
 
 (define (python-lib expr)
   (local [(define (python-lib/recur libs)
