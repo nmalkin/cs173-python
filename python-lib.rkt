@@ -12,7 +12,7 @@ that calls the primitive `print`.
 
 |#
 
-(define-type-alias Lib (CExp -> CExp))
+(define-type-alias Lib (CExpr -> CExpr))
 
 (define print-lambda
   (CFunc (list 'to-print)
@@ -39,12 +39,13 @@ that calls the primitive `print`.
   (CFalse))
 
 (define-type LibBinding
-  [bind (left : symbol) (right : CExp)])
+  [bind (left : symbol) (right : CExpr)])
 
 (define lib-functions
   (list (bind 'print print-lambda)
         (bind 'True true-val)
         (bind 'False false-val)
+        (bind 'None (CNone))
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
         (bind '___assertEqual assert-equal-lambda)))

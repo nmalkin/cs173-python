@@ -11,6 +11,7 @@
     [CStr (s) (v*s (VStr s) sto)]
     [CTrue () (v*s (VTrue) sto)]
     [CFalse () (v*s (VFalse) sto)]
+    [CNone () (v*s (VNone) sto)]
 
     [CSeq (e1 e2) (type-case Result (interp-env e1 env sto)
                     [v*s (v1 s1) (interp-env e2 env s1)])]
