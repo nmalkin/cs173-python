@@ -15,6 +15,7 @@ ParselTongue.
   [CStr (s : string)]
   [CTrue]
   [CFalse]
+  [CNone]
   [CSeq (e1 : CExpr) (e2 : CExpr)]
   [CAssign (targets : (listof CExpr)) (value : CExpr)]
   [CError (e1 : CExpr)]
@@ -31,6 +32,7 @@ ParselTongue.
   [VStr (s : string)]
   [VTrue]
   [VFalse]
+  [VNone]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)])
 
 ;; env is a listof hashof's so there are deliniations between closures

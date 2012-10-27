@@ -20,6 +20,7 @@ primitives here.
     [VStr (s) s]
     [VTrue () "true"]
     [VFalse () "false"]
+    [VNone () "none"]
     [VClosure (env args body) (error 'prim "Can't print closures yet")]))
   
 
