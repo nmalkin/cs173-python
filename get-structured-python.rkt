@@ -94,10 +94,14 @@ structure that you define in python-syntax.rkt
      (PyRaise (get-structured-python exc))]
 
 
-    ;[(hash-table ('nodetype "If")
-    ;            ('body body)
-    ;            ('test test)
-    ;            ('orelse orelse))
+    [(hash-table ('nodetype "If")
+                ('body body)
+                ('test test)
+                ('orelse orelse))
+     (PyIf (get-structured-python test)
+           (get-structured-python body)
+           (get-structured-python orelse))]
+    [empty (PyPass)]
 
     [_ (error 'parse "Haven't handled a case yet")]))
 
@@ -135,3 +139,10 @@ structure that you define in python-syntax.rkt
         (list (PyCompOp (PyNum 1)
                         (list 'Gt)
                         (list (PyNum 2))))))
+
+(test (get-structured-python (parse-python/string "if True: pass"
+                                                  test-python-path))
+      (PySeq
+        (list (PyIf (PyId 'True 'Load)
+                    (PyPass)
+                    (PyPass)))))
