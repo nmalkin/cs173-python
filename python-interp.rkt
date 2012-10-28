@@ -40,7 +40,7 @@
     [CError (e) (error 'interp (to-string (interp-env e env sto)))]
 
     [CIf (i t e) (type-case Result (interp-env i env sto)
-                   [v*s (vi si) (type-case CVal vi
+                   [v*s (vi si) (type-case CVal (truthy? vi)
                                   [VTrue () (interp-env t env si)]
                                   [else (interp-env e env si)])])]
 
@@ -77,7 +77,11 @@
     [CPrim1 (prim arg)
             (type-case Result (interp-env arg env sto)
               [v*s (varg sarg) 
-                      (v*s (python-prim1 prim varg) sarg)])]
+                   (case prim
+                     ['Not (type-case CVal (truthy? varg)
+                             [VTrue () (v*s (VFalse) sarg)]
+                             [else (v*s (VTrue) sarg)])]
+                     [else (v*s (python-prim1 prim varg) sarg)])])]
     
     ;; implement this
     [CPrim2 (prim arg1 arg2) 
@@ -175,6 +179,19 @@
                  (hash-set sto where (first vals))
                  (bind-args (rest args) (rest vals) env sto)
                  env))]))
+
+(define (truthy? val)
+  (type-case CVal val
+    [VNum (n) (if (= 0 n)
+              (VFalse)
+              (VTrue))]
+    [VStr (s) (if (string=? "" s)
+              (VFalse)
+              (VTrue))]
+    [VTrue () val]
+    [VFalse () val]
+    [VNone () (VFalse)]
+    [VClosure (e a b) (VTrue)]))
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
