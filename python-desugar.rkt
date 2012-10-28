@@ -39,7 +39,6 @@
                                        (CAssign (desugar (first targets))
                                                 (desugar value))
                                        (rest targets))]
-
     [PyNum (n) (CNum n)]
     [PyBool (b) (if b (CTrue) (CFalse))]
     [PyStr (s) (CStr s)]
@@ -74,4 +73,3 @@
     [PyApp (fun args)
            (CApp (desugar fun)
                  (map desugar args))]))
-
