@@ -103,8 +103,10 @@ structure that you define in python-syntax.rkt
                  ('test test)
                  ('orelse orelse))
      (PyIf (get-structured-python test)
-           (get-structured-python body)
+           (PySeq
+             (map get-structured-python body))
            (get-structured-python orelse))]
+
     [empty (PyPass)]
 
     ;[(hash-table ('nodetype "BoolOp")
@@ -150,9 +152,9 @@ structure that you define in python-syntax.rkt
                         (list 'Gt)
                         (list (PyNum 2))))))
 
-(test (get-structured-python (parse-python/string "if True: pass"
+(test (get-structured-python (parse-python/string "if True: 5"
                                                   test-python-path))
       (PySeq
         (list (PyIf (PyId 'True 'Load)
-                    (PyPass)
+                    (PySeq (list (PyNum 5)))
                     (PyPass)))))
