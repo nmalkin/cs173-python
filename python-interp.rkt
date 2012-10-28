@@ -4,7 +4,11 @@
          "python-primitives.rkt"
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
          (typed-in racket/base (expt : (number number -> number)))
-         (typed-in racket/base (quotient : (number number -> number))))
+         (typed-in racket/base (quotient : (number number -> number)))
+         (typed-in racket/base (string<? : (string string -> boolean)))
+         (typed-in racket/base (string>? : (string string -> boolean)))
+         (typed-in racket/base (string<=? : (string string -> boolean)))
+         (typed-in racket/base (string>=? : (string string -> boolean))))
 
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
@@ -70,8 +74,10 @@
     ;; lambdas for now, implement real functions later
     [CFunc (args body) (v*s (VClosure (cons (hash empty) env) args body) sto)]
 
-    [CPrim1 (prim arg) (type-case Result (interp-env arg env sto)
-                         [v*s (varg sarg) (v*s (python-prim1 prim varg) sarg)])]
+    [CPrim1 (prim arg)
+            (type-case Result (interp-env arg env sto)
+              [v*s (varg sarg) 
+                      (v*s (python-prim1 prim varg) sarg)])]
     
     ;; implement this
     [CPrim2 (prim arg1 arg2) 
@@ -92,36 +98,48 @@
                                      [else (error 'interp "Bad arguments to *")])]
                             ;; need to make sure division is implemented correctly
                             ['Div (cond
-                                     [(and (VNum? varg1) (VNum? varg2) (> 0 (VNum-n varg2))) (v*s (VNum (/ (VNum-n varg1) (VNum-n varg2))) sarg2)]
-                                     [else (error 'interp "Bad arguments to *")])]
+                                     [(and (VNum? varg1) (VNum? varg2) (< 0 (VNum-n varg2))) (v*s (VNum (/ (VNum-n varg1) (VNum-n varg2))) sarg2)]
+                                     [else (error 'interp "Bad arguments to /")])]
                             ['Mod (cond
-                                    [(and (VNum? varg1) (VNum? varg2) (> 0 (VNum-n varg2))) (v*s (VNum (modulo (VNum-n varg1) (VNum-n varg2))) sarg2)]
+                                    [(and (VNum? varg1) (VNum? varg2) (< 0 (VNum-n varg2))) (v*s (VNum (modulo (VNum-n varg1) (VNum-n varg2))) sarg2)]
                                     [else (error 'interp "Bad arguments to %")])]
                             ['Pow (cond
                                     [(and (VNum? varg1) (VNum? varg2)) (v*s (VNum (expt (VNum-n varg1) (VNum-n varg2))) sarg2)]
                                     [else (error 'interp "Bad arguments to **")])]
                             ['FloorDiv (cond
-                                         [(and (VNum? varg1) (VNum? varg2) (> 0 (VNum-n varg2))) (v*s (VNum (quotient (VNum-n varg1) (VNum-n varg2))) sarg2)]
+                                         [(and (VNum? varg1) (VNum? varg2) (< 0 (VNum-n varg2))) (v*s (VNum (quotient (VNum-n varg1) (VNum-n varg2))) sarg2)]
                                          [else (error 'interp "Bad arguments to //")])]
                             ['Lt (cond
                                   [(and (VNum? varg1) (VNum? varg2)) (v*s (if (< (VNum-n varg1) (VNum-n varg2))
                                                                               (VTrue)
                                                                               (VFalse)) sarg2)]
+                                  [(and (VStr? varg1) (VStr? varg2)) (v*s (if (string<? (VStr-s varg1) (VStr-s varg2))
+                                                                              (VTrue)
+                                                                              (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to <")])]
                             ['Gt (cond
                                   [(and (VNum? varg1) (VNum? varg2)) (v*s (if (> (VNum-n varg1) (VNum-n varg2))
                                                                               (VTrue)
                                                                               (VFalse)) sarg2)]
+                                  [(and (VStr? varg1) (VStr? varg2)) (v*s (if (string>? (VStr-s varg1) (VStr-s varg2))
+                                                                              (VTrue)
+                                                                              (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to >")])]
                             ['LtE (cond
                                   [(and (VNum? varg1) (VNum? varg2)) (v*s (if (<= (VNum-n varg1) (VNum-n varg2))
                                                                               (VTrue)
                                                                               (VFalse)) sarg2)]
+                                  [(and (VStr? varg1) (VStr? varg2)) (v*s (if (string<=? (VStr-s varg1) (VStr-s varg2))
+                                                                              (VTrue)
+                                                                              (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to <=")])]
                             ['GtE (cond
                                   [(and (VNum? varg1) (VNum? varg2)) (v*s (if (>= (VNum-n varg1) (VNum-n varg2))
                                                                               (VTrue)
                                                                               (VFalse)) sarg2)]
+                                  [(and (VStr? varg1) (VStr? varg2)) (v*s (if (string>=? (VStr-s varg1) (VStr-s varg2))
+                                                                              (VTrue)
+                                                                              (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to >=")])]
                             ['Eq (cond
                                   [(and (VNum? varg1) (VNum? varg2)) (v*s (if (eq? (VNum-n varg1) (VNum-n varg2))
@@ -140,11 +158,7 @@
                                                                               (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to !=")])]
                             ;; Handle Is, IsNot, In, NotIn
-                            ['Is (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s (if (not (eq? (VNum-n varg1) (VNum-n varg2)))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2)]
-                                  [else (error 'interp "Bad arguments to !=")])]
+                            [else (error 'interp (string-append "Haven't implemented a case yet: " (symbol->string prim)))]
                             )])])]
     
     ;[else (error 'interp "haven't implemented a case yet")]
@@ -164,4 +178,5 @@
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
-    [v*s (vexpr sexpr) vexpr]))
+    [v*s (vexpr sexpr) (begin (display (pretty vexpr))
+                              (display "\n"))]))
