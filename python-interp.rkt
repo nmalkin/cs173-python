@@ -44,7 +44,7 @@
                                   [VTrue () (interp-env t env si)]
                                   [else (interp-env e env si)])])]
 
-    [CId (x) (begin (display "env: ") (display env) (display "\n") (fetch (lookup x env) sto))]
+    [CId (x) (fetch (lookup x env) sto)]
 
     [CLet (x bind body)
           (let ([w (new-loc)])
@@ -65,12 +65,15 @@
                                                                 (set! sa sarg)
                                                                 varg)])) arges))]
                                         (local [(define-values (e s) (bind-args argxs argvs env sa))]
-                                          (begin (display e) (display "\n")
-                                          (interp-env body e s)))))]
+                                          (interp-env body e s))))]
                           [else (error 'interp "Not a closure")])])]
 
     ;; lambdas for now, implement real functions later
-    [CFunc (args body) (v*s (VClosure (cons (hash empty) env) args body) sto)]
+    [CFunc (args body) (let ([h (hash empty)])
+                         (begin
+                           (set! h (hash-set h 'dummy -1))
+                           (set! h (hash-remove h 'dummy))
+                           (v*s (VClosure (cons h env) args body) sto)))]
 
     [CPrim1 (prim arg)
             (type-case Result (interp-env arg env sto)

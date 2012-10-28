@@ -45,10 +45,10 @@ that calls the primitive `print`.
   [bind (left : symbol) (right : CExpr)])
 
 (define lib-functions
-  (list (bind 'print print-lambda)
-        (bind 'True true-val)
+  (list (bind 'True true-val)
         (bind 'False false-val)
         (bind 'None (CNone))
+        (bind 'print print-lambda)
         (bind 'Exception exception-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
