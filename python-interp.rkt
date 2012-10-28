@@ -17,8 +17,17 @@
                     [v*s (v1 s1) (interp-env e2 env s1)])]
     
     ;; deal with pythonic scope here
-    [CAssign (ts vs) (interp-env vs env sto)]
-                      ; [v*s (va sa) (
+    ;; only for ids!
+    [CAssign (t v) (type-case Result (interp-env v env sto)
+                       [v*s (vv sv) (type-case (optionof Address) (hash-ref (first env) x)
+                                      [some (w) (interp-env body
+                                                            (cons (hash-set (first env) x w) (rest env))
+                                                            (hash-set sto w (v*s-v (interp-env bind env sto))))]
+                                      [none () (let ([w (new-loc)])
+                                                 (interp-env body
+                                                             (cons (hash-set (hash-copy (first env)) x w) (rest env))
+                                                             (hash-set sto w (v*s-v (interp-env bind env sto)))))])])]
+                                                     
     
     [CError (e) (error 'interp (to-string (interp-env e env sto)))]
 
@@ -34,16 +43,10 @@
       [none () (error 'interp "Unbound identifier")])]
 
     [CLet (x bind body)
-          (type-case (optionof Address) (hash-ref (first env) x)
-                         ;; if binding is in current stack frame, overwrite it's value.
-                         [some (w) (interp-env body
-                                               (cons (hash-set (first env) x w) (rest env))
-                                               (hash-set sto w (v*s-v (interp-env bind env sto))))]
-                         ;; otherwise create a new fake stack frame and overwrite x
-                         [none () (let ([w (new-loc)])
-                                    (interp-env body
-                                               (cons (hash-set (hash-copy (first env)) x w) (rest env))
-                                               (hash-set sto w (v*s-v (interp-env bind env sto)))))])]
+          (let ([w (new-loc)])
+            (interp-env body
+                        (cons (hash-set (first env) x w) (rest env))
+                        (hash-set sto w (v*s-v (interp-env bind env sto)))))]
 
     [CApp (fun arges)
      (type-case Result (interp-env fun env sto)
@@ -67,8 +70,15 @@
                          [v*s (varg sarg) (v*s (python-prim1 prim varg) sarg)])]
     
     ;; implement this
-    [CPrim2 (prim arg1 arg2) (type-case Result (interp-env arg1 env sto)
-                         [v*s (varg1 sarg1) (v*s (python-prim1 prim varg1) sarg1)])]
+    [CPrim2 (prim arg1 arg2) 
+            (case prim
+              ['Add (type-case Result (interp-env arg1 env sto)
+                      [v*s (varg1 sarg1)
+                           (type-case Result (interp-env arg2 env sarg1)
+                             [v*s (varg2 sarg2) (cond 
+                                                  [(and (VNum? varg1) (VNum? varg2)) (+ varg1 varg2)]
+                                                  [(and (VStr? varg1) (VStr? varg2)) (string-append varg1 varg2)]
+                                                    )])])])]
     
     ;[else (error 'interp "haven't implemented a case yet")]
     ))
