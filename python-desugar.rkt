@@ -10,5 +10,6 @@
     [PyBool (b) (if b (CTrue) (CFalse))]
     [PyStr (s) (CStr s)]
     [PyId (x ctx) (CId x)]
+    [PyRaise (expr) (CError (desugar expr))]
     [PyApp (f args) (CApp (desugar f) (map desugar args))]
     [else (error 'desugar "haven't implemented a case yet")]))
