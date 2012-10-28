@@ -204,5 +204,7 @@
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
-    [v*s (vexpr sexpr) (begin (display (pretty vexpr))
-                              (display "\n"))]))
+    [v*s (vexpr sexpr) (if (not (VNone? vexpr)) 
+                         (begin (display (pretty vexpr)) 
+                                (display "\n"))
+                         (display ""))]))
