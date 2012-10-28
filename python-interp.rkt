@@ -44,11 +44,7 @@
                                   [VTrue () (interp-env t env si)]
                                   [else (interp-env e env si)])])]
 
-    [CId (x) (type-case (optionof Address) (hash-ref (first env) x)
-      [some (v) (type-case (optionof CVal) (hash-ref sto v)
-                  [some (v2) (v*s v2 sto)]
-                  [none () (error 'interp (string-append "No value at address " (Address->string v)))])]
-      [none () (error 'interp "Unbound identifier")])]
+    [CId (x) (begin (display "env: ") (display env) (display "\n") (fetch (lookup x env) sto))]
 
     [CLet (x bind body)
           (let ([w (new-loc)])
@@ -68,7 +64,9 @@
                                                               (begin 
                                                                 (set! sa sarg)
                                                                 varg)])) arges))]
-                                        (interp-env body (bind-args argxs argvs env sa) sa)))]
+                                        (local [(define-values (e s) (bind-args argxs argvs env sa))]
+                                          (begin (display e) (display "\n")
+                                          (interp-env body e s)))))]
                           [else (error 'interp "Not a closure")])])]
 
     ;; lambdas for now, implement real functions later
@@ -168,17 +166,28 @@
     ;[else (error 'interp "haven't implemented a case yet")]
     ))
 
+(define (lookup x env)
+  (cond
+    [(empty? env) (error 'interp (string-append "Unbound identifier: " (symbol->string x)))]
+    [else (type-case (optionof Address) (hash-ref (first env) x)
+            [some (v) v]
+            [none () (lookup x (rest env))])]))
+
+(define (fetch w sto)
+  (type-case (optionof CVal) (hash-ref sto w)
+    [some (v) (v*s v sto)]
+    [none () (error 'interp (string-append "No value at address " (Address->string w)))]))
+
 (define (bind-args args vals [env : Env] [sto : Store])
-  (cond [(and (empty? args) (empty? vals)) env]
+  (cond [(and (empty? args) (empty? vals)) (values env sto)]
         [(or (empty? args) (empty? vals))
          (error 'interp "Arity mismatch")]
         [(and (cons? args) (cons? vals))
          (let ([where (new-loc)])
                (begin
-                 (hash-set (first env) (first args) where)
-                 (hash-set sto where (first vals))
-                 (bind-args (rest args) (rest vals) env sto)
-                 env))]))
+                 (let ([e (cons (hash-set (first env) (first args) where) (rest env))]
+                       [s (hash-set sto where (first vals))])
+                   (bind-args (rest args) (rest vals) e s))))]))
 
 (define (truthy? val)
   (type-case CVal val
