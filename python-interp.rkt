@@ -127,11 +127,17 @@
                                   [(and (VNum? varg1) (VNum? varg2)) (v*s (if (eq? (VNum-n varg1) (VNum-n varg2))
                                                                               (VTrue)
                                                                               (VFalse)) sto)]
+                                  [(and (VStr? varg1) (VStr? varg2)) (v*s (if (string=? (VStr-s varg1) (VStr-s varg2))
+                                                                              (VTrue)
+                                                                              (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to ==")])]
                             ['NotEq (cond
                                   [(and (VNum? varg1) (VNum? varg2)) (v*s (if (not (eq? (VNum-n varg1) (VNum-n varg2)))
                                                                               (VTrue)
                                                                               (VFalse)) sarg2)]
+                                  [(and (VStr? varg1) (VStr? varg2)) (v*s (if (not (string=? (VStr-s varg1) (VStr-s varg2)))
+                                                                              (VTrue)
+                                                                              (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to !=")])]
                             ;; Handle Is, IsNot, In, NotIn
                             ['Is (cond
