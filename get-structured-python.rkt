@@ -43,6 +43,12 @@ structure that you define in python-syntax.rkt
               (nodetype->symbol op)
               (get-structured-python r))]
 
+    [(hash-table ('nodetype "UnaryOp")
+                 ('op op)
+                 ('operand operand))
+     (PyUnaryOp (nodetype->symbol op)
+                (get-structured-python operand))]
+
     [(hash-table ('nodetype "Compare")
                  ('left l)
                  ('ops ops)
