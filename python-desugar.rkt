@@ -2,8 +2,7 @@
 
 (require "python-syntax.rkt"
          "python-core-syntax.rkt")
-
-(define (desugar expr)
+(define (desugar (expr : PyExpr)) : CExpr
   (type-case PyExpr expr
     [PySeq (es) (foldl (lambda (e1 e2) (CSeq e2 (desugar e1))) (desugar (first es)) (rest es))]
     [PyAssign (t v) (CAssign (map desugar t) (desugar v))]
