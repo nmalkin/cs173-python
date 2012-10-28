@@ -30,7 +30,7 @@
 
            first-comp)))
 
-(define (desugar expr)
+(define (desugar [expr : PyExpr]) : CExpr
   (type-case PyExpr expr
     [PySeq (es) (foldl (lambda (e1 e2) (CSeq e2 (desugar e1))) (desugar (first es)) (rest es))]
     [PyAssign (targets value) (foldl (lambda (t asgns)
