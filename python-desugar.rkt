@@ -15,5 +15,7 @@
             (CFunc empty (CNone))]
     [PyIf (test body orelse)
           (CIf (desugar test) (desugar body) (desugar orelse))]
+    [PyBinOp (left op right) (CPrim2 op (desugar left) (desugar right))]
+    [PyUnaryOp (op operand) (CPrim1 op (desugar operand))]
     [PyApp (f args) (CApp (desugar f) (map desugar args))]
     [else (error 'desugar "haven't implemented a case yet")]))
