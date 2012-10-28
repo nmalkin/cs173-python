@@ -11,5 +11,7 @@
     [PyStr (s) (CStr s)]
     [PyId (x ctx) (CId x)]
     [PyRaise (expr) (CError (desugar expr))]
+    [PyPass () ; no-op function implemented as a lambda returning dummy value (None)
+            (CFunc empty (CNone))]
     [PyApp (f args) (CApp (desugar f) (map desugar args))]
     [else (error 'desugar "haven't implemented a case yet")]))
