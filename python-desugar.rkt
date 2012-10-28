@@ -13,5 +13,7 @@
     [PyRaise (expr) (CError (desugar expr))]
     [PyPass () ; no-op function implemented as a lambda returning dummy value (None)
             (CFunc empty (CNone))]
+    [PyIf (test body orelse)
+          (CIf (desugar test) (desugar body) (desugar orelse))]
     [PyApp (f args) (CApp (desugar f) (map desugar args))]
     [else (error 'desugar "haven't implemented a case yet")]))
