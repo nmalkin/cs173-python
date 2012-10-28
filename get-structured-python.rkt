@@ -80,7 +80,9 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Lambda")
                  ('args args)
                  ('body body))
-     (PyLam (get-structured-python args)
+     (PyLam (map (lambda(arg)
+                   (string->symbol (hash-ref arg 'arg)))
+                 (hash-ref args 'args))
             (get-structured-python body))]
 
     [(hash-table ('nodetype "arguments")
@@ -102,6 +104,10 @@ structure that you define in python-syntax.rkt
                  ('exc exc)
                  ('cause c))
      (PyRaise (get-structured-python exc))]
+
+    [(hash-table ('nodetype "arg")
+                 ('arg arg))
+     (string->symbol arg)]
 
 
     [(hash-table ('nodetype "If")
