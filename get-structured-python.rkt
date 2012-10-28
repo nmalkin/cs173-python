@@ -53,7 +53,7 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "BoolOp")
                  ('values values)
                  ('op op))
-     (PyBoolOp op (map get-structured-python values))]
+     (PyBoolOp (nodetype->symbol op) (map get-structured-python values))]
 
     [(hash-table ('nodetype "Name")
                  ('ctx ctx)        
@@ -108,12 +108,6 @@ structure that you define in python-syntax.rkt
            (get-structured-python orelse))]
 
     [empty (PyPass)]
-
-    ;[(hash-table ('nodetype "BoolOp")
-    ;            ('op op)
-    ;            ('values))
-    ;(
-
 
     [_ (error 'parse "Haven't handled a case yet")]))
 

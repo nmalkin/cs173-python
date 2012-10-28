@@ -18,16 +18,14 @@
 
 (define (desugar-compop [l : PyExpr] 
                         [ops : (listof symbol)] 
-                        [comps : (listof PyExpr)]) : CExpr
-  (local [(define first-right (desugar (first comps)))
+                        [comparators : (listof PyExpr)]) : CExpr
+  (local [(define first-right (desugar (first comparators)))
           (define l-expr (desugar l))
           (define first-comp (CPrim2 (first ops) l-expr first-right))]
-         ;; todo: error here if lengths of ops and comps don't match
-         (if (> (length comps) 1)
-           (CPrim2 'And
-                   first-comp
-                   (desugar-compop l (rest ops) (rest comps)))
-
+         (if (> (length comparators) 1) 
+           (CIf first-comp
+                (desugar-compop (first comparators) (rest ops) (rest comparators))
+                first-comp)
            first-comp)))
 
 (define (desugar [expr : PyExpr]) : CExpr
