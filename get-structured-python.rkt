@@ -50,6 +50,10 @@ structure that you define in python-syntax.rkt
      (PyCompOp (get-structured-python l)
                (map nodetype->symbol ops)
                (map get-structured-python c))]
+    [(hash-table ('nodetype "BoolOp")
+                 ('values values)
+                 ('op op))
+     (PyBoolOp op (map get-structured-python values))]
 
     [(hash-table ('nodetype "Name")
                  ('ctx ctx)        
@@ -95,13 +99,21 @@ structure that you define in python-syntax.rkt
 
 
     [(hash-table ('nodetype "If")
-                ('body body)
-                ('test test)
-                ('orelse orelse))
+                 ('body body)
+                 ('test test)
+                 ('orelse orelse))
      (PyIf (get-structured-python test)
-           (get-structured-python body)
+           (PySeq
+             (map get-structured-python body))
            (get-structured-python orelse))]
+
     [empty (PyPass)]
+
+    ;[(hash-table ('nodetype "BoolOp")
+    ;            ('op op)
+    ;            ('values))
+    ;(
+
 
     [_ (error 'parse "Haven't handled a case yet")]))
 
@@ -140,9 +152,9 @@ structure that you define in python-syntax.rkt
                         (list 'Gt)
                         (list (PyNum 2))))))
 
-(test (get-structured-python (parse-python/string "if True: pass"
+(test (get-structured-python (parse-python/string "if True: 5"
                                                   test-python-path))
       (PySeq
         (list (PyIf (PyId 'True 'Load)
-                    (PyPass)
+                    (PySeq (list (PyNum 5)))
                     (PyPass)))))

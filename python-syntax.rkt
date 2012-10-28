@@ -16,6 +16,7 @@
   [PyCompOp (left : PyExpr) 
             (ops : (listof symbol)) ;ops = 'Eq | 'NotEq | 'Lt etc
             (comparators : (listof PyExpr))]
+  [PyBoolOp (op : symbol) (values : (listof PyExpr))] ;op = 'And | 'Or
   [PyLam (args : (listof symbol)) (body : PyExpr)]
   [PyApp (fun : PyExpr) (args : (listof PyExpr))])
 
