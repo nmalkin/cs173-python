@@ -49,4 +49,4 @@ ParselTongue.
         (unbox n)))))
 
 (define-type Result
-  [v*s (v : CVal) (s : Store)])
+  [v*s*e (v : CVal) (s : Store) (e : Env)])
