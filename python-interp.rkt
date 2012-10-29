@@ -51,10 +51,12 @@
     [CId (x) (fetch (lookup x env) sto env)]
 
     [CLet (x bind body)
-          (let ([w (new-loc)])
+          (letrec ([w (new-loc)]
+                [bind-r (interp-env bind env sto)]
+                [new-env (v*s*e-e bind-r)])
             (interp-env body
                         (cons (hash-set (first env) x w) (rest env))
-                        (hash-set sto w (v*s*e-v (interp-env bind env sto)))))]
+                        (hash-set sto w  (v*s*e-v bind-r))))]
 
     [CApp (fun arges)
      (type-case Result (interp-env fun env sto)
@@ -69,7 +71,7 @@
                                                                 (set! sa sarg)
                                                                 varg)])) arges))]
                                         (local [(define-values (e s) (bind-args argxs argvs cenv sa))]
-                                          (interp-env body e s))))]
+                                            (v*s*e (v*s*e-v (interp-env body e s)) s env))))]
                           [else (error 'interp "Not a closure")])])]
 
     ;; lambdas for now, implement real functions later

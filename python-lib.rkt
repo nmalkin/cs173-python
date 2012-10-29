@@ -20,7 +20,7 @@ that calls the primitive `print`.
 
 (define assert-true-lambda
   (CFunc (list 'check-true)
-    (CIf (CId 'check-true) (CTrue) (CError (CStr "Assert failed")))))
+    (CIf (CId 'check-true) (CNone) (CError (CStr "Assert failed")))))
 
 (define assert-false-lambda
   (CFunc (list 'check-false)
@@ -29,7 +29,7 @@ that calls the primitive `print`.
 (define assert-equal-lambda
   (CFunc (list 'check1 'check2)
     (CIf (CPrim2 'Eq (CId 'check1) (CId 'check2))
-         (CTrue)
+         (CNone)
          (CError (CStr "Assert failed")))))
 (define exception-lambda
   (CFunc (list 'exc)
@@ -50,9 +50,9 @@ that calls the primitive `print`.
         (bind 'None (CNone))
         (bind 'print print-lambda)
         (bind 'Exception exception-lambda)
+        (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
-        (bind '___assertFalse assert-false-lambda)
-        (bind '___assertEqual assert-equal-lambda)))
+        (bind '___assertFalse assert-false-lambda)))
 
 (define (python-lib expr)
   (local [(define (python-lib/recur libs)
