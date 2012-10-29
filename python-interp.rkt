@@ -29,14 +29,13 @@
              (type-case Result (interp-env v env sto)
                        [v*s*e (vv sv venv) (type-case (optionof Address) (hash-ref (first env) (CId-x t))
                                       [some (w) (begin
-                                                  
                                                   (v*s*e (VNone)
-                                                         (hash-set sto w vv) 
+                                                         (hash-set sv w vv) 
                                                          (cons (hash-set (first venv) (CId-x t) w) (rest venv))))]
                                       [none () (let ([w (new-loc)])
                                                  (begin
                                                    (v*s*e (VNone)
-                                                          (hash-set sto w vv)
+                                                          (hash-set sv w vv)
                                                           (cons (hash-set (immutable-hash-copy (first env)) (CId-x t) w) (rest env)))))])])]
                                                      
     
@@ -59,15 +58,15 @@
      (type-case Result (interp-env fun env sto)
        [v*s*e (vfun sfun efun) (type-case CVal vfun
                           [VClosure (cenv argxs body)
-                                    (let ([sa sto])
+                                    (let ([sa sfun])
                                       (local [(define argvs 
                                                 (map (lambda (e) 
-                                                       (type-case Result (interp-env e cenv sa)
+                                                       (type-case Result (interp-env e efun sa)
                                                          [v*s*e (varg sarg envarg) 
                                                               (begin 
                                                                 (set! sa sarg)
                                                                 varg)])) arges))]
-                                        (local [(define-values (e s) (bind-args argxs argvs env sa))]
+                                        (local [(define-values (e s) (bind-args argxs argvs cenv sa))]
                                           (interp-env body e s))))]
                           [else (error 'interp "Not a closure")])])]
 
