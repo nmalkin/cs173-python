@@ -106,18 +106,20 @@
                                       (v*s*e (VStr (let ([count (VNum-n varg2)]
                                                          [s (VStr-s varg1)]
                                                          [ret ""])
-                                                     (for-each 
-                                                      (lambda (i) (set! ret (string-append ret s)))
-                                                      (build-list count identity))
-                                                     ret)) sarg2 envarg2)]
+                                                     (begin
+                                                       (for-each 
+                                                        (lambda (i) (set! ret (string-append ret s)))
+                                                        (build-list count identity))
+                                                       ret))) sarg2 envarg2)]
                                      [(and (VNum? varg1) (VStr? varg2))
                                       (v*s*e (VStr (let ([count (VNum-n varg1)]
                                                          [s (VStr-s varg2)]
                                                          [ret ""])
-                                                     (for-each 
-                                                      (lambda (i) (set! ret (string-append ret s)))
-                                                      (build-list count identity))
-                                                     ret)) sarg2 envarg2)]
+                                                     (begin
+                                                       (for-each 
+                                                        (lambda (i) (set! ret (string-append ret s)))
+                                                        (build-list count identity))
+                                                       ret))) sarg2 envarg2)]
                                      [else (error 'interp "Bad arguments to *")])]
                             ;; need to make sure division is implemented correctly
                             ['Div (cond
