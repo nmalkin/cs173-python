@@ -9,6 +9,8 @@
          (typed-in racket/base (string>? : (string string -> boolean)))
          (typed-in racket/base (string<=? : (string string -> boolean)))
          (typed-in racket/base (string>=? : (string string -> boolean))))
+(define p (CApp (CFunc (list 'x) (CPrim2 'Add (CId 'x) (CNum 1))) (list (CNum 2))))
+(define p2 (CPrim2 'Eq (CNum 1.0) (CNum 2)))
 
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
@@ -69,11 +71,9 @@
                           [else (error 'interp "Not a closure")])])]
 
     ;; lambdas for now, implement real functions later
-    [CFunc (args body) (let ([h (hash empty)])
-                         (begin
-                           (set! h (hash-set h 'dummy -1))
-                           (set! h (hash-remove h 'dummy))
-                           (v*s (VClosure (cons h env) args body) sto)))]
+    [CFunc (args body) (let ([h (hash-remove (hash-set (hash empty) 'dummy -1)
+                                             'dummy)])
+                           (v*s (VClosure (cons h env) args body) sto))]
 
     [CPrim1 (prim arg)
             (type-case Result (interp-env arg env sto)
@@ -82,6 +82,8 @@
                      ['Not (type-case CVal (truthy? varg)
                              [VTrue () (v*s (VFalse) sarg)]
                              [else (v*s (VTrue) sarg)])]
+                     ['USub (interp-env (CPrim2 'Sub (CNum 0) arg) env sto)]
+                     ['UAdd (interp-env (CPrim2 'Add (CNum 0) arg) env sto)]
                      [else (v*s (python-prim1 prim varg) sarg)])])]
     
     ;; implement this
@@ -147,7 +149,7 @@
                                                                               (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to >=")])]
                             ['Eq (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s (if (eq? (VNum-n varg1) (VNum-n varg2))
+                                  [(and (VNum? varg1) (VNum? varg2)) (v*s (if (= (VNum-n varg1) (VNum-n varg2))
                                                                               (VTrue)
                                                                               (VFalse)) sto)]
                                   [(and (VStr? varg1) (VStr? varg2)) (v*s (if (string=? (VStr-s varg1) (VStr-s varg2))
@@ -155,7 +157,9 @@
                                                                               (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to ==")])]
                             ['NotEq (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s (if (not (eq? (VNum-n varg1) (VNum-n varg2)))
+                                  [(and (VNum? varg1) (VNum? varg2)) (v*s (if
+                                                                            (not
+                                                                              (= (VNum-n varg1) (VNum-n varg2)))
                                                                               (VTrue)
                                                                               (VFalse)) sarg2)]
                                   [(and (VStr? varg1) (VStr? varg2)) (v*s (if (not (string=? (VStr-s varg1) (VStr-s varg2)))
