@@ -80,6 +80,8 @@
                      ['Not (type-case CVal (truthy? varg)
                              [VTrue () (v*s (VFalse) sarg)]
                              [else (v*s (VTrue) sarg)])]
+                     ['USub (interp-env (CPrim2 'Sub (CNum 0) arg) env sto)]
+                     ['UAdd (interp-env (CPrim2 'Add (CNum 0) arg) env sto)]
                      [else (v*s (python-prim1 prim varg) sarg)])])]
     
     ;; implement this
