@@ -8,7 +8,8 @@
          (typed-in racket/base (string<? : (string string -> boolean)))
          (typed-in racket/base (string>? : (string string -> boolean)))
          (typed-in racket/base (string<=? : (string string -> boolean)))
-         (typed-in racket/base (string>=? : (string string -> boolean))))
+         (typed-in racket/base (string>=? : (string string -> boolean)))
+         (typed-in racket/base (hash-for-each : ((hashof 'a 'b) ('c 'd -> 'e) -> void))))
 
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
@@ -24,7 +25,8 @@
     
     ;; deal with pythonic scope here
     ;; only for ids!
-    [CAssign (t v) (type-case Result (interp-env v env sto)
+    [CAssign (t v) 
+             (type-case Result (interp-env v env sto)
                        [v*s (vv sv) (type-case (optionof Address) (hash-ref (first env) (CId-x t))
                                       [some (w) (begin
                                                   (cons (hash-set (first env) (CId-x t) w) (rest env))
@@ -32,7 +34,7 @@
                                                   (v*s (VNone) sv))]
                                       [none () (let ([w (new-loc)])
                                                  (begin
-                                                   (cons (hash-set (hash-copy (first env)) (CId-x t) w) (rest env))
+                                                   (cons (hash-set (immutable-hash-copy (first env)) (CId-x t) w) (rest env))
                                                    (hash-set sto w vv)
                                                    (v*s (VNone) sv)))])])]
                                                      
@@ -69,11 +71,7 @@
                           [else (error 'interp "Not a closure")])])]
 
     ;; lambdas for now, implement real functions later
-    [CFunc (args body) (let ([h (hash empty)])
-                         (begin
-                           (set! h (hash-set h 'dummy -1))
-                           (set! h (hash-remove h 'dummy))
-                           (v*s (VClosure (cons h env) args body) sto)))]
+    [CFunc (args body) (v*s (VClosure (cons (hash empty) env) args body) sto)]
 
     [CPrim1 (prim arg)
             (type-case Result (interp-env arg env sto)
@@ -147,7 +145,7 @@
                                                                               (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to >=")])]
                             ['Eq (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s (if (eq? (VNum-n varg1) (VNum-n varg2))
+                                  [(and (VNum? varg1) (VNum? varg2)) (v*s (if (= (VNum-n varg1) (VNum-n varg2))
                                                                               (VTrue)
                                                                               (VFalse)) sto)]
                                   [(and (VStr? varg1) (VStr? varg2)) (v*s (if (string=? (VStr-s varg1) (VStr-s varg2))
@@ -155,7 +153,7 @@
                                                                               (VFalse)) sto)]
                                   [else (error 'interp "Bad arguments to ==")])]
                             ['NotEq (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s (if (not (eq? (VNum-n varg1) (VNum-n varg2)))
+                                  [(and (VNum? varg1) (VNum? varg2)) (v*s (if (not (= (VNum-n varg1) (VNum-n varg2)))
                                                                               (VTrue)
                                                                               (VFalse)) sarg2)]
                                   [(and (VStr? varg1) (VStr? varg2)) (v*s (if (not (string=? (VStr-s varg1) (VStr-s varg2)))
@@ -180,6 +178,14 @@
   (type-case (optionof CVal) (hash-ref sto w)
     [some (v) (v*s v sto)]
     [none () (error 'interp (string-append "No value at address " (Address->string w)))]))
+
+(define (immutable-hash-copy h)
+  (let ([r (hash empty)])
+    (begin
+      (display h) (display "\n")
+      (hash-for-each h (lambda (k v) (set! r (hash-set r k v))))
+      (display r) (display "\n\n")
+      r)))
 
 (define (bind-args args vals [env : Env] [sto : Store])
   (cond [(and (empty? args) (empty? vals)) (values env sto)]
