@@ -81,6 +81,9 @@
             (type-case Result (interp-env arg env sto)
               [v*s*e (varg sarg envarg) 
                    (case prim
+                     ['Invert (type-case CVal varg
+                                [VNum (n) (v*s*e (VNum (- 0 (+ n 1))) sarg envarg)]
+                                [else (error 'interp "Bad arguments to ~")])]
                      ['Not (type-case CVal (truthy? varg)
                              [VTrue () (v*s*e (VFalse) sarg envarg)]
                              [else (v*s*e (VTrue) sarg envarg)])]
