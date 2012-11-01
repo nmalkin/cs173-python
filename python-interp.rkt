@@ -139,6 +139,12 @@
                             ['FloorDiv (cond
                                          [(and (VNum? varg1) (VNum? varg2) (< 0 (VNum-n varg2))) (v*s*e (VNum (quotient (VNum-n varg1) (VNum-n varg2))) sarg2 envarg2)]
                                          [else (error 'interp "Bad arguments to //")])]
+                            ['LShift (cond
+                                       [(and (VNum? varg1) (VNum? varg2)) (v*s*e (VNum (* (VNum-n varg1) (expt 2 (VNum-n varg2)))) sarg2 envarg2)]
+                                       [else (error 'interp "Bad arguments to <<")])]
+                            ['RShift (cond
+                                       [(and (VNum? varg1) (VNum? varg2)) (v*s*e (VNum (quotient (VNum-n varg1) (expt 2 (VNum-n varg2)))) sarg2 envarg2)]
+                                       [else (error 'interp "Bad arguments to >>")])]
                             ['Lt (cond
                                   [(and (VNum? varg1) (VNum? varg2)) (v*s*e (if (< (VNum-n varg1) (VNum-n varg2))
                                                                               (VTrue)
