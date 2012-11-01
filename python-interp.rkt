@@ -92,113 +92,9 @@
                      [else (v*s*e (python-prim1 prim varg) sarg envarg)])])]
     
     ;; implement this
-    [CPrim2 (prim arg1 arg2) 
-            (type-case Result (interp-env arg1 env sto)
-              [v*s*e (varg1 sarg1 envarg1)
-                   (type-case Result (interp-env arg2 envarg1 sarg1)
-                     [v*s*e (varg2 sarg2 envarg2) 
-                          (case prim
-                            ['Add (cond 
-                                    [(and (VNum? varg1) (VNum? varg2)) (v*s*e (VNum (+ (VNum-n varg1) (VNum-n varg2))) sarg2 envarg2)]
-                                    [(and (VStr? varg1) (VStr? varg2)) (v*s*e (VStr (string-append (VStr-s varg1) (VStr-s varg2))) sarg2 envarg2)]
-                                    [else (error 'interp "Bad arguments to +")])]
-                            ['Sub (cond
-                                    [(and (VNum? varg1) (VNum? varg2)) (v*s*e (VNum (- (VNum-n varg1) (VNum-n varg2))) sarg2 envarg2)]
-                                    [else (error 'interp "Bad arguments to -")])]
-                            ['Mult (cond
-                                     [(and (VNum? varg1) (VNum? varg2)) (v*s*e (VNum (* (VNum-n varg1) (VNum-n varg2))) sarg2 envarg2)]
-                                     [(and (VStr? varg1) (VNum? varg2))
-                                      (v*s*e (VStr (let ([count (VNum-n varg2)]
-                                                         [s (VStr-s varg1)]
-                                                         [ret ""])
-                                                     (begin
-                                                       (for-each 
-                                                        (lambda (i) (set! ret (string-append ret s)))
-                                                        (build-list count identity))
-                                                       ret))) sarg2 envarg2)]
-                                     [(and (VNum? varg1) (VStr? varg2))
-                                      (v*s*e (VStr (let ([count (VNum-n varg1)]
-                                                         [s (VStr-s varg2)]
-                                                         [ret ""])
-                                                     (begin
-                                                       (for-each 
-                                                        (lambda (i) (set! ret (string-append ret s)))
-                                                        (build-list count identity))
-                                                       ret))) sarg2 envarg2)]
-                                     [else (error 'interp "Bad arguments to *")])]
-                            ;; need to make sure division is implemented correctly
-                            ['Div (cond
-                                     [(and (VNum? varg1) (VNum? varg2) (< 0 (VNum-n varg2))) (v*s*e (VNum (/ (VNum-n varg1) (VNum-n varg2))) sarg2 envarg2)]
-                                     [else (error 'interp "Bad arguments to /")])]
-                            ['Mod (cond
-                                    [(and (VNum? varg1) (VNum? varg2) (< 0 (VNum-n varg2))) (v*s*e (VNum (modulo (VNum-n varg1) (VNum-n varg2))) sarg2 envarg2)]
-                                    [else (error 'interp "Bad arguments to %")])]
-                            ['Pow (cond
-                                    [(and (VNum? varg1) (VNum? varg2)) (v*s*e (VNum (expt (VNum-n varg1) (VNum-n varg2))) sarg2 envarg2)]
-                                    [else (error 'interp "Bad arguments to **")])]
-                            ['FloorDiv (cond
-                                         [(and (VNum? varg1) (VNum? varg2) (< 0 (VNum-n varg2))) (v*s*e (VNum (quotient (VNum-n varg1) (VNum-n varg2))) sarg2 envarg2)]
-                                         [else (error 'interp "Bad arguments to //")])]
-                            ['LShift (cond
-                                       [(and (VNum? varg1) (VNum? varg2)) (v*s*e (VNum (* (VNum-n varg1) (expt 2 (VNum-n varg2)))) sarg2 envarg2)]
-                                       [else (error 'interp "Bad arguments to <<")])]
-                            ['RShift (cond
-                                       [(and (VNum? varg1) (VNum? varg2)) (v*s*e (VNum (quotient (VNum-n varg1) (expt 2 (VNum-n varg2)))) sarg2 envarg2)]
-                                       [else (error 'interp "Bad arguments to >>")])]
-                            ['Lt (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s*e (if (< (VNum-n varg1) (VNum-n varg2))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [(and (VStr? varg1) (VStr? varg2)) (v*s*e (if (string<? (VStr-s varg1) (VStr-s varg2))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [else (error 'interp "Bad arguments to <")])]
-                            ['Gt (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s*e (if (> (VNum-n varg1) (VNum-n varg2))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [(and (VStr? varg1) (VStr? varg2)) (v*s*e (if (string>? (VStr-s varg1) (VStr-s varg2))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [else (error 'interp "Bad arguments to >")])]
-                            ['LtE (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s*e (if (<= (VNum-n varg1) (VNum-n varg2))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [(and (VStr? varg1) (VStr? varg2)) (v*s*e (if (string<=? (VStr-s varg1) (VStr-s varg2))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [else (error 'interp "Bad arguments to <=")])]
-                            ['GtE (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s*e (if (>= (VNum-n varg1) (VNum-n varg2))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [(and (VStr? varg1) (VStr? varg2)) (v*s*e (if (string>=? (VStr-s varg1) (VStr-s varg2))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [else (error 'interp "Bad arguments to >=")])]
-                            ['Eq (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s*e (if (= (VNum-n varg1) (VNum-n varg2))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [(and (VStr? varg1) (VStr? varg2)) (v*s*e (if (string=? (VStr-s varg1) (VStr-s varg2))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [else (error 'interp "Bad arguments to ==")])]
-                            ['NotEq (cond
-                                  [(and (VNum? varg1) (VNum? varg2)) (v*s*e (if (not (= (VNum-n varg1) (VNum-n varg2)))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [(and (VStr? varg1) (VStr? varg2)) (v*s*e (if (not (string=? (VStr-s varg1) (VStr-s varg2)))
-                                                                              (VTrue)
-                                                                              (VFalse)) sarg2 envarg2)]
-                                  [else (error 'interp "Bad arguments to !=")])]
-                            ;; Handle Is, IsNot, In, NotIn
-                            [else (error 'interp (string-append "Haven't implemented a case yet: " (symbol->string prim)))]
-                            )])])]
+    [CPrim2 (prim arg1 arg2) (interp-cprim2 prim arg1 arg2 sto env)]))
     
     ;[else (error 'interp "haven't implemented a case yet")]
-    ))
 
 (define (lookup x env)
   (cond
@@ -248,3 +144,171 @@
                          (begin (display (pretty vexpr)) 
                                 (display "\n"))
                          (display ""))]))
+
+(define (interp-cprim2 [prim : symbol] 
+                       [arg1 : CExpr]
+                       [arg2 : CExpr]
+                       [sto : Store]
+                       [env : Env]) : Result
+
+    (type-case Result (interp-env arg1 env sto)
+      [v*s*e (varg1 sarg1 envarg1)
+           (type-case Result (interp-env arg2 envarg1 sarg1)
+             [v*s*e (varg2 sarg2 envarg2) 
+                  (case prim
+                    ['Add (cond 
+                            [(and (VNum? varg1) (VNum? varg2))
+                             (v*s*e (VNum (+ (VNum-n varg1) (VNum-n varg2))) 
+                                    sarg2 envarg2)]
+                            [(and (VStr? varg1) (VStr? varg2)) 
+                             (v*s*e (VStr (string-append 
+                                            (VStr-s varg1) 
+                                            (VStr-s varg2)))
+                                    sarg2 envarg2)]
+                            [else (error 'interp "Bad arguments to +")])]
+
+                    ['Sub (cond
+                            [(and (VNum? varg1) (VNum? varg2)) 
+                             (v*s*e (VNum (- (VNum-n varg1) (VNum-n varg2))) 
+                                    sarg2 envarg2)]
+                            [else (error 'interp "Bad arguments to -")])]
+
+                    ['Mult (cond
+                             [(and (VNum? varg1) (VNum? varg2)) 
+                              (v*s*e (VNum (* (VNum-n varg1) (VNum-n varg2))) 
+                                     sarg2 envarg2)]
+
+                             [(and (VStr? varg1) (VNum? varg2))
+                              (v*s*e (VStr (let ([count (VNum-n varg2)]
+                                                 [s (VStr-s varg1)]
+                                                 [ret ""])
+                                             (begin
+                                               (for-each 
+                                                (lambda (i) (set! ret (string-append ret s)))
+                                                (build-list count identity))
+                                               ret))) sarg2 envarg2)]
+                             [(and (VNum? varg1) (VStr? varg2))
+                              (v*s*e (VStr (let ([count (VNum-n varg1)]
+                                                 [s (VStr-s varg2)]
+                                                 [ret ""])
+                                             (begin
+                                               (for-each 
+                                                (lambda (i) (set! ret (string-append ret s)))
+                                                (build-list count identity))
+                                               ret))) sarg2 envarg2)]
+                             [else (error 'interp "Bad arguments to *")])]
+
+                    ;; need to make sure division is implemented correctly
+                    ['Div (cond
+                             [(and (VNum? varg1) (VNum? varg2) (< 0 (VNum-n varg2)))
+                              (v*s*e (VNum (/ (VNum-n varg1) (VNum-n varg2)))
+                                     sarg2 envarg2)]
+                             [else (error 'interp "Bad arguments to /")])]
+
+                    ['Mod (cond
+                            [(and (VNum? varg1) (VNum? varg2) (< 0 (VNum-n varg2)))
+                             (v*s*e (VNum (modulo (VNum-n varg1) (VNum-n varg2))) sarg2 envarg2)]
+
+                            [else (error 'interp "Bad arguments to %")])]
+
+                    ['Pow (cond
+                            [(and (VNum? varg1) (VNum? varg2)) 
+                             (v*s*e (VNum (expt (VNum-n varg1) (VNum-n varg2))) 
+                                    sarg2 envarg2)]
+                            [else (error 'interp "Bad arguments to **")])]
+
+                    ['FloorDiv (cond
+                                 [(and (VNum? varg1) (VNum? varg2)
+                                       (< 0 (VNum-n varg2))) 
+                                  (v*s*e (VNum (quotient (VNum-n varg1) (VNum-n varg2))) sarg2 envarg2)]
+                                 [else (error 'interp "Bad arguments to //")])]
+
+                    ['LShift (cond
+                               [(and (VNum? varg1) (VNum? varg2)) 
+                                (v*s*e (VNum (* (VNum-n varg1) (expt 2 (VNum-n varg2)))) sarg2 envarg2)]
+                               [else (error 'interp "Bad arguments to <<")])]
+
+                    ['RShift (cond
+                               [(and (VNum? varg1) (VNum? varg2))
+                                (v*s*e (VNum (quotient (VNum-n varg1) (expt 2 (VNum-n varg2)))) sarg2 envarg2)]
+                               [else (error 'interp "Bad arguments to >>")])]
+
+                    ['Lt (cond
+                          [(and (VNum? varg1) (VNum? varg2)) 
+                           (v*s*e (if (< (VNum-n varg1) (VNum-n varg2))
+                                    (VTrue)
+                                    (VFalse)) sarg2 envarg2)]
+
+                          [(and (VStr? varg1) (VStr? varg2))
+                           (v*s*e (if (string<? (VStr-s varg1) (VStr-s varg2)) 
+                                    (VTrue)
+                                    (VFalse))
+                                  sarg2 envarg2)]
+                          [else (error 'interp "Bad arguments to <")])]
+                
+                    ['Gt (cond
+                          [(and (VNum? varg1) (VNum? varg2)) 
+                           (v*s*e (if (> (VNum-n varg1) (VNum-n varg2))
+                                    (VTrue)
+                                    (VFalse)) 
+                                  sarg2 envarg2)]
+                          [(and (VStr? varg1) (VStr? varg2))
+                           (v*s*e (if (string>? (VStr-s varg1) (VStr-s varg2)) 
+                                    (VTrue) 
+                                    (VFalse)) 
+                                  sarg2 envarg2)]
+                          [else (error 'interp "Bad arguments to >")])]
+
+                    ['LtE (cond
+                          [(and (VNum? varg1) (VNum? varg2)) 
+                           (v*s*e (if (<= (VNum-n varg1) (VNum-n varg2)) 
+                                    (VTrue) 
+                                    (VFalse)) 
+                                  sarg2 envarg2)]
+                          [(and (VStr? varg1) (VStr? varg2)) 
+                           (v*s*e (if (string<=? (VStr-s varg1) (VStr-s varg2)) 
+                                    (VTrue) 
+                                    (VFalse))
+                                  sarg2 envarg2)]
+                          [else (error 'interp "Bad arguments to <=")])]
+
+                    ['GtE (cond
+                          [(and (VNum? varg1) (VNum? varg2)) 
+                           (v*s*e (if (>= (VNum-n varg1) (VNum-n varg2)) 
+                                    (VTrue) 
+                                    (VFalse))
+                                  sarg2 envarg2)]
+                          [(and (VStr? varg1) (VStr? varg2)) (v*s*e (if (string>=? (VStr-s varg1) (VStr-s varg2))
+                                                                      (VTrue)
+                                                                      (VFalse)) sarg2 envarg2)]
+                          [else (error 'interp "Bad arguments to >=")])]
+
+                    ['Eq (cond
+                          [(and (VNum? varg1) (VNum? varg2)) 
+                           (v*s*e (if (= (VNum-n varg1) (VNum-n varg2)) 
+                                    (VTrue) 
+                                    (VFalse)) 
+                                  sarg2 envarg2)]
+                          [(and (VStr? varg1) (VStr? varg2)) 
+                           (v*s*e (if (string=? (VStr-s varg1) (VStr-s varg2)) 
+                                    (VTrue) 
+                                    (VFalse)) 
+                                  sarg2 envarg2)]
+                          [else (error 'interp "Bad arguments to ==")])]
+                    ['NotEq (cond
+                          [(and (VNum? varg1) (VNum? varg2)) 
+                           (v*s*e (if (not (= (VNum-n varg1) (VNum-n varg2))) 
+                                    (VTrue) 
+                                    (VFalse))
+                                  sarg2 envarg2)]
+                          [(and (VStr? varg1) (VStr? varg2))
+                           (v*s*e (if (not (string=? (VStr-s varg1) (VStr-s varg2))) 
+                                    (VTrue) 
+                                    (VFalse)) 
+                                  sarg2 envarg2)]
+                          [else (error 'interp "Bad arguments to !=")])]
+                    ;; Handle Is, IsNot, In, NotIn
+                    [else (error 'interp (string-append "Haven't implemented a
+                                                        case yet: "
+                                                        (symbol->string
+                                                          prim)))])])]))
