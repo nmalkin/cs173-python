@@ -56,6 +56,7 @@ structure that you define in python-syntax.rkt
      (PyCompOp (get-structured-python l)
                (map nodetype->symbol ops)
                (map get-structured-python c))]
+
     [(hash-table ('nodetype "BoolOp")
                  ('values values)
                  ('op op))
@@ -118,6 +119,12 @@ structure that you define in python-syntax.rkt
            (PySeq
              (map get-structured-python body))
            (get-structured-python orelse))]
+
+    [(hash-table ('nodetype "Dict")
+                 ('values values)
+                 ('keys keys))
+     (PyDict (map get-structured-python keys)
+             (map get-structured-python values))]
 
     [empty (PyPass)]
 

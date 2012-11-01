@@ -25,7 +25,9 @@ ParselTongue.
   [CApp (fun : CExpr) (args : (listof CExpr))]
   [CFunc (args : (listof symbol)) (body : CExpr)]
   [CPrim1 (prim : symbol) (arg : CExpr)]
-  [CPrim2 (prim : symbol) (arg1 : CExpr) (arg2 : CExpr)])
+  [CPrim2 (prim : symbol) (arg1 : CExpr) (arg2 : CExpr)]
+  
+  [CDict (contents : (hashof CExpr CExpr))])
 
 (define-type CVal
   [VNum (n : number)]
@@ -33,7 +35,9 @@ ParselTongue.
   [VTrue]
   [VFalse]
   [VNone]
-  [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)])
+  [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)]
+  
+  [VDict (contents : (hashof CVal CVal))])
 
 ;; env is a listof hashof's so there are deliniations between closures
 (define-type-alias Env (listof (hashof symbol Address)))
