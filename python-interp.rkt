@@ -2,6 +2,7 @@
 
 (require "python-core-syntax.rkt"
          "python-primitives.rkt"
+         "util.rkt"
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
          (typed-in racket/base (expt : (number number -> number)))
          (typed-in racket/base (quotient : (number number -> number)))
@@ -9,7 +10,6 @@
          (typed-in racket/base (string>? : (string string -> boolean)))
          (typed-in racket/base (string<=? : (string string -> boolean)))
          (typed-in racket/base (string>=? : (string string -> boolean)))
-         (typed-in racket/base (hash-for-each : ((hashof 'a 'b) ('c 'd -> 'e) -> void)))
          (typed-in racket/base (for-each : (('a -> void) (listof number) -> 'b)))
          (typed-in racket/base (raise-user-error : ('symbol string -> 'a))))
 
@@ -34,29 +34,41 @@
                     [v*s*e (v1 s1 new-env) (interp-env e2 new-env s1)]
                     [Return (v1 s1 new-env) (Return v1 s1 new-env)])]
     
+    ;; note that for now we're assuming that dict keys and values aren't going
+    ;; to mess with the environment and store, but this might be wrong
+    [CDict (contents) (v*s*e
+                        (VDict (lists->hash 
+                               (map (lambda(k) (v*s*e-v (interp-env k env sto)))
+                                    (hash-keys contents))
+                               (map (lambda(k) (v*s*e-v (interp-env (some-v (hash-ref contents k))
+                                                           env sto)))
+                                    (hash-keys contents))))
+                        sto
+                        env)]
+
     ;; deal with pythonic scope here
     ;; only for ids!
     [CAssign (t v) 
              (type-case Result (interp-env v env sto)
                [v*s*e (vv sv venv) 
-                      (type-case (optionof Address) (hash-ref (first env) (CId-x t))
-                        [some (w) (begin
-                                    (v*s*e (VNone)
-                                           (hash-set sv w vv) 
-                                           (cons (hash-set 
-                                                  (first venv) 
-                                                  (CId-x t) w) 
-                                                 (rest venv))))]
-                        [none () (let ([w (new-loc)])
-                                   (begin
-                                     (v*s*e (VNone)
-                                            (hash-set sv w vv)
-                                            (cons (hash-set 
-                                                   (immutable-hash-copy (first env)) 
-                                                   (CId-x t) w) 
-                                                  (rest env)))))])]
+                  (type-case (optionof Address) (hash-ref (first env) (CId-x t)) 
+                     [some (w) (begin 
+                                 (v*s*e (VNone) 
+                                        (hash-set sv w vv) 
+                                        (cons 
+                                          (hash-set (first venv)
+                                                    (CId-x t) w)
+                                          (rest venv))))] 
+                     [none () (let ([w (new-loc)]) 
+                                (begin 
+                                  (v*s*e (VNone) 
+                                         (hash-set sv w vv) 
+                                         (cons 
+                                           (hash-set 
+                                             (immutable-hash-copy 
+                                               (first env)) (CId-x t) w)
+                                           (rest env)))))])]
                [else (error 'interp "'return' outside of function")])]
-    
     
     [CError (e) (type-case Result (interp-env e env sto)
                   [v*s*e (ve se ee)
@@ -217,6 +229,9 @@
     [VFalse () val]
     [VNone () (VFalse)]
     [VClosure (e a b) (VTrue)]
+    [VDict (c) (if (empty? (hash-keys c))
+                           (VTrue)
+                           (VFalse))]
     [else (VFalse)]))
 
 (define (interp expr)
@@ -311,8 +326,9 @@
                                [else (error 'interp "Bad arguments to <<")])]
 
                     ['RShift (cond
-                               [(and (VNum? varg1) (VNum? varg2))
-                                (v*s*e (VNum (quotient (VNum-n varg1) (expt 2 (VNum-n varg2)))) sarg2 envarg2)]
+                               [(and (VNum? varg1) (VNum? varg2)) 
+                                (v*s*e (VNum (quotient (VNum-n varg1) 
+                                                       (expt 2 (VNum-n varg2)))) sarg2 envarg2)] 
                                [else (error 'interp "Bad arguments to >>")])]
 
                     ['Lt (cond
@@ -389,6 +405,7 @@
                                     (VFalse)) 
                                   sarg2 envarg2)]
                           [else (error 'interp "Bad arguments to !=")])]
+
                     ;; Handle Is, IsNot, In, NotIn
                     [else (error 'interp (string-append "Haven't implemented a
                                                         case yet: "

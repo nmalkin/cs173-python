@@ -59,6 +59,7 @@ structure that you define in python-syntax.rkt
      (PyCompOp (get-structured-python l)
                (map nodetype->symbol ops)
                (map get-structured-python c))]
+
     [(hash-table ('nodetype "BoolOp")
                  ('values values)
                  ('op op))
@@ -156,6 +157,12 @@ structure that you define in python-syntax.rkt
      (PyDotField (get-structured-python value)
                  (string->symbol attr))]
     
+    [(hash-table ('nodetype "Dict")
+                 ('values values)
+                 ('keys keys))
+     (PyDict (map get-structured-python keys)
+             (map get-structured-python values))]
+
     [(list-no-order (hash-table (k v) ...) ..2)
      (PySeq (map get-structured-python pyjson))]
     

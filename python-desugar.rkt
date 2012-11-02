@@ -1,7 +1,8 @@
 #lang plai-typed
 
 (require "python-syntax.rkt"
-         "python-core-syntax.rkt")
+         "python-core-syntax.rkt"
+         "util.rkt")
 
 (define (desugar-boolop [op : symbol] [values : (listof PyExpr)]) : CExpr
   (local [(define first-val (desugar (first values)))]
@@ -76,6 +77,10 @@
     
     [PyReturn (value)
               (CReturn (desugar value))]
+
+    [PyDict (keys values)
+            (CDict (lists->hash (map desugar keys)
+                                (map desugar values)))]
 
     [PyApp (fun args)
            (CApp (desugar fun)
