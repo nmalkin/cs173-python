@@ -21,6 +21,15 @@
         (get-structured-python
           (parse-python/port port python-path))))))
 
+(define (get-surface-syntax port)
+  (get-structured-python
+   (parse-python/port port python-path)))
+
+(define (get-core-syntax port)
+  (desugar
+   (get-structured-python
+    (parse-python/port port python-path))))
+
 (define python-path "/usr/local/bin/python3.2")
 
 (command-line
@@ -35,6 +44,12 @@
 
   ("--get-syntax" "Get s-exp for python"
    (pretty-write (parse-python/port (current-input-port) python-path)))
+  
+  ("--get-surface-syntax" "Get surface syntax python"
+   (pretty-write (get-surface-syntax (current-input-port))))
+  
+  ("--get-core-syntax" "Get desugared python"
+   (pretty-write (get-core-syntax (current-input-port))))
 
   ("--test" dirname "Run all tests in dirname"
    (display (results-summary (run-tests (mk-proc-eval/silent python-test-runner) dirname))))

@@ -21,7 +21,9 @@ primitives here.
     [VTrue () "True"]
     [VFalse () "False"]
     [VNone () "None"]
-    [VClosure (env args body) (error 'prim "Can't print closures yet")]))
+    [VClosure (env args body) (error 'pretty "Can't print closures yet")]
+    [VClass (b d) (string-append "class: " (string-append (to-string d) "\n"))]
+    [else (error 'pretty (string-append "Cannot print case: " (to-string arg)))]))
   
 
 (define (print arg)

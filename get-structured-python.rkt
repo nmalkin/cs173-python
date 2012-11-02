@@ -3,7 +3,8 @@
 (require "python-syntax.rkt")
 (require "parse-python.rkt")
 (require racket/match
-         racket/list)
+         racket/list
+         racket/base)
 
 #|
 
@@ -18,6 +19,8 @@ structure that you define in python-syntax.rkt
   (string->symbol (hash-ref nodejson 'nodetype)))
 
 (define (get-structured-python pyjson)
+  (begin
+    ;(display pyjson) (display "\n\n")
   (match pyjson
     [(hash-table ('nodetype "Module") ('body expr-list))
      (PySeq (map get-structured-python expr-list))]
@@ -96,7 +99,6 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Assign")
                  ('value value)
                  ('targets targets))
-
      (PyAssign (map get-structured-python targets)
                (get-structured-python value))]
 
@@ -118,10 +120,54 @@ structure that you define in python-syntax.rkt
            (PySeq
              (map get-structured-python body))
            (get-structured-python orelse))]
+    
+    [(hash-table ('nodetype "ClassDef")
+                 ('name name)
+                 ('bases bases)
+                 ('body body)
+                 ('decorator_list dl)
+                 ('keywords ks)
+                 ('kwargs kwargs)
+                 ('starargs sargs))
+     (PyClass (string->symbol name)
+              (map PyId-x (map get-structured-python bases))
+              (get-structured-python body))]
+    
+    [(hash-table ('nodetype "FunctionDef")
+                 ('name name)
+                 ('body body)
+                 ('decorator_list dl)
+                 ('args args)
+                 ('returns returns))
+     (PyFunc (string->symbol name)
+             (map (lambda(arg)
+                    (string->symbol (hash-ref arg 'arg)))
+                  (hash-ref args 'args))
+             (get-structured-python body))]
+    
+    [(hash-table ('nodetype "Return")
+                 ('value value))
+     (PyReturn (get-structured-python value))]
+    
+    [(hash-table ('nodetype "Attribute")
+                 ('value value)
+                 ('attr attr)
+                 ('ctx ctx))
+     (PyDotField (get-structured-python value)
+                 (string->symbol attr))]
+    
+    [(list-no-order (hash-table (k v) ...) ..2)
+     (PySeq (map get-structured-python pyjson))]
+    
+    [(list-no-order (hash-table (k v) ...))
+     (get-structured-python (first pyjson))]
 
+    [(list)
+     (PyPass)]
+    
     [empty (PyPass)]
 
-    [_ (error 'parse "Haven't handled a case yet")]))
+    [_ (error 'parse "Haven't handled a case yet: ")])))
 
 
 ;; tests!
@@ -164,3 +210,9 @@ structure that you define in python-syntax.rkt
         (list (PyIf (PyId 'True 'Load)
                     (PySeq (list (PyNum 5)))
                     (PyPass)))))
+
+(test (get-structured-python (parse-python/string "class A(str, list): pass" test-python-path))
+      (PySeq
+        (list (PyClass 'A
+                       (list 'str 'list)
+                       (PyPass)))))

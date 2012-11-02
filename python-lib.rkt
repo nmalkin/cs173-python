@@ -31,6 +31,7 @@ that calls the primitive `print`.
     (CIf (CPrim2 'Eq (CId 'check1) (CId 'check2))
          (CNone)
          (CError (CStr "Assert failed")))))
+
 (define exception-lambda
   (CFunc (list 'exc)
     (CId 'exc)))
@@ -41,6 +42,13 @@ that calls the primitive `print`.
 (define false-val
   (CFalse))
 
+(define base-class
+  (CClass empty
+	  (CAssign
+	    (CId '__init__)
+	    (CFunc (list 'self)
+		   (CId 'self)))))
+
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
 
@@ -48,6 +56,7 @@ that calls the primitive `print`.
   (list (bind 'True true-val)
         (bind 'False false-val)
         (bind 'None (CNone))
+        (bind 'object base-class)
         (bind 'print print-lambda)
         (bind 'Exception exception-lambda)
         (bind '___assertEqual assert-equal-lambda)

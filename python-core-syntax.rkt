@@ -16,6 +16,9 @@ ParselTongue.
   [CTrue]
   [CFalse]
   [CNone]
+  [CClass (bases : (listof symbol)) (body : CExpr)]
+  [CObject (class : CExpr) (dict : object-dict)]
+  [CGetField (value : CExpr) (attr : symbol)]
   [CSeq (e1 : CExpr) (e2 : CExpr)]
   [CAssign (target : CExpr) (value : CExpr)]
   [CError (e1 : CExpr)]
@@ -24,6 +27,7 @@ ParselTongue.
   [CLet (x : symbol) (bind : CExpr) (body : CExpr)]
   [CApp (fun : CExpr) (args : (listof CExpr))]
   [CFunc (args : (listof symbol)) (body : CExpr)]
+  [CReturn (value : CExpr)]
   [CPrim1 (prim : symbol) (arg : CExpr)]
   [CPrim2 (prim : symbol) (arg1 : CExpr) (arg2 : CExpr)])
 
@@ -33,6 +37,8 @@ ParselTongue.
   [VTrue]
   [VFalse]
   [VNone]
+  [VClass (bases : (listof symbol)) (dict : object-dict)]
+  [VObject (c : CVal) (f : object-dict)]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)])
 
 ;; env is a listof hashof's so there are deliniations between closures
@@ -49,4 +55,9 @@ ParselTongue.
         (unbox n)))))
 
 (define-type Result
-  [v*s*e (v : CVal) (s : Store) (e : Env)])
+  [v*s*e (v : CVal) (s : Store) (e : Env)]
+  [Return (v : CVal) (s : Store) (e : Env)])
+
+(define-type-alias object-dict (hashof symbol Address))
+(define get-field hash-ref)
+(define set-field hash-set)

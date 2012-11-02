@@ -9,6 +9,8 @@
   [PyId (x : symbol) (ctx : symbol)]
   [PyRaise (expr : PyExpr)]
   [PyPass]
+  [PyClass (name : symbol) (bases : (listof symbol)) (body : PyExpr)]
+  [PyDotField (value : PyExpr) (attr : symbol)]
   [PyIf (test : PyExpr) (body : PyExpr) (orelse : PyExpr)]
   [PyBinOp (left : PyExpr) (op : symbol) (right : PyExpr)] ;op = 'Add | 'Sub | etc
   [PyUnaryOp (op : symbol) (operand : PyExpr)]
@@ -18,5 +20,7 @@
             (comparators : (listof PyExpr))]
   [PyBoolOp (op : symbol) (values : (listof PyExpr))] ;op = 'And | 'Or
   [PyLam (args : (listof symbol)) (body : PyExpr)]
+  [PyFunc (name : symbol) (args : (listof symbol)) (body : PyExpr)]
+  [PyReturn (value : PyExpr)]
   [PyApp (fun : PyExpr) (args : (listof PyExpr))])
 

@@ -66,8 +66,26 @@
 
     [PyLam (args body)
            (CFunc args 
-                  (desugar body))]
+                  (CReturn                   
+                   (desugar body)))]
+    
+    [PyFunc (name args body)
+            (CAssign (CId name)
+                     (CFunc args
+                            (desugar body)))]
+    
+    [PyReturn (value)
+              (CReturn (desugar value))]
 
     [PyApp (fun args)
            (CApp (desugar fun)
-                 (map desugar args))]))
+                 (map desugar args))]
+    
+    [PyClass (name bases body)
+             (CAssign (CId name)
+                      (CClass bases
+                              (desugar body)))]
+    
+    [PyDotField (value attr)
+                (CGetField (desugar value)
+                           attr)]))
