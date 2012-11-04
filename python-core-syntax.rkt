@@ -40,7 +40,7 @@ ParselTongue.
   [VFalse]
   [VNone]
   [VClass (bases : (listof symbol)) (dict : object-dict)]
-  [VObject (c : CVal) (f : object-dict)]
+  [VObject (class : CVal) (dict : object-dict)]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)]
   [VDict (contents : (hashof CVal CVal))])
 
@@ -62,5 +62,3 @@ ParselTongue.
   [Return (v : CVal) (s : Store) (e : Env)])
 
 (define-type-alias object-dict (hashof symbol Address))
-(define get-field hash-ref)
-(define set-field hash-set)
