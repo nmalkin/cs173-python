@@ -15,7 +15,7 @@
 
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
-  (type-case CExpr expr
+    (type-case CExpr expr
     [CNum (n) (v*s*e (VNum n) sto env)]
     [CStr (s) (v*s*e (VStr s) sto env)]
     [CTrue () (v*s*e (VTrue) sto env)]
@@ -59,7 +59,7 @@
                [v*s*e (vv sv venv) 
 		      (type-case CExpr t
 			[CId (x) (assign-to-id t vv venv sv)]
-			[CGetField (o a) (begin (display env) (assign-to-field o a vv venv sv))]
+			[CGetField (o a) (assign-to-field o a vv venv sv)]
 			[else (error 'interp "Can only assign to ids or objects")])]
                [else (error 'interp "'return' outside of function")])]
     
@@ -121,14 +121,18 @@
                            (local [(define-values (e s) 
                                      (bind-args argxs (cons o argvs) cenv sa))]
                              (type-case Result (interp-env body e s)
-                               [v*s*e (vb sb eb) (v*s*e o sb env)]
+                               [v*s*e (vb sb eb) (v*s*e 
+						   (let ([obj (v*s*e-v 
+							        (fetch (lookup (first argxs)
+									       eb) sb eb))])
+						     obj)
+						   sb env)]
                                [Return (vb sb eb) (v*s*e vb sb env)]))))]
                       [else (error 'interp 
                                    "__init__ not found for the given class")]))]
           [else (error 'interp "Not a closure or constructor")])]
        [else (error 'interp "'return' outside of function")])]
 
-    ;; lambdas for now, implement real functions later
     [CFunc (args body) (v*s*e (VClosure (cons (hash empty) env) args body) sto env)]
     
     [CReturn (value) (type-case Result (interp-env value env sto)
@@ -192,7 +196,7 @@
 ;; depth-first, left-to-right if super = #f
 ;; left-to-right, depth-second if super = #t
 (define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : CVal
-  (begin (display e) (display "\n") (display n) (display "\n\n") (type-case CVal c
+  (type-case CVal c
     [VClass (b d) 
 	    (let ([w (hash-ref (VClass-dict c) n)])
               (type-case (optionof Address) (hash-ref (VClass-dict c) n)
@@ -214,22 +218,26 @@
                                            (string-append "Function not found: " 
                                                           (symbol->string n)))]
                         [else (get-field n (VObject-class c) e s)])]))]
-    [else (error 'interp "Not an object with functions.")])))
+    [else (error 'interp "Not an object with functions.")]))
 
 (define (assign-to-field o f v e s)
   (type-case Result (interp-env o e s)
-    [v*s*e (vo so eo) (begin (display "set: ") (display vo) (display "\n") (type-case CVal vo
+    [v*s*e (vo so eo) (type-case CVal vo
 	[VObject (b d)
 	  (let ([w (hash-ref (VObject-dict vo) f)])
 	    (type-case (optionof Address) (hash-ref (VObject-dict vo) f)
 	      [some (w) (v*s*e (VNone)
-			       (hash-set so w vo)
+			       (hash-set so w v)
 			       eo)]
 	      [none () (let ([w (new-loc)])
-      		         (v*s*e (VNone)
-			        (hash-set so w vo)
-			        (list (hash-set (VObject-dict vo) f w))))]))]
-    	[else (error 'interp "Can't assign to nonobject.")]))]
+			   (let ([nw (hash-ref (first eo) (CId-x o))])
+			     (let ([snew (hash-set so (some-v nw) 
+			                 (VObject (VObject-class vo)
+						  (hash-set (VObject-dict vo) f w)))])
+      		           	(v*s*e (VNone)
+			          (hash-set snew w v)
+			          eo))))]))]
+    	[else (error 'interp "Can't assign to nonobject.")])]
     [else (error 'interp "'return' outside function")]))
 
 (define (new-object [c : CVal] [e : Env] [s : Store])
