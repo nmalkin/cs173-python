@@ -1,5 +1,7 @@
 #lang plai-typed 
 
+(require "python-core-syntax.rkt")
+
 (require
          (typed-in racket/base 
                    (hash-for-each : ((hashof 'a 'b) ('c 'd -> 'e) -> void))))
@@ -30,3 +32,9 @@
       (hash-for-each h (lambda (k v) (set! r (hash-set r k v))))
       r)))
 
+(define (seq-ops (ops : (listof CExpr))) : CExpr
+  (foldl
+    (lambda (next sofar)
+      (CSeq next sofar))
+    (first ops)
+    (rest ops)))

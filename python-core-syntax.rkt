@@ -30,19 +30,23 @@ ParselTongue.
   [CReturn (value : CExpr)]
   [CPrim1 (prim : symbol) (arg : CExpr)]
   [CPrim2 (prim : symbol) (arg1 : CExpr) (arg2 : CExpr)]
+  [CBuiltinPrim (op : symbol) (args : (listof CExpr))]
+
   
   [CDict (contents : (hashof CExpr CExpr))])
 
 (define-type CVal
-  [VNum (n : number)]
   [VStr (s : string)]
   [VTrue]
   [VFalse]
   [VNone]
   [VClass (bases : (listof symbol)) (dict : object-dict)]
-  [VObject (class : CVal) (dict : object-dict)]
+  [VObject (class : CVal) (dict : object-dict) (metadata : meta-dict)]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)]
   [VDict (contents : (hashof CVal CVal))])
+
+(define-type PrimVal
+             (PrimNum (n : number)))
 
 ;; env is a listof hashof's so there are deliniations between closures
 (define-type-alias Env (listof (hashof symbol Address)))
@@ -62,3 +66,4 @@ ParselTongue.
   [Return (v : CVal) (s : Store) (e : Env)])
 
 (define-type-alias object-dict (hashof symbol Address))
+(define-type-alias meta-dict (hashof symbol PrimVal))
