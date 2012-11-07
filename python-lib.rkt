@@ -1,6 +1,7 @@
 #lang plai-typed
 
 (require "python-core-syntax.rkt")
+(require "builtins/num.rkt")
 
 #|
 
@@ -63,7 +64,8 @@ that calls the primitive `print`.
         (bind 'Exception exception-lambda)
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
-        (bind '___assertFalse assert-false-lambda)))
+        (bind '___assertFalse assert-false-lambda)
+        (bind 'num (num-class 'num))))
 
 (define (python-lib expr)
   (local [(define (python-lib/recur libs)

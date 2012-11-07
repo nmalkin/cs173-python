@@ -2,7 +2,8 @@
 
 (require "python-syntax.rkt"
          "python-core-syntax.rkt"
-         "util.rkt")
+         "util.rkt"
+         "builtins/num.rkt")
 
 (define (desugar-boolop [op : symbol] [values : (listof PyExpr)]) : CExpr
   (local [(define first-val (desugar (first values)))]
@@ -38,7 +39,7 @@
                                        (CAssign (desugar (first targets))
                                                 (desugar value))
                                        (rest targets))]
-    [PyNum (n) (CNum n)]
+    [PyNum (n) (make-builtin-num n)]
     [PyBool (b) (if b (CTrue) (CFalse))]
     [PyStr (s) (CStr s)]
     [PyId (x ctx) (CId x)]
@@ -88,9 +89,9 @@
     
     [PyClass (name bases body)
              (CAssign (CId name)
-                      (CClass (if (empty? bases)
-				(list 'object)
-				bases)
+                      (CClass (if (empty? bases) 
+                                (list 'object) 
+                                bases) 
                               (desugar body)))]
     
     [PyDotField (value attr)

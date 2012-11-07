@@ -17,7 +17,7 @@ ParselTongue.
   [CFalse]
   [CNone]
   [CClass (name : symbol) (bases : (listof symbol)) (body : CExpr)]
-  [CObject (class : CExpr) (dict : object-dict) (bval : BuiltinVal)]
+  [CObject (class : symbol) (bval : BuiltinVal) (dict : object-dict)]
   [CGetField (value : CExpr) (attr : symbol)]
   [CSeq (e1 : CExpr) (e2 : CExpr)]
   [CAssign (target : CExpr) (value : CExpr)]
@@ -40,15 +40,16 @@ ParselTongue.
   [VTrue]
   [VFalse]
   [VNone]
-  [VClass (bases : (listof symbol)) (dict : object-dict)]
-  [VObject (class : CVal) (dict : object-dict) (bval : BuiltinVal)]
+  [VObject (antecedent : symbol) (dict : object-dict) (bval : (optionof
+                                                                BuiltinVal))]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)]
   [VDict (contents : (hashof CVal CVal))])
 
 (define-type BuiltinVal
              [BuiltinNum (n : number)]
-             [BuiltinList (l : (listof BuiltinVal))]
-             [NotBuiltin])
+             [BuiltinClass ()]
+             [BuiltinList (l : (listof BuiltinVal))])
+             
 
 ;; env is a listof hashof's so there are deliniations between closures
 (define-type-alias Env (listof (hashof symbol Address)))
