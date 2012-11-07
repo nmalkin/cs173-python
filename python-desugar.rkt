@@ -89,9 +89,10 @@
     
     [PyClass (name bases body)
              (CAssign (CId name)
-                      (CClass (if (empty? bases) 
-                                (list 'object) 
-                                bases) 
+                      (CClass name
+                              (if (empty? bases) 
+                                'object
+                                (first bases))  
                               (desugar body)))]
     
     [PyDotField (value attr)
