@@ -16,8 +16,8 @@ ParselTongue.
   [CTrue]
   [CFalse]
   [CNone]
-  [CClass (bases : (listof symbol)) (body : CExpr)]
-  [CObject (class : CExpr) (dict : object-dict)]
+  [CClass (name : symbol) (bases : (listof symbol)) (body : CExpr)]
+  [CObject (class : CExpr) (dict : object-dict) (bval : BuiltinVal)]
   [CGetField (value : CExpr) (attr : symbol)]
   [CSeq (e1 : CExpr) (e2 : CExpr)]
   [CAssign (target : CExpr) (value : CExpr)]
@@ -41,12 +41,14 @@ ParselTongue.
   [VFalse]
   [VNone]
   [VClass (bases : (listof symbol)) (dict : object-dict)]
-  [VObject (class : CVal) (dict : object-dict) (metadata : meta-dict)]
+  [VObject (class : CVal) (dict : object-dict) (bval : BuiltinVal)]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)]
   [VDict (contents : (hashof CVal CVal))])
 
-(define-type PrimVal
-             (PrimNum (n : number)))
+(define-type BuiltinVal
+             [BuiltinNum (n : number)]
+             [BuiltinList (l : (listof BuiltinVal))]
+             [NotBuiltin])
 
 ;; env is a listof hashof's so there are deliniations between closures
 (define-type-alias Env (listof (hashof symbol Address)))
@@ -66,4 +68,3 @@ ParselTongue.
   [Return (v : CVal) (s : Store) (e : Env)])
 
 (define-type-alias object-dict (hashof symbol Address))
-(define-type-alias meta-dict (hashof symbol PrimVal))

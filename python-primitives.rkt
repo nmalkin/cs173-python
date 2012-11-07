@@ -17,7 +17,6 @@ primitives here.
 
 (define (pretty arg)
   (type-case CVal arg
-    [VNum (n) (to-string n)]
     [VStr (s) (string-append "'" (string-append s "'"))]
     [VTrue () "True"]
     [VFalse () "False"]

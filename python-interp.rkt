@@ -16,13 +16,12 @@
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
     (type-case CExpr expr
-    [CNum (n) (v*s*e (VNum n) sto env)]
     [CStr (s) (v*s*e (VStr s) sto env)]
     [CTrue () (v*s*e (VTrue) sto env)]
     [CFalse () (v*s*e (VFalse) sto env)]
     [CNone () (v*s*e (VNone) sto env)]
 
-    [CClass (bases body)
+    [CClass (name bases body)
                (type-case Result (interp-env body (cons (hash empty) env) sto)
                  [v*s*e (vbody sbody ebody)
                         (v*s*e (VClass bases (first ebody)) sbody ebody)]
@@ -143,9 +142,6 @@
             (type-case Result (interp-env arg env sto)
               [v*s*e (varg sarg envarg) 
                    (case prim
-                     ['Invert (type-case CVal varg
-                                [VNum (n) (v*s*e (VNum (- 0 (+ n 1))) sarg envarg)]
-                                [else (error 'interp "Bad arguments to ~")])]
                      ['Not (type-case CVal (truthy? varg)
                              [VTrue () (v*s*e (VFalse) sarg envarg)]
                              [else (v*s*e (VTrue) sarg envarg)])]
@@ -258,9 +254,6 @@
 
 (define (truthy? val)
   (type-case CVal val
-    [VNum (n) (if (= 0 n)
-              (VFalse)
-              (VTrue))]
     [VStr (s) (if (string=? "" s)
               (VFalse)
               (VTrue))]
@@ -292,6 +285,7 @@
            (type-case Result (interp-env arg2 envarg1 sarg1)
              [v*s*e (varg2 sarg2 envarg2) 
                   (case prim
+                    #|
                     ['Add (cond 
                             [(and (VNum? varg1) (VNum? varg2))
                              (v*s*e (VNum (+ (VNum-n varg1) (VNum-n varg2))) 
@@ -444,6 +438,7 @@
                                     (VFalse)) 
                                   sarg2 envarg2)]
                           [else (error 'interp "Bad arguments to !=")])]
+                    |#
 
                     ;; Handle Is, IsNot, In, NotIn
                     [else (error 'interp (string-append "Haven't implemented a
