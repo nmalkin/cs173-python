@@ -23,7 +23,6 @@ primitives here.
     [VDict (contents) (dict-str contents)]
     [VNone () "None"]
     [VClosure (env args body) (error 'pretty "Can't print closures yet")]
-    [VClass (b d) (string-append "class: " (string-append (to-string d) "\n"))]
     [else (error 'pretty (string-append "Cannot print case: " (to-string arg)))]))
   
 

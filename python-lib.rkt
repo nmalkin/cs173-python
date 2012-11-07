@@ -46,11 +46,13 @@ that calls the primitive `print`.
   (CFalse))
 
 (define base-class
-  (CClass empty
-	  (CAssign
-	    (CId '__init__)
-	    (CFunc (list 'self)
-		   (CId 'self)))))
+  (CClass 
+    'object
+    'none 
+    (CAssign 
+      (CId '__init__) 
+      (CFunc (list 'self)
+             (CId 'self)))))
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
