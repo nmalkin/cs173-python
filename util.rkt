@@ -41,3 +41,29 @@
 
 (define (def (name : symbol) (expr : CExpr)) : CExpr
   (CAssign (CId name) expr))
+
+(define-syntax (check-types x)
+  (syntax-case x ()
+    [(check-types args t1 body)
+     #'(let ([arg1 (first args)])
+         (if (and (VObject? arg1) (symbol=? (VObject-antecedent) 'num))
+             (let ([mayb-mval1 (VObject-mval arg1)])
+               (if (some? mayb-mval1)
+                   (let ([mval1 (some-v mayb-mval1)])
+                     body)
+                   (none)))
+             (none)))]
+    [(check-types args t1 t2 body)
+     #'(let ([arg1 (first args)]
+             [arg2 (second args)])
+         (if (and (VObject? arg1) (VObject? arg2)
+                  (symbol=? (VObject-antecedent arg1) t1)
+                  (symbol=? (VObject-antecedent arg2) t2))
+             (let ([mayb-mval1 (VObject-mval arg1)]
+                   [mayb-mval2 (VObject-mval arg2)])
+               (if (and (some? mayb-mval1) (some? mayb-mval2))
+                   (let ([mval1 (some-v mayb-mval1)]
+                         [mval2 (some-v mayb-mval2)])
+                     body)
+                   (none)))
+             (none)))]))
