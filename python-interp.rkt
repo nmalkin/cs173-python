@@ -13,6 +13,27 @@
          (typed-in racket/base (for-each : (('a -> void) (listof number) -> 'b)))
          (typed-in racket/base (raise-user-error : ('symbol string -> 'a))))
 
+;; interp-cascade, interprets a list of expressions with an initial store,
+;; environment and produces the list of values and the final environment and
+;; store using the values/define-values 
+(define (interp-cascade [exprs : (listof CExpr)] 
+                        [init-s : Store]
+                        [init-e : Env])
+  (local [(define (rec-cascade exprs e s)
+            (cond [(empty? exprs) empty]
+                  [(cons? exprs) (let ([first-r (interp-env (first exprs)
+                                                           e s)])
+                                   (cons first-r
+                                         (rec-cascade (rest exprs)
+                                                      (v*s*e-e first-r)
+                                                      (v*s*e-s first-r))))]))
+         (define result-list (rec-cascade exprs init-e init-s))]
+
+         (values (map v*s*e-v result-list) 
+                 (v*s*e-s (first (reverse result-list)))
+                 (v*s*e-e (first (reverse result-list))))))
+
+
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
     (type-case CExpr expr
@@ -159,7 +180,17 @@
     ;; implement this
     [CPrim2 (prim arg1 arg2) (interp-cprim2 prim arg1 arg2 sto env)]
     
-		[CBuiltinPrim (op args) (error 'interp "Haven't implemented CBuiltinPrim yet.")]
+    [CBuiltinPrim (op args) (local [(define-values (val-list new-s new-e)
+                                      (interp-cascade args sto env))
+                                    (define mayb-val (builtin-prim op val-list))] 
+
+                                   (if (some? mayb-val)
+                                       (v*s*e (some-v mayb-val)
+                                              new-s
+                                              new-e)
+                                       ;; todo: real exceptions
+                                       (error 'interp (string-append "Builtin error for "
+                                                                     (symbol->string op)))))]
 
     [else (error 'interp "haven't implemented a case yet")]))
 

@@ -13,7 +13,11 @@
                            (CBuiltinPrim 'num+ 
                                          (list 
                                            (CId 'self) 
-                                           (CId 'other)))))))))
+                                           (CId 'other)))))
+               (def '__str__
+                   (CFunc (list 'self)
+                          (CBuiltinPrim 'str
+                                        (list (CId 'self)))))))))
 
 
 (define (make-builtin-num [n : number]) : CExpr
