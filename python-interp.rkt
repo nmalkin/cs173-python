@@ -98,6 +98,10 @@
 
     [CId (x) (fetch (lookup x env) sto env)]
 
+    [CObject (c mval) (v*s*e (VObject c mval (make-hash empty))
+                             sto
+                             env)]
+
     [CLet (x bind body)
           (letrec ([w (new-loc)])
             (type-case Result (interp-env bind env sto)
@@ -172,8 +176,8 @@
                      ['Not (type-case CVal (truthy? varg)
                              [VTrue () (v*s*e (VFalse) sarg envarg)]
                              [else (v*s*e (VTrue) sarg envarg)])]
-                     ['USub (interp-env (CPrim2 'Sub (CNum 0) arg) env sarg)]
-                     ['UAdd (interp-env (CPrim2 'Add (CNum 0) arg) env sarg)]
+                     ;['USub (interp-env (CPrim2 'Sub (CNum 0) arg) env sarg)]
+                     ;['UAdd (interp-env (CPrim2 'Add (CNum 0) arg) env sarg)]
                      [else (v*s*e (python-prim1 prim varg) sarg envarg)])]
               [else (error 'interp "'return' outside of function")])]
     
@@ -190,9 +194,10 @@
                                               new-e)
                                        ;; todo: real exceptions
                                        (error 'interp (string-append "Builtin error for "
-                                                                     (symbol->string op)))))]
+                                                                     (symbol->string
+                                                                       op)))))]))
 
-    [else (error 'interp "haven't implemented a case yet")]))
+    ;[else (error 'interp "haven't implemented a case yet")]))
 
 (define (lookup x env)
   (cond

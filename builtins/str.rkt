@@ -31,8 +31,7 @@
 (define (make-builtin-str [s : string]) : CExpr
 	(CObject
 		'str
-		(MetaStr s)
-		(make-hash empty)))
+		(some (MetaStr s))))
 
 #|(define (str+ [self-str : CVal] [other : CVal])
 	(type-case CVal self-str

@@ -23,7 +23,6 @@
 (define (make-builtin-num [n : number]) : CExpr
   (CObject
     'num
-    (MetaNum n)
-    (make-hash empty)))
+    (some (MetaNum n))))
 
 

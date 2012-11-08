@@ -11,13 +11,12 @@ ParselTongue.
 
 
 (define-type CExpr
-  [CNum (n : number)]
   [CStr (s : string)]
   [CTrue]
   [CFalse]
   [CNone]
   [CClass (name : symbol) (base : symbol) (body : CExpr)]
-  [CObject (class : symbol) (bval : MetaVal) (dict : object-dict)]
+  [CObject (class : symbol) (bval : (optionof MetaVal))]
   [CGetField (value : CExpr) (attr : symbol)]
   [CSeq (e1 : CExpr) (e2 : CExpr)]
   [CAssign (target : CExpr) (value : CExpr)]
