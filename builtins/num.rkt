@@ -3,9 +3,6 @@
 (require "../python-core-syntax.rkt")
 (require "../util.rkt")
 
-(define (def (name : symbol) (expr : CExpr)) : CExpr
-  (CAssign (CId name) expr))
-
 (define (num-class [name : symbol]) : CExpr
   (CClass
     name

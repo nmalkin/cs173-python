@@ -30,7 +30,6 @@
                                sbody ebody)]
                  [else (error 'interp "'return' outside of function")])]
     
-    ;[CObject (
     [CGetField (value attr)
 	       (type-case Result (interp-env value env sto)
 		 [v*s*e (vval sval eval)
@@ -160,6 +159,8 @@
     ;; implement this
     [CPrim2 (prim arg1 arg2) (interp-cprim2 prim arg1 arg2 sto env)]
     
+		[CBuiltinPrim (op args) (error 'interp "Haven't implemented CBuiltinPrim yet.")]
+
     [else (error 'interp "haven't implemented a case yet")]))
 
 (define (lookup x env)

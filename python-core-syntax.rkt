@@ -40,12 +40,13 @@ ParselTongue.
   [VTrue]
   [VFalse]
   [VNone]
-  [VObject (antecedent : symbol) (bval : (optionof MetaVal)) (dict : object-dict)]
+  [VObject (antecedent : symbol) (mval : (optionof MetaVal)) (dict : object-dict)]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)]
   [VDict (contents : (hashof CVal CVal))])
 
 (define-type MetaVal
              [MetaNum (n : number)]
+						 [MetaStr (s : string)]
              [MetaClass]
              [MetaList (l : (listof MetaVal))])
              

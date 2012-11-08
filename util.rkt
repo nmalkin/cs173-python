@@ -38,3 +38,6 @@
       (CSeq next sofar))
     (first ops)
     (rest ops)))
+
+(define (def (name : symbol) (expr : CExpr)) : CExpr
+  (CAssign (CId name) expr))

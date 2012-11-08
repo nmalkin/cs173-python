@@ -3,7 +3,8 @@
 (require "python-syntax.rkt"
          "python-core-syntax.rkt"
          "util.rkt"
-         "builtins/num.rkt")
+         "builtins/num.rkt"
+				 "builtins/str.rkt")
 
 (define (desugar-boolop [op : symbol] [values : (listof PyExpr)]) : CExpr
   (local [(define first-val (desugar (first values)))]
@@ -41,7 +42,7 @@
                                        (rest targets))]
     [PyNum (n) (make-builtin-num n)]
     [PyBool (b) (if b (CTrue) (CFalse))]
-    [PyStr (s) (CStr s)]
+    [PyStr (s) (make-builtin-str s)]
     [PyId (x ctx) (CId x)]
 
     ; for now just desugar raise as error
