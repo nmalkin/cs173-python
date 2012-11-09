@@ -15,16 +15,16 @@
                                                    (CId 'other))))))
                   (def '__mult__
                     (CFunc (list 'self 'other)
-                           (CBuiltinPrim 'str*
+                           (CReturn (CBuiltinPrim 'str*
                                          (list
                                           (CId 'self)
-                                          (CId 'other)))))
+                                          (CId 'other))))))
                   (def '__rmult__
                     (CFunc (list 'self 'other)
-                           (CBuiltinPrim 'str*
+                           (CReturn (CBuiltinPrim 'str*
                                          (list
                                           (CId 'self)
-                                          (CId 'other)))))))))
+                                          (CId 'other))))))))))
 
 (define (make-builtin-str [s : string]) : CExpr
   (CObject
