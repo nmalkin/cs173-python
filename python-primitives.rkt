@@ -2,6 +2,7 @@
 
 (require "python-core-syntax.rkt"
          "util.rkt"
+         "builtins/str.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
          (typed-in racket/base (number->string : (number -> string))))
 
@@ -29,7 +30,7 @@ primitives here.
                             "Can't print non-builtin object.")]
     [VClosure (env args body) (error 'pretty "Can't print closures yet")]
     ;[else (error 'pretty (string-append "Cannot print case: " (to-string arg)))]
-		))
+    ))
 
 (define (pretty-metaval mval)
   (type-case MetaVal mval
@@ -37,14 +38,14 @@ primitives here.
     [MetaStr (s) s]
     [MetaClass () "Class"]
     [MetaList (l) (string-append 
-                    (string-append "[" 
-                      (foldl (lambda (item res) 
-                               (string-join 
-                                 (list res (pretty-metaval item))
-                                 ", "))
-                             ""
-                             l))
-                    "]")]))
+                   (string-append "[" 
+                                  (foldl (lambda (item res) 
+                                           (string-join 
+                                            (list res (pretty-metaval item))
+                                            ", "))
+                                         ""
+                                         l))
+                   "]")]))
 
 (define (print arg)
   (display (pretty arg)))
@@ -74,13 +75,8 @@ primitives here.
     ['str (let ([arg (first args)])
             (some (VStr (number->string (MetaNum-n (some-v 
                                                     (VObject-mval arg)))))))]
-    ;['str+ (check-types args 'str 'str
-    ;                    (some (VObject 'str 
-    ;                                   (some (MetaStr
-    ;                                          (string-append (MetaStr-s mval1)
-    ;                                                         (MetaStr-s mval2))))
-    ;                                   (hash empty))))]
-		))
+    ['str+ (str+ args)]
+    ))
 
 
 (define (dict-str (contents : (hashof CVal CVal)))

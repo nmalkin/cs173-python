@@ -4,46 +4,43 @@
 (require "../util.rkt")
 
 (define str-class : CExpr
-	(CClass
-		'str 
-		'object
-		(seq-ops
-			(list
-				(def '__add__
-						 (CFunc (list 'self 'other)
-										(CBuiltinPrim 'str+
-																	(list
-																		(CId 'self)
-																		(CId 'other)))))
-				(def '__mult__
-						 (CFunc (list 'self 'other)
-										(CBuiltinPrim 'str*
-																	(list
-																		(CId 'self)
-																		(CId 'other)))))
-				(def '__rmult__
-						 (CFunc (list 'self 'other)
-										(CBuiltinPrim 'str*
-																	(list
-																	(CId 'self)
-																	(CId 'other)))))))))
+  (CClass
+   'str 
+   'object
+   (seq-ops (list (def '__add__
+                    (CFunc (list 'self 'other)
+                           (CReturn (CBuiltinPrim 'str+
+                                                  (list
+                                                   (CId 'self)
+                                                   (CId 'other))))))
+                  (def '__mult__
+                    (CFunc (list 'self 'other)
+                           (CBuiltinPrim 'str*
+                                         (list
+                                          (CId 'self)
+                                          (CId 'other)))))
+                  (def '__rmult__
+                    (CFunc (list 'self 'other)
+                           (CBuiltinPrim 'str*
+                                         (list
+                                          (CId 'self)
+                                          (CId 'other)))))))))
 
 (define (make-builtin-str [s : string]) : CExpr
-	(CObject
-		'str
-		(some (MetaStr s))))
+  (CObject
+   'str
+   (some (MetaStr s))))
 
-#|(define (str+ [self-str : CVal] [other : CVal])
-	(type-case CVal self-str
-		[VObject (ante-name mval dict)
-						 (cond
-						 	[(symbol=? ante-name 'str)
-							 (type-case CVal other
-								[VObject (o-ante-name o-mval o-dict)
-												 (cond
-													 [(symbol=? o-ante-name 'str)
-														(let ([s1 (MetaStr-s (some-v mval))]
-																	[s2 (MetaStr-s (some-v o-mval))])
-															(string-append s1 s2))])]
-								[else (error 'str+ "Second argument not a string")])])]
-		[else (error 'str+ "First argument not a string")]))|#
+(define (str+ (args : (listof CVal))) : (optionof CVal)
+  (check-types args 'str 'str
+               (some (VObject 'str 
+                              (some (MetaStr
+                                     (string-append (MetaStr-s mval1)
+                                                    (MetaStr-s mval2))))
+                              (hash empty)))))
+
+(define (str (args : (listof CVal))) : (optionof CVal)
+  (check-types args 'str
+               (some (VObject 'str
+                              (some (MetaStr (MetaStr-s mval1)))
+                              (hash empty)))))

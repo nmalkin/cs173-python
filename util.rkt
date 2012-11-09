@@ -45,18 +45,18 @@
 (define-syntax (check-types x)
   (syntax-case x ()
     [(check-types args t1 body)
-     ;(with-syntax ([mval1 (datum->syntax x 'mval1)])
+     (with-syntax ([mval1 (datum->syntax x 'mval1)])
        #'(let ([arg1 (first args)])
-           (if (and (VObject? arg1) (symbol=? (VObject-antecedent) 'num))
+           (if (and (VObject? arg1) (symbol=? (VObject-antecedent arg1) t1))
                (let ([mayb-mval1 (VObject-mval arg1)])
                  (if (some? mayb-mval1)
                      (let ([mval1 (some-v mayb-mval1)])
                        body)
                      (none)))
-               (none)))]
+               (none))))]
     [(check-types args t1 t2 body)
-     (with-syntax ([mval1 #'mval1]
-                   [mval2 #'mval2])
+     (with-syntax ([mval1 (datum->syntax x 'mval1)]
+                   [mval2 (datum->syntax x 'mval2)])
        #'(let ([arg1 (first args)]
                [arg2 (second args)])
            (if (and (VObject? arg1) (VObject? arg2)
