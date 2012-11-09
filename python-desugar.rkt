@@ -55,9 +55,14 @@
           (CIf (desugar test) (desugar body) (desugar orelse))]
 
     [PyBinOp (left op right)
+             (if (symbol=? op 'Add)
+               (CApp (CGetField (desugar left)
+                                '__add__)
+                     (list (desugar left) (desugar right)))
+
              (CPrim2 op
                      (desugar left) 
-                     (desugar right))]
+                     (desugar right)))]
 
     [PyUnaryOp (op operand)
                (CPrim1 op
