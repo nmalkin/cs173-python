@@ -10,10 +10,10 @@
     (seq-ops (list 
                (def '__add__ 
                     (CFunc (list 'self 'other) 
-                           (CBuiltinPrim 'num+ 
+                           (CReturn (CBuiltinPrim 'num+ 
                                          (list 
                                            (CId 'self) 
-                                           (CId 'other)))))
+                                           (CId 'other))))))
                (def '__str__
                    (CFunc (list 'self)
                           (CBuiltinPrim 'str

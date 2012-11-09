@@ -24,9 +24,27 @@ primitives here.
     [VFalse () "False"]
     [VDict (contents) (dict-str contents)]
     [VNone () "None"]
+    [VObject (a mval d) (if (some? mval)
+                            (pretty-metaval (some-v mval))
+                            "Can't print non-builtin object.")]
     [VClosure (env args body) (error 'pretty "Can't print closures yet")]
-    [else (error 'pretty (string-append "Cannot print case: " (to-string arg)))]))
+    ;[else (error 'pretty (string-append "Cannot print case: " (to-string arg)))]
+		))
 
+(define (pretty-metaval mval)
+  (type-case MetaVal mval
+    [MetaNum (n) (number->string n)]
+    [MetaStr (s) s]
+    [MetaClass () "Class"]
+    [MetaList (l) (string-append 
+                    (string-append "[" 
+                      (foldl (lambda (item res) 
+                               (string-join 
+                                 (list res (pretty-metaval item))
+                                 ", "))
+                             ""
+                             l))
+                    "]")]))
 
 (define (print arg)
   (display (pretty arg)))
@@ -56,12 +74,13 @@ primitives here.
     ['str (let ([arg (first args)])
             (some (VStr (number->string (MetaNum-n (some-v 
                                                     (VObject-mval arg)))))))]
-    ['str+ (check-types args 'str 'str
-                        (some (VObject 'str 
-                                       (some (MetaStr
-                                              (string-append (MetaStr-s mval1)
-                                                             (MetaStr-s mval2))))
-                                       (hash empty))))]))
+    ;['str+ (check-types args 'str 'str
+    ;                    (some (VObject 'str 
+    ;                                   (some (MetaStr
+    ;                                          (string-append (MetaStr-s mval1)
+    ;                                                         (MetaStr-s mval2))))
+    ;                                   (hash empty))))]
+		))
 
 
 (define (dict-str (contents : (hashof CVal CVal)))
