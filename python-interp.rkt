@@ -260,13 +260,14 @@
 			       eo)]
 	      [none () (let ([w (new-loc)])
 			   (let ([nw (hash-ref (first eo) (CId-x o))])
-			     (let ([snew (hash-set so (some-v nw) 
+			     (begin (display nw) (display "\n\n") (display so)
+                  (let ([snew (hash-set so (some-v nw) 
 			                 (VObject ante-name
-                                                  mval
-						  (hash-set (VObject-dict vo) f w)))])
+                                mval
+						                    (hash-set (VObject-dict vo) f w)))])
       		           	(v*s*e (VNone)
 			          (hash-set snew w v)
-			          eo))))]))]
+			          eo)))))]))]
     	[else (error 'interp "Can't assign to nonobject.")])]
     [else (error 'interp "'return' outside function")]))
 
