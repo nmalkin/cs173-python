@@ -102,8 +102,13 @@
                                 (map desugar values)))]
 
     [PyApp (fun args)
-           (CApp (desugar fun)
-                 (map desugar args))]
+           (let ([f (desugar fun)])
+             (if (CGetField? f)
+               (let ([o (CGetField-value f)])
+                 (CApp f
+                       (cons o (map desugar args))))
+               (CApp f
+                     (map desugar args))))]
     
     [PyClass (name bases body)
              (CAssign (CId name)

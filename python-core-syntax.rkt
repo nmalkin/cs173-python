@@ -46,7 +46,7 @@ ParselTongue.
 (define-type MetaVal
              [MetaNum (n : number)]
 						 [MetaStr (s : string)]
-             [MetaClass]
+             [MetaClass (c : symbol)]
              [MetaList (l : (listof MetaVal))])
              
 
