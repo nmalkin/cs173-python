@@ -2,7 +2,8 @@
 
 (require "python-core-syntax.rkt")
 (require "builtins/num.rkt"
-         "builtins/str.rkt")
+         "builtins/str.rkt"
+         "builtins/object.rkt")
 
 #|
 
@@ -46,14 +47,6 @@ that calls the primitive `print`.
 (define false-val
   (CFalse))
 
-(define base-class
-  (CClass 
-    'object
-    'none 
-    (CAssign 
-      (CId '__init__) 
-      (CFunc (list 'self)
-             (CId 'self)))))
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
@@ -62,7 +55,7 @@ that calls the primitive `print`.
   (list (bind 'True true-val)
         (bind 'False false-val)
         (bind 'None (CNone))
-        (bind 'object base-class)
+        (bind 'object object-class)
         (bind 'print print-lambda)
         (bind 'Exception exception-lambda)
         (bind '___assertEqual assert-equal-lambda)

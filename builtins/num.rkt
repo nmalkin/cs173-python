@@ -17,8 +17,25 @@
                (def '__str__
                    (CFunc (list 'self)
                           (CBuiltinPrim 'str
-                                        (list (CId 'self)))))))))
-
+                                        (list (CId 'self)))))
+               (def '__eq__
+                    (CFunc (list 'self 'other)
+                           (CReturn (CBuiltinPrim 'num=
+                                                  (list
+                                                    (CId 'self)
+                                                    (CId 'other))))))
+               (def '__gt__
+                    (CFunc (list 'self 'other)
+                           (CReturn (CBuiltinPrim 'num>
+                                                  (list
+                                                    (CId 'self)
+                                                    (CId 'other))))))
+               (def '__lt__
+                    (CFunc (list 'self 'other)
+                           (CReturn (CBuiltinPrim 'num<
+                                                  (list
+                                                    (CId 'self)
+                                                    (CId 'other))))))))))
 
 (define (make-builtin-num [n : number]) : CExpr
   (CObject
