@@ -36,7 +36,7 @@ primitives here.
   (type-case MetaVal mval
     [MetaNum (n) (number->string n)]
     [MetaStr (s) s]
-    [MetaClass () "Class"]
+    [MetaClass (c) (symbol->string c)]
     [MetaList (l) (string-append 
                    (string-append "[" 
                                   (foldl (lambda (item res) 

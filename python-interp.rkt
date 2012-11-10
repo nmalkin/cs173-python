@@ -46,7 +46,7 @@
                (type-case Result (interp-env body (cons (hash empty) env) sto)
                  [v*s*e (vbody sbody ebody)
                         (v*s*e (VObject base 
-                                        (some (MetaClass)) 
+                                        (some (MetaClass name)) 
                                         (first ebody)) 
                                sbody ebody)]
                  [else (error 'interp "'return' outside of function")])]
@@ -133,7 +133,7 @@
           [VObject (b mval d)
                    (if (and (some? mval) (MetaClass? (some-v mval)))
                       (let ([f (get-field '__init__ vfun efun sfun)]
-                            [o (new-object b efun sfun)])
+                            [o (new-object (MetaClass-c (some-v mval)) efun sfun)])
                         (type-case CVal f
                           [VClosure (cenv argxs body)
                              (let ([sa sfun])
@@ -147,12 +147,12 @@
                                                 [else (error 'interp "'return' outside of function")])) arges))]
                                (local [(define-values (e s) 
                                          (bind-args argxs (cons o argvs) cenv sa))]
-                                 (type-case Result (interp-env body e s)
+                                        (type-case Result (interp-env body e s)
                                    [v*s*e (vb sb eb) (v*s*e 
                                (let ([obj (v*s*e-v 
                                         (fetch (lookup (first argxs)
                                                eb) sb eb))])
-                                 obj)
+                                        obj)
                                sb env)]
                                    [Return (vb sb eb) (v*s*e vb sb env)]))))]
                           [else (error 'interp 
@@ -238,15 +238,15 @@
 (define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : CVal
   (type-case CVal c
     [VObject (antecedent mval d) 
-	    (let ([w (hash-ref (VObject-dict c) n)]
-              [base (v*s*e-v (fetch (lookup antecedent e) s e))])
+             (let ([w (hash-ref (VObject-dict c) n)])
               (type-case (optionof Address) (hash-ref (VObject-dict c) n)
                 [some (w) (v*s*e-v (fetch w s e))]
-                [none () (cond 
-                        [(VNone? base) (error 'interp 
-                                           (string-append "Function not found: " 
+                [none () (let ([base (v*s*e-v (fetch (lookup antecedent e) s e))])
+                           (cond 
+                             [(VNone? base) (error 'interp 
+                                                   (string-append "Function not found: " 
                                                           (symbol->string n)))]
-                        [else (get-field n base e s)])]))]
+                             [else (get-field n base e s)]))]))]
     [else (error 'interp "Not an object with functions.")]))
 
 (define (assign-to-field o f v e s)
