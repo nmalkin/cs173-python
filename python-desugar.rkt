@@ -59,7 +59,9 @@
                    [right-c (desugar right)]) 
                (case op 
                  ['Add (CApp (CGetField left-c '__add__) 
-                             (list left-c right-c))] 
+                             (list left-c right-c))]
+                 ['Mult (CApp (CGetField left-c '__mult__)
+                              (list left-c right-c))]
                  ['Eq (CApp (CGetField left-c '__eq__)
                             (list left-c right-c))]
                  ['Gt (CApp (CGetField left-c '__gt__)

@@ -77,7 +77,9 @@ primitives here.
     ['str (let ([arg (first args)])
             (some (VStr (number->string (MetaNum-n (some-v 
                                                     (VObject-mval arg)))))))]
-    ['str+ (str+ args)]))
+    ['str+ (str+ args)]
+    ['str* (str* args)]
+    ['strcmp (strcmp args)]))
 
 
 (define (dict-str (contents : (hashof CVal CVal)))

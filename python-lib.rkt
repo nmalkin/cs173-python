@@ -3,7 +3,8 @@
 (require "python-core-syntax.rkt")
 (require "builtins/num.rkt"
          "builtins/str.rkt"
-         "builtins/object.rkt")
+         "builtins/object.rkt"
+         "util.rkt")
 
 #|
 
@@ -37,9 +38,18 @@ that calls the primitive `print`.
          (CNone)
          (CError (CStr "Assert failed")))))
 
-(define exception-lambda
-  (CFunc (list 'exc)
-    (CId 'exc)))
+(define exception
+  (CClass
+    'Exception
+    'object
+    (seq-ops (list 
+               (def '__init__
+                    (CFunc (list 'self 'args)
+                           (CAssign 
+                             (CGetField
+                               (CId 'self)
+                               'args)
+                             (CId 'args))))))))
 
 (define true-val
   (CTrue))
@@ -57,7 +67,7 @@ that calls the primitive `print`.
         (bind 'None (CNone))
         (bind 'object object-class)
         (bind 'print print-lambda)
-        (bind 'Exception exception-lambda)
+        (bind 'Exception exception)
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
