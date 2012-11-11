@@ -7,10 +7,10 @@
          (typed-in racket/base (string<? : (string string -> boolean)))
          (typed-in racket/base (string-length : (string -> number)))
          (typed-in racket/string (string-replace : (string string string -> string)))
-         (typed-in racket/base (make-string : (number string -> string)))
-         (typed-in racket/base (string->list : (string -> (listof string))))
-         (typed-in racket/base (char->integer : (string -> number)))
-         (typed-in racket/base (integer->char : (number -> string))))
+         (typed-in racket/base (make-string : (number char -> string)))
+         (typed-in racket/base (string->list : (string -> (listof char))))
+         (typed-in racket/base (char->integer : (char -> number)))
+         (typed-in racket/base (integer->char : (number -> char))))
 
 (define str-class : CExpr
   (CClass
