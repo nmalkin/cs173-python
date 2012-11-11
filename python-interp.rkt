@@ -2,6 +2,7 @@
 
 (require "python-core-syntax.rkt"
          "python-primitives.rkt"
+         "builtins/object.rkt"
          "util.rkt"
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
          (typed-in racket/base (expt : (number number -> number)))
@@ -309,10 +310,11 @@
     [VFalse () val]
     [VNone () (VFalse)]
     [VClosure (e a b) (VTrue)]
+    [VObject (a mval d) (truthy-object? (VObject a mval d))]
     [VDict (c) (if (empty? (hash-keys c))
                            (VTrue)
-                           (VFalse))]
-    [else (VFalse)]))
+                           (VFalse))]))
+   ; [else (VTrue)]))
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
