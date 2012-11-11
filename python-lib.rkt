@@ -51,12 +51,38 @@ that calls the primitive `print`.
                                'args)
                              (CId 'args))))))))
 
+(define len-lambda
+  (CFunc (list 'self)
+    (CReturn
+      (CApp
+        (CGetField
+          (CId 'self)
+          '__len__)
+        (list (CId 'self))))))
+
+(define min-lambda
+  (CFunc (list 'self)
+    (CReturn
+      (CApp
+        (CGetField
+          (CId 'self)
+          '__min__)
+        (list (CId 'self))))))
+
+(define max-lambda
+  (CFunc (list 'self)
+    (CReturn
+      (CApp
+        (CGetField
+          (CId 'self)
+          '__max__)
+        (list (CId 'self))))))
+
 (define true-val
   (CTrue))
 
 (define false-val
   (CFalse))
-
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
@@ -72,7 +98,10 @@ that calls the primitive `print`.
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
         (bind 'num (num-class 'num))
-        (bind 'str str-class)))
+        (bind 'str str-class)
+        (bind 'len len-lambda)
+        (bind 'min min-lambda)
+        (bind 'max max-lambda)))
 
 (define (python-lib expr)
   (local [(define (python-lib/recur libs)

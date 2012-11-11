@@ -267,7 +267,8 @@
   (VObject c-name (none) (hash empty)))
 
 (define (bind-args [args : (listof symbol)] [vals : (listof CVal)] 
-                   [arges : (listof CExpr)] [env : Env] [ext : Env] [sto : Store]) : (Env * Store)
+                   [arges : (listof CExpr)] [env : Env] [ext : Env]
+                   [sto : Store]) : (Env * Store)
   (cond [(and (empty? args) (empty? vals)) (values ext sto)]
         [(or (empty? args) (empty? vals))
          (error 'interp "Arity mismatch")]

@@ -5,7 +5,11 @@
 (require (typed-in racket/base (string=? : (string string -> boolean)))
          (typed-in racket/base (string>? : (string string -> boolean)))
          (typed-in racket/base (string<? : (string string -> boolean)))
-         (typed-in racket/base (string-length : (string -> number))))
+         (typed-in racket/base (string-length : (string -> number)))
+         (typed-in racket/base (make-string : (number string -> string)))
+         (typed-in racket/base (string->list : (string -> (listof string))))
+         (typed-in racket/base (char->integer : (string -> number)))
+         (typed-in racket/base (integer->char : (number -> string))))
 
 (define str-class : CExpr
   (CClass
@@ -37,9 +41,24 @@
                                          (list
                                            (CId 'self)
                                            (CId 'other))))))
+                  (def '__min__
+                     (CFunc (list 'self)
+                            (CReturn (CBuiltinPrim 'strmin
+                                         (list
+                                           (CId 'self))))))
+                  (def '__max__
+                     (CFunc (list 'self)
+                            (CReturn (CBuiltinPrim 'strmax
+                                         (list
+                                           (CId 'self))))))
                   (def '__len__
                      (CFunc (list 'self)
                             (CReturn (CBuiltinPrim 'strlen
+                                         (list
+                                           (CId 'self))))))
+                  (def '__bool__
+                     (CFunc (list 'self)
+                            (CReturn (CBuiltinPrim 'strbool
                                          (list
                                            (CId 'self))))))))))
 
@@ -101,4 +120,38 @@
      (some (VObject 'num
                     (some (MetaNum
                             (string-length (MetaStr-s mval1))))
+                    (hash empty)))))
+
+(define (strbool [args : (listof CVal)]) : (optionof CVal)
+  (check-types args 'str
+     (some (if (string=? (MetaStr-s mval1) "")
+               (VFalse)
+               (VTrue)))))
+
+(define (strmin [args : (listof CVal)]) : (optionof CVal)
+  (check-types args 'str
+     (some (VObject 'str
+                    (some (MetaStr
+                            (make-string 1
+                              (integer->char
+                                (foldl (lambda (c res)
+                                         (min res c))
+                                         ;; the maximum char integer is currently #x10FFFF
+                                         ;; should find a better way to do this
+                                         #x110000
+                                         (map char->integer
+                                          (string->list (MetaStr-s mval1))))))))
+                    (hash empty)))))
+
+(define (strmax [args : (listof CVal)]) : (optionof CVal)
+  (check-types args 'str
+     (some (VObject 'str
+                    (some (MetaStr
+                            (make-string 1
+                              (integer->char
+                                (foldl (lambda (c res)
+                                         (max res c))
+                                       -1
+                                       (map char->integer
+                                          (string->list (MetaStr-s mval1))))))))
                     (hash empty)))))

@@ -80,7 +80,10 @@ primitives here.
     ['str+ (str+ args)]
     ['str* (str* args)]
     ['strcmp (strcmp args)]
-    ['strlen (strlen args)]))
+    ['strlen (strlen args)]
+    ['strbool (strbool args)]
+    ['strmin (strmin args)]
+    ['strmax (strmax args)]))
 
 
 (define (dict-str (contents : (hashof CVal CVal)))
