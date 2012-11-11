@@ -76,6 +76,25 @@
                  ['GtE (desugar (PyBoolOp 'Or
                                           (list (PyBinOp left 'Eq right)
                                                 (PyBinOp left 'Gt right))))]
+                 ['In (CApp (CFunc (list 'self 'test)
+                                   (CSeq
+                                     (CAssign (CId '__infunc__)
+                                              (CGetField (CId 'self)
+                                                         '__in__))
+                                     (CIf (CId '__infunc__)
+                                          (CReturn
+                                            (CApp
+                                              (CId '__infunc__)
+                                              (list (CId 'self)
+                                                    (CId 'test))))
+                                          (CApp (CId 'TypeError)
+                                                (list (CObject
+                                                        'str
+                                                        (some (MetaStr 
+                                                                (string-append
+                                                                  "argument of type '___'" 
+                                                                  "is not iterable")))))))))
+                            (list right-c left-c))]
                  [else (CPrim2 op (desugar left) (desugar right))]))]
 
     [PyUnaryOp (op operand)

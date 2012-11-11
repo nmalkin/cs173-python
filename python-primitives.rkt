@@ -83,7 +83,8 @@ primitives here.
     ['strlen (strlen args)]
     ['strbool (strbool args)]
     ['strmin (strmin args)]
-    ['strmax (strmax args)]))
+    ['strmax (strmax args)]
+    ['strin (strin args)]))
 
 
 (define (dict-str (contents : (hashof CVal CVal)))

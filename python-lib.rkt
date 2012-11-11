@@ -51,6 +51,11 @@ that calls the primitive `print`.
                                'args)
                              (CId 'args))))))))
 
+(define type-error
+  (CObject
+    'Exception
+    (some (MetaClass 'TypeError))))
+
 (define len-lambda
   (CFunc (list 'self)
     (CReturn
@@ -92,16 +97,17 @@ that calls the primitive `print`.
         (bind 'False false-val)
         (bind 'None (CNone))
         (bind 'object object-class)
-        (bind 'print print-lambda)
-        (bind 'Exception exception)
-        (bind '___assertEqual assert-equal-lambda)
-        (bind '___assertTrue assert-true-lambda)
-        (bind '___assertFalse assert-false-lambda)
         (bind 'num (num-class 'num))
         (bind 'str str-class)
         (bind 'len len-lambda)
         (bind 'min min-lambda)
-        (bind 'max max-lambda)))
+        (bind 'max max-lambda)
+        (bind 'print print-lambda)
+        (bind 'Exception exception)
+        (bind 'TypeError type-error)
+        (bind '___assertEqual assert-equal-lambda)
+        (bind '___assertTrue assert-true-lambda)
+        (bind '___assertFalse assert-false-lambda)))
 
 (define (python-lib expr)
   (local [(define (python-lib/recur libs)

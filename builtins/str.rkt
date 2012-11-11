@@ -6,6 +6,7 @@
          (typed-in racket/base (string>? : (string string -> boolean)))
          (typed-in racket/base (string<? : (string string -> boolean)))
          (typed-in racket/base (string-length : (string -> number)))
+         (typed-in racket/string (string-replace : (string string string -> string)))
          (typed-in racket/base (make-string : (number string -> string)))
          (typed-in racket/base (string->list : (string -> (listof string))))
          (typed-in racket/base (char->integer : (string -> number)))
@@ -41,6 +42,12 @@
                                          (list
                                            (CId 'self)
                                            (CId 'other))))))
+                  (def '__in__
+                     (CFunc (list 'self 'test)
+                            (CReturn (CBuiltinPrim 'strin
+                                         (list
+                                           (CId 'self)
+                                           (CId 'test))))))
                   (def '__min__
                      (CFunc (list 'self)
                             (CReturn (CBuiltinPrim 'strmin
@@ -114,6 +121,16 @@
                           [(string>? str1 str2) 1]
                           [(string=? str1 str2) 0]))))
                     (hash empty)))))
+
+(define (strin [args : (listof CVal)]) : (optionof CVal)
+  (check-types args 'str 'str
+     (let ([self (MetaStr-s mval1)]
+           [test (MetaStr-s mval2)])
+       (some (if (or (< (string-length (string-replace self test ""))
+                     (string-length self))
+                     (string=? test ""))
+                 (VTrue)
+                 (VFalse))))))
 
 (define (strlen [args : (listof CVal)]) : (optionof CVal)
   (check-types args 'str
