@@ -75,7 +75,7 @@
                                                 (PyBinOp left 'Lt right))))]
                  ['GtE (desugar (PyBoolOp 'Or
                                           (list (PyBinOp left 'Eq right)
-                                                (PyBinOp left 'rt right))))]
+                                                (PyBinOp left 'Gt right))))]
                  [else (CPrim2 op (desugar left) (desugar right))]))]
 
     [PyUnaryOp (op operand)
@@ -104,8 +104,14 @@
                                 (map desugar values)))]
 
     [PyApp (fun args)
-           (CApp (desugar fun)
-                 (map desugar args))]
+           (let ([f (desugar fun)])
+             (if (CGetField? f)
+               (let ([o (CGetField-value f)])
+                 (CApp f
+                       (cons o (map desugar args))))
+               (CApp
+                 (desugar fun)
+                 (map desugar args))))]
     
     [PyClass (name bases body)
              (CAssign (CId name)

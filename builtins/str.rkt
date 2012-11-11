@@ -4,7 +4,8 @@
          "../util.rkt")
 (require (typed-in racket/base (string=? : (string string -> boolean)))
          (typed-in racket/base (string>? : (string string -> boolean)))
-         (typed-in racket/base (string<? : (string string -> boolean))))
+         (typed-in racket/base (string<? : (string string -> boolean)))
+         (typed-in racket/base (string-length : (string -> number))))
 
 (define str-class : CExpr
   (CClass
@@ -35,7 +36,12 @@
                             (CReturn (CBuiltinPrim 'strcmp
                                          (list
                                            (CId 'self)
-                                           (CId 'other))))))))))
+                                           (CId 'other))))))
+                  (def '__len__
+                     (CFunc (list 'self)
+                            (CReturn (CBuiltinPrim 'strlen
+                                         (list
+                                           (CId 'self))))))))))
 
 (define (make-builtin-str [s : string]) : CExpr
   (CObject
@@ -89,4 +95,10 @@
                           [(string>? str1 str2) 1]
                           [(string=? str1 str2) 0]))))
                     (hash empty)))))
-                            
+
+(define (strlen [args : (listof CVal)]) : (optionof CVal)
+  (check-types args 'str
+     (some (VObject 'num
+                    (some (MetaNum
+                            (string-length (MetaStr-s mval1))))
+                    (hash empty)))))

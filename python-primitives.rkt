@@ -79,7 +79,8 @@ primitives here.
                                                     (VObject-mval arg)))))))]
     ['str+ (str+ args)]
     ['str* (str* args)]
-    ['strcmp (strcmp args)]))
+    ['strcmp (strcmp args)]
+    ['strlen (strlen args)]))
 
 
 (define (dict-str (contents : (hashof CVal CVal)))
