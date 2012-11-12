@@ -21,8 +21,6 @@
                  [MetaNum (n) (if (= n 0) (VFalse) (VTrue))]
                  [MetaStr (s) (if (= (string-length s) 0) (VFalse) (VTrue))]
                  [else (VTrue)]))
-    ;;TODO: CHECK FOR EXISTENCE OF __BOOL__ AND __LEN__ AND DISPATCH TO THEM FOR
-    ;;USER DEFINED CLASS
     (VTrue)))
 
 

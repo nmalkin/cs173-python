@@ -37,7 +37,7 @@ that calls the primitive `print`.
 
 (define assert-equal-lambda
   (CFunc (list 'check1 'check2)
-    (CIf (CPrim2 'Eq (CId 'check1) (CId 'check2))
+    (CIf (CApp (CGetField (CId 'check1) '__eq__) (list (CId 'check1) (CId 'check2)))
          (CNone)
          (CError (CStr "Assert failed")))))
 

@@ -14,6 +14,7 @@
          (typed-in racket/base (for-each : (('a -> void) (listof number) -> 'b)))
          (typed-in racket/base (raise-user-error : ('symbol string -> 'a))))
 
+
 ;; interp-cascade, interprets a list of expressions with an initial store,
 ;; environment and produces the list of values and the final environment and
 ;; store using the values/define-values 
@@ -117,10 +118,10 @@
                   [else (error 'interp "'return' outside of function")])]
 
     [CIf (i t e) (type-case Result (interp-env i env sto)
-                   [v*s*e (vi si envi) (type-case CVal (truthy? vi)
-                                     [VTrue () (interp-env t envi si)]
-                                     [else (interp-env e envi si)])]
-                   [else (error 'interp "'return' outside of function")])]
+                       [v*s*e (vi si envi) (type-case CVal (truthy? vi)
+                                         [VTrue () (interp-env t envi si)]
+                                         [else (interp-env e envi si)])]
+                       [else (error 'interp "'return' outside of function")])]
 
     [CId (x) (let ([w (lookup x env)])
                 (fetch w sto env))]
@@ -189,8 +190,6 @@
                      ['Not (type-case CVal (truthy? varg)
                              [VTrue () (v*s*e (VFalse) sarg envarg)]
                              [else (v*s*e (VTrue) sarg envarg)])]
-                     ;['USub (interp-env (CPrim2 'Sub (CNum 0) arg) env sarg)]
-                     ;['UAdd (interp-env (CPrim2 'Add (CNum 0) arg) env sarg)]
                      [else (v*s*e (python-prim1 prim varg) sarg envarg)])]
               [else (error 'interp "'return' outside of function")])]
     
@@ -262,6 +261,7 @@
                              [else (get-field n base e s)]))]))]
     [else (error 'interp "Not an object with functions.")]))
 
+
 (define (assign-to-field o f v e s)
   (type-case Result (interp-env o e s)
     [v*s*e (vo so eo) (type-case CVal vo
@@ -321,10 +321,10 @@
                   [s (hash-set sto where (first vals))])
                  (bind-args (rest args) (rest vals) (rest arges) env e s))))]))
 
-(define (truthy? val)
+(define (truthy? [val : CVal]) : CVal
   (type-case CVal val
     [VStr (s) (if (string=? "" s)
-              (VFalse)
+              (VFalse) 
               (VTrue))]
     [VTrue () val]
     [VFalse () val]
@@ -334,7 +334,6 @@
     [VDict (c) (if (empty? (hash-keys c))
                            (VTrue)
                            (VFalse))]))
-   ; [else (VTrue)]))
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
