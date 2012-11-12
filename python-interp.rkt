@@ -2,6 +2,7 @@
 
 (require "python-core-syntax.rkt"
          "python-primitives.rkt"
+         "builtins/object.rkt"
          "util.rkt"
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
          (typed-in racket/base (expt : (number number -> number)))
@@ -18,7 +19,7 @@
 ;; store using the values/define-values 
 (define (interp-cascade [exprs : (listof CExpr)] 
                         [init-s : Store]
-                        [init-e : Env])
+                        [init-e : Env]) : ((listof CVal) * Store * Env)
   (local [(define (rec-cascade exprs e s)
             (cond [(empty? exprs) empty]
                   [(cons? exprs) (let ([first-r (interp-env (first exprs)
@@ -30,8 +31,12 @@
          (define result-list (rec-cascade exprs init-e init-s))]
 
          (values (map v*s*e-v result-list) 
-                 (v*s*e-s (first (reverse result-list)))
-                 (v*s*e-e (first (reverse result-list))))))
+                 (if (cons? result-list)
+                     (v*s*e-s (first (reverse result-list)))
+                     init-s)
+                 (if (cons? result-list)
+                     (v*s*e-e (first (reverse result-list)))
+                     init-e))))
 
 
 ;; interp-env : CExpr * Env * Store -> Result
@@ -46,7 +51,7 @@
                (type-case Result (interp-env body (cons (hash empty) env) sto)
                  [v*s*e (vbody sbody ebody)
                         (v*s*e (VObject base 
-                                        (some (MetaClass)) 
+                                        (some (MetaClass name)) 
                                         (first ebody)) 
                                sbody ebody)]
                  [else (error 'interp "'return' outside of function")])]
@@ -91,7 +96,8 @@
                [v*s*e (vv sv venv) 
 		      (type-case CExpr t
 			[CId (x) (assign-to-id t vv venv sv)]
-			[CGetField (o a) (assign-to-field o a vv venv sv)]
+			[CGetField (o a) (let ([r (assign-to-field o a vv venv sv)])
+                        r)]
 			[else (error 'interp "Can only assign to ids or objects")])]
                [else (error 'interp "'return' outside of function")])]
     
@@ -106,7 +112,8 @@
                                      [else (interp-env e envi si)])]
                    [else (error 'interp "'return' outside of function")])]
 
-    [CId (x) (fetch (lookup x env) sto env)]
+    [CId (x) (let ([w (lookup x env)])
+                (fetch w sto env))]
 
     [CObject (c mval) (v*s*e (VObject c mval (make-hash empty))
                              sto
@@ -127,44 +134,30 @@
         (vfun sfun efun) 
         (type-case CVal vfun
           [VClosure (cenv argxs body)
-                    (let ([sa sfun])
-                      (local [(define argvs 
-                                (map (lambda (e) 
-                                       (type-case Result (interp-env e efun sa)
-                                         [v*s*e (varg sarg envarg) 
-                                                (begin 
-                                                  (set! sa sarg)
-                                                  varg)]
-                                         [else (error 'interp "'return' outside of function")])) arges))]
-                        (local [(define-values (e s) (bind-args argxs argvs cenv sa))]
+                      (local [(define-values (argvs sc ec) (interp-cascade arges sfun efun))
+                              (define-values (e s) (bind-args argxs argvs arges efun cenv sc))]
                           (type-case Result (interp-env body e s)
                             [v*s*e (vb sb eb) (v*s*e (VNone) sb env)]
-                            [Return (vb sb eb) (v*s*e vb sb env)]))))]
+                            [Return (vb sb eb) (v*s*e vb sb env)]))]
           [VObject (b mval d)
                    (if (and (some? mval) (MetaClass? (some-v mval)))
                       (let ([f (get-field '__init__ vfun efun sfun)]
-                            [o (new-object b efun sfun)])
+                            [o (new-object (MetaClass-c (some-v mval)) efun sfun)])
                         (type-case CVal f
                           [VClosure (cenv argxs body)
-                             (let ([sa sfun])
-                             (local [(define argvs 
-                                       (map (lambda (e) 
-                                              (type-case Result (interp-env e efun sa)
-                                                [v*s*e (varg sarg envarg) 
-                                                       (begin 
-                                                         (set! sa sarg)
-                                                         varg)]
-                                                [else (error 'interp "'return' outside of function")])) arges))]
-                               (local [(define-values (e s) 
-                                         (bind-args argxs (cons o argvs) cenv sa))]
-                                 (type-case Result (interp-env body e s)
-                                   [v*s*e (vb sb eb) (v*s*e 
-                               (let ([obj (v*s*e-v 
-                                        (fetch (lookup (first argxs)
-                                               eb) sb eb))])
-                                 obj)
-                               sb env)]
-                                   [Return (vb sb eb) (v*s*e vb sb env)]))))]
+                             (local [(define-values (argvs sc ec)
+                                       (interp-cascade arges sfun efun))
+                                     (define-values (e s) 
+                                         (bind-args argxs (cons o argvs) 
+                                                    (cons (CId 'init) arges) efun cenv sc))]
+                                        (type-case Result (interp-env body e s)
+                                          [v*s*e (vb sb eb) (v*s*e 
+                                             (let ([obj (v*s*e-v 
+                                                          (fetch (lookup (first argxs)
+                                                                         eb) sb eb))])
+                                               obj)
+                                             sb env)]
+                                          [Return (vb sb eb) (v*s*e vb sb env)]))]
                           [else (error 'interp 
                                        "__init__ not found for the given
                                        class")]))
@@ -248,15 +241,15 @@
 (define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : CVal
   (type-case CVal c
     [VObject (antecedent mval d) 
-	    (let ([w (hash-ref (VObject-dict c) n)]
-              [base (v*s*e-v (fetch (lookup antecedent e) s e))])
+                    (let ([w (hash-ref (VObject-dict c) n)])
               (type-case (optionof Address) (hash-ref (VObject-dict c) n)
                 [some (w) (v*s*e-v (fetch w s e))]
-                [none () (cond 
-                        [(VNone? base) (error 'interp 
-                                           (string-append "Function not found: " 
+                [none () (let ([base (v*s*e-v (fetch (lookup antecedent e) s e))])
+                           (cond 
+                             [(VNone? base) (error 'interp 
+                                                   (string-append "Function not found: " 
                                                           (symbol->string n)))]
-                        [else (get-field n base e s)])]))]
+                             [else (get-field n base e s)]))]))]
     [else (error 'interp "Not an object with functions.")]))
 
 (define (assign-to-field o f v e s)
@@ -270,30 +263,54 @@
 			       eo)]
 	      [none () (let ([w (new-loc)])
 			   (let ([nw (hash-ref (first eo) (CId-x o))])
-			     (let ([snew (hash-set so (some-v nw) 
-			                 (VObject ante-name
-                                                  mval
-						  (hash-set (VObject-dict vo) f w)))])
+                  (let ([snew (hash-set so (some-v nw) 
+			                        (VObject ante-name
+                                       mval
+						                           (hash-set (VObject-dict vo) f w)))])
       		           	(v*s*e (VNone)
-			          (hash-set snew w v)
-			          eo))))]))]
+                             (hash-set snew w v)
+			                       eo))))]))]
     	[else (error 'interp "Can't assign to nonobject.")])]
     [else (error 'interp "'return' outside function")]))
 
 (define (new-object [c-name : symbol] [e : Env] [s : Store])
   (VObject c-name (none) (hash empty)))
- 
 
-(define (bind-args args vals [env : Env] [sto : Store])
-  (cond [(and (empty? args) (empty? vals)) (values env sto)]
+(define (bind-args [args : (listof symbol)] [vals : (listof CVal)] 
+                   [arges : (listof CExpr)] [env : Env] [ext : Env]
+                   [sto : Store]) : (Env * Store)
+  (cond [(and (empty? args) (empty? vals)) (values ext sto)]
         [(or (empty? args) (empty? vals))
          (error 'interp "Arity mismatch")]
         [(and (cons? args) (cons? vals))
-         (let ([where (new-loc)])
-               (begin
-                 (let ([e (cons (hash-set (first env) (first args) where) (rest env))]
-                       [s (hash-set sto where (first vals))])
-                   (bind-args (rest args) (rest vals) e s))))]))
+         (let ([val (first vals)]
+               [where -1])
+            (begin
+              (type-case CVal val
+              [VObject (ante-name mayb-mval dict)
+                       ;; these should not get new store locations if they already exist
+                       (if (some? mayb-mval)
+                         (let ([mval (some-v mayb-mval)])
+                           (type-case MetaVal mval
+                             [MetaClass (c) (set! where 
+                                              (if (symbol=? (CId-x (first arges)) 'init)
+                                                  (new-loc)
+                                                  (lookup (CId-x (first arges)) env)))]
+                             [MetaList (l) (set! where
+                                              (if (symbol=? (CId-x (first arges)) 'init)
+                                                  (new-loc)
+                                                  (lookup (CId-x (first arges)) env)))]
+                             ;;[MetaDict (d) (;; get loc of val in store)]
+                             ;; immutable types should get a new store location
+                             [else (set! where (new-loc))]
+                             ))
+                         (set! where (if (symbol=? (CId-x (first arges)) 'init)
+                                         (new-loc)
+                                         (lookup (CId-x (first arges)) env))))]
+              [else (set! where (new-loc))])
+            (let ([e (cons (hash-set (first ext) (first args) where) (rest ext))]
+                  [s (hash-set sto where (first vals))])
+                 (bind-args (rest args) (rest vals) (rest arges) env e s))))]))
 
 (define (truthy? val)
   (type-case CVal val
@@ -304,10 +321,11 @@
     [VFalse () val]
     [VNone () (VFalse)]
     [VClosure (e a b) (VTrue)]
+    [VObject (a mval d) (truthy-object? (VObject a mval d))]
     [VDict (c) (if (empty? (hash-keys c))
                            (VTrue)
-                           (VFalse))]
-    [else (VFalse)]))
+                           (VFalse))]))
+   ; [else (VTrue)]))
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))

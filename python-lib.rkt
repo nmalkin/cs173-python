@@ -4,6 +4,8 @@
 (require "builtins/num.rkt"
          "builtins/str.rkt"
          "builtins/list.rkt"
+         "builtins/object.rkt"
+         "util.rkt"
 )
 
 #|
@@ -38,24 +40,56 @@ that calls the primitive `print`.
          (CNone)
          (CError (CStr "Assert failed")))))
 
-(define exception-lambda
-  (CFunc (list 'exc)
-    (CId 'exc)))
+(define exception
+  (CClass
+    'Exception
+    'object
+    (seq-ops (list 
+               (def '__init__
+                    (CFunc (list 'self 'args)
+                           (CAssign 
+                             (CGetField
+                               (CId 'self)
+                               'args)
+                             (CId 'args))))))))
+
+(define type-error
+  (CObject
+    'Exception
+    (some (MetaClass 'TypeError))))
+
+(define len-lambda
+  (CFunc (list 'self)
+    (CReturn
+      (CApp
+        (CGetField
+          (CId 'self)
+          '__len__)
+        (list (CId 'self))))))
+
+(define min-lambda
+  (CFunc (list 'self)
+    (CReturn
+      (CApp
+        (CGetField
+          (CId 'self)
+          '__min__)
+        (list (CId 'self))))))
+
+(define max-lambda
+  (CFunc (list 'self)
+    (CReturn
+      (CApp
+        (CGetField
+          (CId 'self)
+          '__max__)
+        (list (CId 'self))))))
 
 (define true-val
   (CTrue))
 
 (define false-val
   (CFalse))
-
-(define base-class
-  (CClass 
-    'object
-    'none 
-    (CAssign 
-      (CId '__init__) 
-      (CFunc (list 'self)
-             (CId 'self)))))
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
@@ -64,9 +98,15 @@ that calls the primitive `print`.
   (list (bind 'True true-val)
         (bind 'False false-val)
         (bind 'None (CNone))
-        (bind 'object base-class)
+        (bind 'object object-class)
+        (bind 'num (num-class 'num))
+        (bind 'str str-class)
+        (bind 'len len-lambda)
+        (bind 'min min-lambda)
+        (bind 'max max-lambda)
         (bind 'print print-lambda)
-        (bind 'Exception exception-lambda)
+        (bind 'Exception exception)
+        (bind 'TypeError type-error)
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)

@@ -29,15 +29,13 @@ primitives here.
     [VObject (a mval d) (if (some? mval)
                             (pretty-metaval (some-v mval))
                             "Can't print non-builtin object.")]
-    [VClosure (env args body) (error 'pretty "Can't print closures yet")]
-    ;[else (error 'pretty (string-append "Cannot print case: " (to-string arg)))]
-    ))
+    [VClosure (env args body) (error 'pretty "Can't print closures yet")]))
 
 (define (pretty-metaval mval)
   (type-case MetaVal mval
     [MetaNum (n) (number->string n)]
     [MetaStr (s) s]
-    [MetaClass () "Class"]
+    [MetaClass (c) (symbol->string c)]
     [MetaList (l) (string-append 
                    (string-append "[" 
                                   (string-join (map pretty l) ", "))
@@ -52,28 +50,39 @@ primitives here.
 
 (define (builtin-prim [op : symbol] [args : (listof CVal)]) : (optionof CVal)
   (case op
-    ['num+ (let ([arg1 (first args)]
-                 [arg2 (second args)]) 
-             (if (and (VObject? arg1) (VObject? arg2)
-                      (symbol=? (VObject-antecedent arg1) 'num)
-                      (symbol=? (VObject-antecedent arg2) 'num))
-                 (let ([mayb-mval1 (VObject-mval arg1)] 
-                       [mayb-mval2 (VObject-mval arg2)]) 
-                   (if (and (some? mayb-mval1) (some? mayb-mval2))
-                       (let ([mval1 (some-v mayb-mval1)]
-                             [mval2 (some-v mayb-mval2)])
-                         (some (VObject 'num (some (MetaNum 
+    ['num+ (check-types args 'num 'num 
+                        (some (VObject 'num (some (MetaNum 
                                                     (+ (MetaNum-n mval1) 
                                                        (MetaNum-n mval2))))
-                                        (make-hash empty))))
-                       (none)))
-                 (none)))]
+                                        (make-hash empty))))]
+    ['num= (check-types args 'num 'num 
+                        (if (= (MetaNum-n mval1) (MetaNum-n mval2))
+                          (some (VTrue))
+                          (some (VFalse))))]
+    ['num> (check-types args 'num 'num 
+                        (if (> (MetaNum-n mval1) (MetaNum-n mval2))
+                          (some (VTrue))
+                          (some (VFalse))))]
+
+    ['num< (check-types args 'num 'num 
+                        (if (< (MetaNum-n mval1) (MetaNum-n mval2))
+                          (some (VTrue))
+                          (some (VFalse))))]
+
+
     ['str (let ([arg (first args)])
             (some (VStr (number->string (MetaNum-n (some-v 
                                                     (VObject-mval arg)))))))]
     ['str+ (str+ args)]
     ['list+ (list+ args)]
-    ))
+    ['str* (str* args)]
+    ['strcmp (strcmp args)]
+    ['strlen (strlen args)]
+    ['strbool (strbool args)]
+    ['strmin (strmin args)]
+    ['strmax (strmax args)]
+    ['strin (strin args)]
+))
 
 
 (define (dict-str (contents : (hashof CVal CVal)))

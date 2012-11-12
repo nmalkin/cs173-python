@@ -24,7 +24,7 @@
                         [comparators : (listof PyExpr)]) : CExpr
   (local [(define first-right (desugar (first comparators)))
           (define l-expr (desugar l))
-          (define first-comp (CPrim2 (first ops) l-expr first-right))]
+          (define first-comp (desugar (PyBinOp  l (first ops) (first comparators))))]
          (if (> (length comparators) 1) 
            (CIf first-comp
                 (desugar-compop (first comparators) (rest ops) (rest comparators))
@@ -55,14 +55,47 @@
           (CIf (desugar test) (desugar body) (desugar orelse))]
 
     [PyBinOp (left op right)
-             (if (symbol=? op 'Add)
-               (CApp (CGetField (desugar left)
-                                '__add__)
-                     (list (desugar left) (desugar right)))
+             (let ([left-c (desugar left)]
+                   [right-c (desugar right)]) 
+               (case op 
+                 ['Add (CApp (CGetField left-c '__add__) 
+                             (list left-c right-c))]
+                 ['Mult (CApp (CGetField left-c '__mult__)
+                              (list left-c right-c))]
+                 ['Eq (CApp (CGetField left-c '__eq__)
+                            (list left-c right-c))]
+                 ['Gt (CApp (CGetField left-c '__gt__)
+                            (list left-c right-c))]
+                 ['Lt (CApp (CGetField left-c '__lt__)
+                            (list left-c right-c))]
+                 ['NotEq (desugar (PyUnaryOp 'Not (PyBinOp left 'Eq right)))]
 
-             (CPrim2 op
-                     (desugar left) 
-                     (desugar right)))]
+                 ['LtE (desugar (PyBoolOp 'Or
+                                          (list (PyBinOp left 'Eq right)
+                                                (PyBinOp left 'Lt right))))]
+                 ['GtE (desugar (PyBoolOp 'Or
+                                          (list (PyBinOp left 'Eq right)
+                                                (PyBinOp left 'Gt right))))]
+                 ['In (CApp (CFunc (list 'self 'test)
+                                   (CSeq
+                                     (CAssign (CId '__infunc__)
+                                              (CGetField (CId 'self)
+                                                         '__in__))
+                                     (CIf (CId '__infunc__)
+                                          (CReturn
+                                            (CApp
+                                              (CId '__infunc__)
+                                              (list (CId 'self)
+                                                    (CId 'test))))
+                                          (CApp (CId 'TypeError)
+                                                (list (CObject
+                                                        'str
+                                                        (some (MetaStr 
+                                                                (string-append
+                                                                  "argument of type '___'" 
+                                                                  "is not iterable")))))))))
+                            (list right-c left-c))]
+                 [else (CPrim2 op (desugar left) (desugar right))]))]
 
     [PyUnaryOp (op operand)
                (CPrim1 op
@@ -93,8 +126,14 @@
             (CList (map desugar values))]
 
     [PyApp (fun args)
-           (CApp (desugar fun)
-                 (map desugar args))]
+           (let ([f (desugar fun)])
+             (if (CGetField? f)
+               (let ([o (CGetField-value f)])
+                 (CApp f
+                       (cons o (map desugar args))))
+               (CApp
+                 (desugar fun)
+                 (map desugar args))))]
     
     [PyClass (name bases body)
              (CAssign (CId name)
