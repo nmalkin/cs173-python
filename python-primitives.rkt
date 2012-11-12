@@ -75,6 +75,7 @@ primitives here.
                                                     (VObject-mval arg)))))))]
     ['str+ (str+ args)]
     ['list+ (list+ args)]
+    ['list-len (list-len args)]
     ['str* (str* args)]
     ['strcmp (strcmp args)]
     ['strlen (strlen args)]
