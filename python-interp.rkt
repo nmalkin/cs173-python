@@ -293,20 +293,30 @@
                          (let ([mval (some-v mayb-mval)])
                            (type-case MetaVal mval
                              [MetaClass (c) (set! where 
-                                              (if (symbol=? (CId-x (first arges)) 'init)
-                                                  (new-loc)
-                                                  (lookup (CId-x (first arges)) env)))]
+                                              (type-case CExpr (first arges)
+                                                         [CId (x) 
+                                                              (if (symbol=? x 'init)
+                                                                  (new-loc)
+                                                                  (lookup x env))]
+                                                         [else (new-loc)]))]
                              [MetaList (l) (set! where
-                                              (if (symbol=? (CId-x (first arges)) 'init)
-                                                  (new-loc)
-                                                  (lookup (CId-x (first arges)) env)))]
+                                              (type-case CExpr (first arges)
+                                                         [CId (x) 
+                                                              (if (symbol=? x 'init)
+                                                                  (new-loc)
+                                                                  (lookup x env))]
+                                                         [else (new-loc)]))]
                              ;;[MetaDict (d) (;; get loc of val in store)]
                              ;; immutable types should get a new store location
                              [else (set! where (new-loc))]
                              ))
-                         (set! where (if (symbol=? (CId-x (first arges)) 'init)
-                                         (new-loc)
-                                         (lookup (CId-x (first arges)) env))))]
+                         (set! where
+                                  (type-case CExpr (first arges)
+                                             [CId (x) 
+                                                  (if (symbol=? x 'init)
+                                                      (new-loc)
+                                                      (lookup x env))]
+                                             [else (new-loc)])))]
               [else (set! where (new-loc))])
             (let ([e (cons (hash-set (first ext) (first args) where) (rest ext))]
                   [s (hash-set sto where (first vals))])
