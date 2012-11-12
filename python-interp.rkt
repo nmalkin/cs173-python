@@ -284,7 +284,14 @@
          (error 'interp "Arity mismatch")]
         [(and (cons? args) (cons? vals))
          (let ([val (first vals)]
-               [where -1])
+               [where -1]
+               [mutability-check (lambda ()
+                    (type-case CExpr (first arges)
+                         [CId (x)
+                              (if (symbol=? x 'init)
+                                  (new-loc)
+                                  (lookup x env))]
+                         [else (new-loc)]))])
             (begin
               (type-case CVal val
               [VObject (ante-name mayb-mval dict)
@@ -292,31 +299,13 @@
                        (if (some? mayb-mval)
                          (let ([mval (some-v mayb-mval)])
                            (type-case MetaVal mval
-                             [MetaClass (c) (set! where 
-                                              (type-case CExpr (first arges)
-                                                         [CId (x) 
-                                                              (if (symbol=? x 'init)
-                                                                  (new-loc)
-                                                                  (lookup x env))]
-                                                         [else (new-loc)]))]
-                             [MetaList (l) (set! where
-                                              (type-case CExpr (first arges)
-                                                         [CId (x) 
-                                                              (if (symbol=? x 'init)
-                                                                  (new-loc)
-                                                                  (lookup x env))]
-                                                         [else (new-loc)]))]
+                             [MetaClass (c) (set! where (mutability-check))]
+                             [MetaList (l) (set! where (mutability-check))]
                              ;;[MetaDict (d) (;; get loc of val in store)]
                              ;; immutable types should get a new store location
                              [else (set! where (new-loc))]
                              ))
-                         (set! where
-                                  (type-case CExpr (first arges)
-                                             [CId (x) 
-                                                  (if (symbol=? x 'init)
-                                                      (new-loc)
-                                                      (lookup x env))]
-                                             [else (new-loc)])))]
+                         (set! where (mutability-check)))]
               [else (set! where (new-loc))])
             (let ([e (cons (hash-set (first ext) (first args) where) (rest ext))]
                   [s (hash-set sto where (first vals))])
