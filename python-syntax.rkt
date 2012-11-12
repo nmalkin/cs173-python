@@ -37,5 +37,7 @@
   ; builtin data structures
   [PyStr (s : string)]
   [PyDict (keys : (listof PyExpr)) (values : (listof PyExpr))]
-  [PyList (values : (listof PyExpr))])
+  [PyList (values : (listof PyExpr))]
+  [PyTuple (values : (listof PyExpr))]
+)
 

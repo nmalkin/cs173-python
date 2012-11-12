@@ -3,34 +3,34 @@
 (require "../python-core-syntax.rkt")
 (require "../util.rkt")
 
-(define list-class : CExpr
+(define tuple-class : CExpr
   (CClass
-   'list
+   'tuple
    'object
    (seq-ops (list (def '__add__
                     (CFunc (list 'self 'other)
-                           (CReturn (CBuiltinPrim 'list+
+                           (CReturn (CBuiltinPrim 'tuple+
                                                   (list
                                                    (CId 'self)
                                                    (CId 'other))))))
                   (def '__len__
                     (CFunc (list 'self)
-                           (CReturn (CBuiltinPrim 'list-len
+                           (CReturn (CBuiltinPrim 'tuple-len
                                                   (list
                                                    (CId 'self))))))
 ))))
 
-(define (list+ (args : (listof CVal))) : (optionof CVal)
-  (check-types args 'list 'list
-               (some (VObject 'list
-                              (some (MetaList
-                                     (append (MetaList-v mval1)
-                                             (MetaList-v mval2))))
+(define (tuple+ (args : (listof CVal))) : (optionof CVal)
+  (check-types args 'tuple 'tuple
+               (some (VObject 'tuple
+                              (some (MetaTuple
+                                     (append (MetaTuple-v mval1)
+                                             (MetaTuple-v mval2))))
                               (hash empty)))))
 
-(define (list-len (args : (listof CVal))) : (optionof CVal)
-  (check-types args 'list
+(define (tuple-len (args : (listof CVal))) : (optionof CVal)
+  (check-types args 'tuple
                (some (VObject 'num
-                              (some (MetaNum (length (MetaList-v mval1))))
+                              (some (MetaNum (length (MetaTuple-v mval1))))
                               (hash empty)))))
 

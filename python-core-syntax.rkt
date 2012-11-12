@@ -31,6 +31,7 @@ ParselTongue.
   [CPrim2 (prim : symbol) (arg1 : CExpr) (arg2 : CExpr)]
   [CBuiltinPrim (op : symbol) (args : (listof CExpr))]
   [CList (values : (listof CExpr))]
+  [CTuple (values : (listof CExpr))]
   [CDict (contents : (hashof CExpr CExpr))])
 
 (define-type CVal
@@ -45,7 +46,8 @@ ParselTongue.
 (define-type MetaVal
              [MetaNum (n : number)]
              [MetaStr (s : string)]
-             [MetaList (l : (listof CVal))]
+             [MetaList (v : (listof CVal))]
+             [MetaTuple (v : (listof CVal))]
              [MetaClass (c : symbol)])
              
 

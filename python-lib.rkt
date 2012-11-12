@@ -4,6 +4,7 @@
 (require "builtins/num.rkt"
          "builtins/str.rkt"
          "builtins/list.rkt"
+         "builtins/tuple.rkt"
          "builtins/object.rkt"
          "util.rkt"
 )
@@ -102,6 +103,7 @@ that calls the primitive `print`.
         (bind 'num (num-class 'num))
         (bind 'str str-class)
         (bind 'list list-class)
+        (bind 'tuple tuple-class)
         (bind 'len len-lambda)
         (bind 'min min-lambda)
         (bind 'max max-lambda)

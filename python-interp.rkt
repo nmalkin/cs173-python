@@ -89,6 +89,16 @@
                       new-e
                       ))]
 
+    [CTuple (values)
+           (local [(define-values (val-list new-s new-e)
+                                      (interp-cascade values sto env))]
+               (v*s*e (VObject 'tuple
+                                (some (MetaTuple val-list))
+                                (make-hash empty))
+                      new-s
+                      new-e
+                      ))]
+
     ;; deal with pythonic scope here
     ;; only for ids!
     [CAssign (t v) 

@@ -124,6 +124,8 @@
 
     [PyList (values)
             (CList (map desugar values))]
+    [PyTuple (values)
+            (CTuple (map desugar values))]
 
     [PyApp (fun args)
            (let ([f (desugar fun)])

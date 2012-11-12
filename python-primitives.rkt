@@ -4,6 +4,7 @@
          "util.rkt"
          "builtins/str.rkt"
          "builtins/list.rkt"
+         "builtins/tuple.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
          (typed-in racket/base (number->string : (number -> string))))
 
@@ -36,10 +37,14 @@ primitives here.
     [MetaNum (n) (number->string n)]
     [MetaStr (s) s]
     [MetaClass (c) (symbol->string c)]
-    [MetaList (l) (string-append 
-                   (string-append "[" 
-                                  (string-join (map pretty l) ", "))
-                   "]")]))
+    [MetaList (v) (string-append
+                   (string-append "["
+                                  (string-join (map pretty v) ", "))
+                   "]")]
+    [MetaTuple (v) (string-append
+                   (string-append "("
+                                  (string-join (map pretty v) ", "))
+                   ")")]))
 
 (define (print arg)
   (display (pretty arg)))
@@ -76,6 +81,8 @@ primitives here.
     ['str+ (str+ args)]
     ['list+ (list+ args)]
     ['list-len (list-len args)]
+    ['tuple+ (tuple+ args)]
+    ['tuple-len (tuple-len args)]
     ['str* (str* args)]
     ['strcmp (strcmp args)]
     ['strlen (strlen args)]

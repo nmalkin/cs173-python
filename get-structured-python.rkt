@@ -168,6 +168,11 @@ structure that you define in python-syntax.rkt
                  ('ctx ctx))
      (PyList (map get-structured-python values))]
 
+    [(hash-table ('nodetype "Tuple")
+                 ('elts values)
+                 ('ctx ctx))
+     (PyTuple (map get-structured-python values))]
+
     [(list-no-order (hash-table (k v) ...) ..2)
      (PySeq (map get-structured-python pyjson))]
     
