@@ -40,12 +40,7 @@ primitives here.
     [MetaClass () "Class"]
     [MetaList (l) (string-append 
                    (string-append "[" 
-                                  (foldl (lambda (item res) 
-                                           (string-join 
-                                            (list res (pretty item))
-                                            ", "))
-                                         ""
-                                         l))
+                                  (string-join (map pretty l) ", "))
                    "]")]))
 
 (define (print arg)
