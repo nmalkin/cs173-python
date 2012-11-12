@@ -89,6 +89,9 @@
             (CDict (lists->hash (map desugar keys)
                                 (map desugar values)))]
 
+    [PyList (values)
+            (CList (map desugar values))]
+
     [PyApp (fun args)
            (CApp (desugar fun)
                  (map desugar args))]

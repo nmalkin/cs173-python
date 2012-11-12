@@ -31,7 +31,7 @@ ParselTongue.
   [CPrim2 (prim : symbol) (arg1 : CExpr) (arg2 : CExpr)]
   [CBuiltinPrim (op : symbol) (args : (listof CExpr))]
 
-  
+  [CList (values : (listof CExpr))]
   [CDict (contents : (hashof CExpr CExpr))])
 
 (define-type CVal
@@ -47,7 +47,7 @@ ParselTongue.
              [MetaNum (n : number)]
 						 [MetaStr (s : string)]
              [MetaClass]
-             [MetaList (l : (listof MetaVal))])
+             [MetaList (l : (listof CVal))])
              
 
 ;; env is a listof hashof's so there are deliniations between closures

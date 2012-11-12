@@ -163,6 +163,11 @@ structure that you define in python-syntax.rkt
      (PyDict (map get-structured-python keys)
              (map get-structured-python values))]
 
+    [(hash-table ('nodetype "List")
+                 ('elts values)
+                 ('ctx ctx))
+     (PyList (map get-structured-python values))]
+
     [(list-no-order (hash-table (k v) ...) ..2)
      (PySeq (map get-structured-python pyjson))]
     

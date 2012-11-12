@@ -2,7 +2,9 @@
 
 (require "python-core-syntax.rkt")
 (require "builtins/num.rkt"
-         "builtins/str.rkt")
+         "builtins/str.rkt"
+         "builtins/list.rkt"
+)
 
 #|
 
@@ -69,7 +71,9 @@ that calls the primitive `print`.
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
         (bind 'num (num-class 'num))
-        (bind 'str str-class)))
+        (bind 'str str-class)
+        (bind 'list list-class)
+        ))
 
 (define (python-lib expr)
   (local [(define (python-lib/recur libs)

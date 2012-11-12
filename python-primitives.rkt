@@ -3,6 +3,7 @@
 (require "python-core-syntax.rkt"
          "util.rkt"
          "builtins/str.rkt"
+         "builtins/list.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
          (typed-in racket/base (number->string : (number -> string))))
 
@@ -41,7 +42,7 @@ primitives here.
                    (string-append "[" 
                                   (foldl (lambda (item res) 
                                            (string-join 
-                                            (list res (pretty-metaval item))
+                                            (list res (pretty item))
                                             ", "))
                                          ""
                                          l))
@@ -76,6 +77,7 @@ primitives here.
             (some (VStr (number->string (MetaNum-n (some-v 
                                                     (VObject-mval arg)))))))]
     ['str+ (str+ args)]
+    ['list+ (list+ args)]
     ))
 
 
