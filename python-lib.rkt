@@ -41,6 +41,12 @@ that calls the primitive `print`.
          (CNone)
          (CError (CStr "Assert failed")))))
 
+(define assert-is-lambda
+  (CFunc (list 'check1 'check2)
+    (CIf (CPrim2 'Is (CId 'check1) (CId 'check2))
+         (CNone)
+         (CError (CStr "Assert failed")))))
+
 (define exception
   (CClass
     'Exception
@@ -118,7 +124,8 @@ that calls the primitive `print`.
         (bind 'TypeError type-error)
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
-        (bind '___assertFalse assert-false-lambda)))
+        (bind '___assertFalse assert-false-lambda)
+        (bind '___assertIs assert-is-lambda)))
 
 (define (python-lib [expr : CExpr]) : CExpr
   (seq-ops (append
