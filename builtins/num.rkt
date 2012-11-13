@@ -47,6 +47,18 @@
                            (CReturn (CBuiltinPrim 'num<
                                                   (list
                                                     (CId 'self)
+                                                    (CId 'other))))))
+               (def '__gte__
+                    (CFunc (list 'self 'other)
+                           (CReturn (CBuiltinPrim 'num>=
+                                                  (list
+                                                    (CId 'self)
+                                                    (CId 'other))))))
+               (def '__lte__
+                    (CFunc (list 'self 'other)
+                           (CReturn (CBuiltinPrim 'num<=
+                                                  (list
+                                                    (CId 'self)
                                                     (CId 'other))))))))))
 
 (define (make-builtin-num [n : number]) : CExpr

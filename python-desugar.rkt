@@ -71,14 +71,12 @@
                             (list left-c right-c))]
                  ['Lt (CApp (CGetField left-c '__lt__)
                             (list left-c right-c))]
+                 ['LtE (CApp (CGetField left-c '__lte__)
+                            (list left-c right-c))]
+                 ['GtE (CApp (CGetField left-c '__gte__)
+                            (list left-c right-c))]
                  ['NotEq (desugar (PyUnaryOp 'Not (PyBinOp left 'Eq right)))]
 
-                 ['LtE (desugar (PyBoolOp 'Or
-                                          (list (PyBinOp left 'Eq right)
-                                                (PyBinOp left 'Lt right))))]
-                 ['GtE (desugar (PyBoolOp 'Or
-                                          (list (PyBinOp left 'Eq right)
-                                                (PyBinOp left 'Gt right))))]
                  ['In (CApp (CFunc (list 'self 'test)
                                    (CSeq
                                      (CAssign (CId '__infunc__)

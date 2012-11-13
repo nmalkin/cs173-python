@@ -84,11 +84,22 @@ primitives here.
                           (some (VTrue))
                           (some (VFalse))))]
 
+    ['num>= (check-types args 'num 'num 
+                        (if (>= (MetaNum-n mval1) (MetaNum-n mval2))
+                          (some (VTrue))
+                          (some (VFalse))))]
+
+    ['num<= (check-types args 'num 'num 
+                        (if (<= (MetaNum-n mval1) (MetaNum-n mval2))
+                          (some (VTrue))
+                          (some (VFalse))))]
+
 
     ['str (let ([arg (first args)])
             (some (VStr (number->string (MetaNum-n (some-v 
                                                     (VObject-mval arg)))))))]
     ['str+ (str+ args)]
+    ['str= (streq args)]
     ['list+ (list+ args)]
     ['list-len (list-len args)]
     ['tuple+ (tuple+ args)]
