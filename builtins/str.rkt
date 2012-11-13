@@ -1,7 +1,8 @@
 #lang plai-typed
 
 (require "../python-core-syntax.rkt"
-         "../util.rkt")
+         "../util.rkt"
+         "num.rkt")
 (require (typed-in racket/base (string=? : (string string -> boolean)))
          (typed-in racket/base (string>? : (string string -> boolean)))
          (typed-in racket/base (string<? : (string string -> boolean)))
@@ -58,6 +59,7 @@
                             (CReturn (CBuiltinPrim 'strmax
                                          (list
                                            (CId 'self))))))
+
                   (def '__len__
                      (CFunc (list 'self)
                             (CReturn (CBuiltinPrim 'strlen

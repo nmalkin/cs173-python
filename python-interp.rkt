@@ -54,7 +54,7 @@
                         (v*s*e (VObject base 
                                         (some (MetaClass name)) 
                                         (first ebody)) 
-                               sbody ebody)]
+                               sbody env)]
                  [else (error 'interp "'return' outside of function")])]
     
     [CGetField (value attr)
@@ -251,7 +251,7 @@
   (type-case CVal c
     [VObject (antecedent mval d) 
                     (let ([w (hash-ref (VObject-dict c) n)])
-              (type-case (optionof Address) (hash-ref (VObject-dict c) n)
+              (type-case (optionof Address) w
                 [some (w) (v*s*e-v (fetch w s e))]
                 [none () (let ([base (v*s*e-v (fetch (lookup antecedent e) s e))])
                            (cond 

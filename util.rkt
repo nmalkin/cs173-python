@@ -33,11 +33,10 @@
       r)))
 
 (define (seq-ops (ops : (listof CExpr))) : CExpr
-  (foldl
-   (lambda (next sofar)
-     (CSeq next sofar))
-   (first ops)
-   (rest ops)))
+  (cond 
+    [(= 1 (length ops)) (first ops)]
+    [else (CSeq (first ops) 
+                (seq-ops (rest ops)))]))
 
 (define (def (name : symbol) (expr : CExpr)) : CExpr
   (CAssign (CId name) expr))

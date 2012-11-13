@@ -22,8 +22,8 @@
                                            (CId 'other))))))
                (def '__str__
                    (CFunc (list 'self)
-                          (CBuiltinPrim 'str
-                                        (list (CId 'self)))))
+                          (CReturn (CBuiltinPrim 'str
+                                        (list (CId 'self))))))
                (def '__eq__
                     (CFunc (list 'self 'other)
                            (CReturn (CBuiltinPrim 'num=
