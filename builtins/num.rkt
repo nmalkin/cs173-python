@@ -14,6 +14,12 @@
                                          (list 
                                            (CId 'self) 
                                            (CId 'other))))))
+               (def '__sub__ 
+                    (CFunc (list 'self 'other) 
+                           (CReturn (CBuiltinPrim 'num-
+                                         (list 
+                                           (CId 'self) 
+                                           (CId 'other))))))
                (def '__mult__ 
                     (CFunc (list 'self 'other) 
                            (CReturn (CBuiltinPrim 'num* 
