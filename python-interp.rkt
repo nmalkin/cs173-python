@@ -7,12 +7,13 @@
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
          (typed-in racket/base (expt : (number number -> number)))
          (typed-in racket/base (quotient : (number number -> number)))
+         (typed-in racket/string (string-join : ((listof string) string -> string)))
          (typed-in racket/base (string<? : (string string -> boolean)))
          (typed-in racket/base (string>? : (string string -> boolean)))
          (typed-in racket/base (string<=? : (string string -> boolean)))
          (typed-in racket/base (string>=? : (string string -> boolean)))
          (typed-in racket/base (for-each : (('a -> void) (listof number) -> 'b)))
-         (typed-in racket/base (raise-user-error : ('symbol string -> 'a))))
+         (typed-in racket/base (raise-user-error : (string -> 'a))))
 
 
 ;; interp-cascade, interprets a list of expressions with an initial store,
@@ -43,7 +44,7 @@
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
     (type-case CExpr expr
-    [CStr (s) (v*s*e (VStr s) sto env)]
+    [CStr (s) (v*s*e (VObject 'str (some (MetaStr s)) (hash empty)) sto env)]
     [CTrue () (v*s*e (VTrue) sto env)]
     [CFalse () (v*s*e (VFalse) sto env)]
     [CNone () (v*s*e (VNone) sto env)]
@@ -55,18 +56,21 @@
                                         (some (MetaClass name)) 
                                         (first ebody)) 
                                sbody env)]
-                 [else (error 'interp "'return' outside of function")])]
+                 [Return (vval sval eval) (return-exception eval sval)]
+                 [Exception (vval sval eval) (Exception vval sval eval)])]
     
     [CGetField (value attr)
 	       (type-case Result (interp-env value env sto)
-		 [v*s*e (vval sval eval)
-			(v*s*e (get-field attr vval eval sval) sval eval)]
-		 [else (error 'interp "'return' outside function")])]
+                    [v*s*e (vval sval eval)
+                           (v*s*e (get-field attr vval eval sval) sval eval)]
+                    [Return (vval sval eval) (return-exception eval sval)]
+                    [Exception (vval sval eval) (Exception vval sval eval)])]
 			
     
     [CSeq (e1 e2) (type-case Result (interp-env e1 env sto)
                     [v*s*e (v1 s1 new-env) (interp-env e2 new-env s1)]
-                    [Return (v1 s1 new-env) (Return v1 s1 new-env)])]
+                    [Return (v1 s1 new-env) (Return v1 s1 new-env)]
+                    [Exception (v1 s1 new-env) (Exception v1 s1 new-env)])]
     
     ;; note that for now we're assuming that dict keys and values aren't going
     ;; to mess with the environment and store, but this might be wrong
@@ -103,26 +107,37 @@
     [CAssign (t v) 
              (type-case Result (interp-env v env sto)
                [v*s*e (vv sv venv) 
-		      (type-case CExpr t
-			[CId (x) (assign-to-id t vv venv sv)]
-			[CGetField (o a) (let ([r (assign-to-field o a vv venv sv)])
-                        r)]
-			[else (error 'interp "Can only assign to ids or objects")])]
-               [else (error 'interp "'return' outside of function")])]
+                     (type-case CExpr t
+                                [CId (x) (assign-to-id t vv venv sv)]
+                                [CGetField (o a) (assign-to-field o a vv venv sv)]
+                                [else (mk-exception 'SyntaxError
+                                                 "can't assign to literals"
+                                                 venv
+                                                 sv)])]
+               [Return (vv sv ev) (return-exception ev sv)]
+               [Exception (vv sv ev) (Exception vv sv ev)])]
     
     [CError (e) (type-case Result (interp-env e env sto)
                   [v*s*e (ve se ee)
-                         (raise-user-error 'interp (pretty ve))]
-                  [else (error 'interp "'return' outside of function")])]
+                         (raise-user-error (string-append "CERROR: " (pretty ve)))]
+                  [Return (ve se ee) (return-exception ee se)]
+                  [Exception (ve se ee) (Exception ve se ee)])]
 
     [CIf (i t e) (type-case Result (interp-env i env sto)
                        [v*s*e (vi si envi) (type-case CVal (truthy? vi)
                                          [VTrue () (interp-env t envi si)]
                                          [else (interp-env e envi si)])]
-                       [else (error 'interp "'return' outside of function")])]
+                       [Return (vi si envi) (return-exception envi si)]
+                       [Exception (vi si envi) (Exception vi si envi)])]
 
     [CId (x) (let ([w (lookup x env)])
-                (fetch w sto env))]
+               (if (none? w)
+                 (mk-exception 'NameError 
+                                (string-append "name '" 
+                                               (string-append (symbol->string x)
+                                                              "' is not defined"))
+                                env sto)
+                 (fetch (some-v w) sto env)))]
 
     [CObject (c mval) (v*s*e (VObject c mval (make-hash empty))
                              sto
@@ -135,7 +150,8 @@
                      (interp-env body
                                  (cons (hash-set (first eb) x w) (rest eb))
                                  (hash-set sb w vb))]
-              [else (error 'interp "'return' outside of function")]))]
+              [Return (vb sb eb) (return-exception eb sb)]
+              [Exception (vb sb eb) (Exception vb sb eb)]))]
 
     [CApp (fun arges)
      (type-case Result (interp-env fun env sto)
@@ -147,7 +163,8 @@
                               (define-values (e s) (bind-args argxs argvs arges efun cenv sc))]
                           (type-case Result (interp-env body e s)
                             [v*s*e (vb sb eb) (v*s*e (VNone) sb env)]
-                            [Return (vb sb eb) (v*s*e vb sb env)]))]
+                            [Return (vb sb eb) (v*s*e vb sb env)]
+                            [Exception (vb sb eb) (Exception vb sb env)]))]
           [VObject (b mval d)
                    (if (and (some? mval) (MetaClass? (some-v mval)))
                       (let ([f (get-field '__init__ vfun efun sfun)]
@@ -162,24 +179,27 @@
                                         (type-case Result (interp-env body e s)
                                           [v*s*e (vb sb eb) (v*s*e 
                                              (let ([obj (v*s*e-v 
-                                                          (fetch (lookup (first argxs)
-                                                                         eb) sb eb))])
+                                                          (fetch (some-v 
+                                                                   (lookup (first argxs)
+                                                                         eb)) sb eb))])
                                                obj)
                                              sb env)]
-                                          [Return (vb sb eb) (v*s*e vb sb env)]))]
+                                          [Return (vb sb eb) (v*s*e vb sb env)]
+                                          [Exception (vb sb eb) (Exception vb sb env)]))]
                           [else (error 'interp 
-                                       "__init__ not found for the given
-                                       class")]))
+                                       "__init__ not found. THIS SHOULDN'T HAPPEN.")]))
                                          
-                          (error 'interp "I dont know how to call objects yet, bro"))]
+                      (error 'interp "I dont know how to call objects yet, bro"))]
           [else (error 'interp "Not a closure or constructor")])]
-       [else (error 'interp "'return' outside of function")])]
+       [Return (vfun sfun efun) (return-exception efun sfun)]
+       [Exception (vfun sfun efun) (Exception vfun sfun efun)])]
 
     [CFunc (args body) (v*s*e (VClosure (cons (hash empty) env) args body) sto env)]
     
     [CReturn (value) (type-case Result (interp-env value env sto)
                        [v*s*e (vv sv ev) (Return vv sv ev)]
-                       [else (error 'interp "'return' outside of function")])]
+                       [Return (vv sv ev) (return-exception ev sv)]
+                       [Exception (vv sv ev) (Exception vv sv ev)])]
 
     [CPrim1 (prim arg)
             (type-case Result (interp-env arg env sto)
@@ -189,7 +209,8 @@
                              [VTrue () (v*s*e (VFalse) sarg envarg)]
                              [else (v*s*e (VTrue) sarg envarg)])]
                      [else (v*s*e (python-prim1 prim varg) sarg envarg)])]
-              [else (error 'interp "'return' outside of function")])]
+              [Return (varg sarg earg) (return-exception earg sarg)]
+              [Exception (varg sarg earg) (Exception varg sarg earg)])]
     
     ;; implement this
     [CPrim2 (prim arg1 arg2) (interp-cprim2 prim arg1 arg2 sto env)]
@@ -206,15 +227,42 @@
                                        (error 'interp (string-append "Builtin error for "
                                                                      (symbol->string
                                                                        op)))))]
-    [CRaise (expr) (type-case Result (interp-env expr env sto))]))
+    [CRaise (expr) (type-case Result (interp-env expr env sto)
+                     [v*s*e (vexpr sexpr eexpr) 
+                            (mk-exception 'TypeError
+                                       "exceptions must derive from BaseException"
+                                       eexpr
+                                       sexpr)]
+                     [Return (vexpr sexpr eexpr) (return-exception eexpr sexpr)]
+                     [Exception (vexpr sexpr eexpr) (Exception vexpr sexpr eexpr)])]
+    
+    [CTryExceptElseFinally (try excepts orelse finally)
+         (type-case Result (interp-env try env sto)
+            [v*s*e (vtry stry etry)
+                   (type-case Result (interp-env orelse env sto)
+                      [v*s*e (velse selse eelse)
+                             (type-case Result (interp-env finally env sto)
+                                [v*s*e (vfin sfin efin)
+                                       (v*s*e (VNone) sfin efin)]
+                                [Return (vfin sfin efin) (return-exception efin sfin)]
+                                [Exception (vfin sfin efin)
+                                           (Exception vfin sfin efin)])]
+                      [Return (velse selse eelse) (return-exception eelse selse)]
+                      [Exception (velse selse eelse)
+                                 (Exception velse selse eelse)])]
+            [Return (vtry stry etry) (return-exception etry stry)]
+            [Exception (vtry stry etry) (Exception vtry stry etry)])]
+                       ;; handle excepts here
+    
+    [CExcept (types body) (error 'interp "WTF is an except?")]))
 
     ;[else (error 'interp "haven't implemented a case yet")]))
 
-(define (lookup x env)
+(define (lookup [x : symbol] [env : Env]) : (optionof Address)
   (cond
-    [(empty? env) (error 'interp (string-append "Unbound identifier: " (symbol->string x)))]
+    [(empty? env) (none)]
     [else (type-case (optionof Address) (hash-ref (first env) x)
-            [some (v) v]
+            [some (v) (some v)]
             [none () (lookup x (rest env))])]))
 
 (define (fetch w sto env)
@@ -252,7 +300,7 @@
                     (let ([w (hash-ref (VObject-dict c) n)])
               (type-case (optionof Address) w
                 [some (w) (v*s*e-v (fetch w s e))]
-                [none () (let ([base (v*s*e-v (fetch (lookup antecedent e) s e))])
+                [none () (let ([base (v*s*e-v (fetch (some-v (lookup antecedent e)) s e))])
                            (cond 
                              [(VNone? base) (error 'interp 
                                                    (string-append "Function not found: " 
@@ -280,7 +328,8 @@
                              (hash-set snew w v)
 			                       eo))))]))]
     	[else (error 'interp "Can't assign to nonobject.")])]
-    [else (error 'interp "'return' outside function")]))
+    [Return (vo so eo) (return-exception eo so)]
+    [Exception (vo so eo) (Exception vo so eo)]))
 
 (define (new-object [c-name : symbol] [e : Env] [s : Store])
   (VObject c-name (none) (hash empty)))
@@ -299,7 +348,7 @@
                          [CId (x)
                               (if (symbol=? x 'init)
                                   (new-loc)
-                                  (lookup x env))]
+                                  (some-v (lookup x env)))]
                          [else (new-loc)]))])
             (begin
               (type-case CVal val
@@ -319,6 +368,25 @@
             (let ([e (cons (hash-set (first ext) (first args) where) (rest ext))]
                   [s (hash-set sto where (first vals))])
                  (bind-args (rest args) (rest vals) (rest arges) env e s))))]))
+
+(define (make-exception [name : symbol] [error : string]) : CExpr
+  (CApp
+    (CId name)
+    (list (CStr error))))
+
+(define (mk-exception [type : symbol] [arg : string]
+                      [env : Env] [sto : Store]) : Result
+  (let ([exception 
+          (interp-env (make-exception
+                        type 
+                        arg)
+                      env sto)])
+    (Exception (v*s*e-v exception)
+               (v*s*e-s exception)
+               (v*s*e-e exception))))
+
+(define (return-exception [env : Env] [sto : Store]) : Result
+  (mk-exception 'SyntaxError "'return' outside function" env sto))
 
 (define (truthy? [val : CVal]) : CVal
   (type-case CVal val
@@ -340,7 +408,20 @@
                          (begin (display (pretty vexpr)) 
                                 (display "\n"))
                          (display ""))]
-    [else (error 'interp "'return' outside of function")]))
+    [Return (vexpr sexpr env) (raise-user-error "SyntaxError: 'return' outside function")]
+    [Exception (vexpr sexpr env) (raise-user-error
+                                   (string-join
+                                     (list
+                                       (symbol->string (VObject-antecedent vexpr))
+                                       (MetaStr-s
+                                         (some-v 
+                                           (VObject-mval
+                                             (v*s*e-v (fetch (some-v
+                                                               (hash-ref 
+                                                                 (VObject-dict vexpr) 'args))
+                                                             sexpr
+                                                             env))))))
+                                     ": "))]))
 
 (define (interp-cprim2 [prim : symbol] 
                        [arg1 : CExpr]
@@ -364,5 +445,7 @@
                                                         case yet: "
                                                         (symbol->string
                                                           prim)))])]
-             [else (error 'interp "'return' outside of function")])]
-      [else (error 'interp "'return' outside of function")]))
+             [Return (varg2 sarg2 envarg2) (return-exception envarg2 sarg2)]
+             [Exception (varg2 sarg2 envarg2) (Exception varg2 sarg2 envarg2)])]
+      [Return (varg1 sarg1 envarg1) (return-exception envarg1 sarg1)]
+      [Exception (varg1 sarg1 envarg1) (Exception varg1 sarg1 envarg1)]))

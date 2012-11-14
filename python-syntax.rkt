@@ -13,6 +13,9 @@
 
   ;
   [PyRaise (expr : PyExpr)]
+  [PyExcept (types : (listof symbol)) (body : PyExpr)]
+  [PyTryExceptElseFinally (try : PyExpr) (except : (listof PyExpr))
+                          (orelse : PyExpr) (finally : PyExpr)]
   [PyPass]
 
   ; classes and objects 

@@ -54,21 +54,37 @@ that calls the primitive `print`.
     (seq-ops (list 
                (def '__init__
                     (CFunc (list 'self 'args)
-                           (CAssign 
-                             (CGetField
-                               (CId 'self)
-                               'args)
-                             (CId 'args))))))))
+                           (CSeq 
+                             (CAssign 
+                               (CGetField
+                                 (CId 'self)
+                                 'args)
+                               (CId 'args))
+                             (CAssign
+                               (CGetField
+                                 (CId 'self)
+                                 '__class__)
+                               (CId 'Exception)))))
+               (def '__str__
+                    (CFunc (list 'self)
+                           (CReturn
+                             (CApp
+                               (CGetField
+                                 (CId 'self)
+                                 '__add__)
+                               (list
+                                 (CGetField
+                                   (CId 'self)
+                                   '__class__)
+                                 (CGetField
+                                   (CId 'self)
+                                   'args))))))))))
 
-(define type-error
-  (CObject
+(define (make-exception-class [name : symbol]) : CExpr
+  (CClass
+    name
     'Exception
-    (some (MetaClass 'TypeError))))
-
-(define make-type-error
-  (CObject
-    'TypeError
-    (some (MetaClass 'TypeError))))
+    (CNone)))
 
 (define len-lambda
   (CFunc (list 'self)
@@ -115,6 +131,7 @@ that calls the primitive `print`.
         (bind 'object (CNone))
         (bind 'num (CNone))
         (bind 'str (CNone))
+        (bind 'Exception (CNone))
 
         (bind 'object object-class)
         (bind 'num (num-class 'num))
@@ -126,7 +143,9 @@ that calls the primitive `print`.
         (bind 'max max-lambda)
         (bind 'print print-lambda)
         (bind 'Exception exception)
-        (bind 'TypeError type-error)
+        (bind 'TypeError (make-exception-class 'TypeError))
+        (bind 'SyntaxError (make-exception-class 'SyntaxError))
+        (bind 'NameError (make-exception-class 'NameError))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)

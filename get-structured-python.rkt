@@ -134,7 +134,7 @@ structure that you define in python-syntax.rkt
               (map PyId-x (map get-structured-python bases))
               (get-structured-python body))]
     
-    [(hash-table ('nodetype "FunctionDef")
+    [(hash-table ('nodetype "FunctionDef")FunctionDef
                  ('name name)
                  ('body body)
                  ('decorator_list dl)
@@ -185,6 +185,36 @@ structure that you define in python-syntax.rkt
                  ('value val))
      (get-structured-python val)]
 
+    [(hash-table ('nodetype "TryFinally")
+                 ('body body)
+                 ('finalbody fbody))
+     (let ([TEE (get-structured-python body)]
+           [F (get-structured-python fbody)])
+       (let ([try (PyTryExceptElseFinally-try TEE)]
+             [excepts (PyTryExceptElseFinally-except TEE)]
+             [orelse (PyTryExceptElseFinally-orelse TEE)]
+             [finally F])
+         (PyTryExceptElseFinally try excepts orelse finally)))]
+
+    [(hash-table ('nodetype "TryExcept")
+                 ('body body)
+                 ('orelse else-expr)
+                 ('handlers handlers))
+     (let ([try (get-structured-python body)]
+           [excepts (map get-structured-python handlers)]
+           [orelse (get-structured-python else-expr)])
+       (PyTryExceptElseFinally try excepts orelse (PyPass)))]
+
+    [(hash-table ('nodetype "ExceptHandler")
+                 ('type type)
+                 ('name name)
+                 ('body body))
+     (let ([types (get-structured-python type)])
+       (if (PyTuple? types)
+         (PyExcept (map PyId-x (PyTuple-values types))
+                   (get-structured-python body))
+         (PyExcept (PyId-x type)
+                   (get-structured-python body))))]
 
     [(list-no-order (hash-table (k v) ...) ..2)
      (PySeq (map get-structured-python pyjson))]

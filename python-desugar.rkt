@@ -171,4 +171,15 @@
     
     [PyDotField (value attr)
                 (CGetField (desugar value)
-                           attr)]))
+                           attr)]
+    
+    [PyTryExceptElseFinally (try excepts orelse finally)
+                (CTryExceptElseFinally
+                  (desugar try)
+                  (map desugar excepts)
+                  (desugar orelse)
+                  (desugar finally))]
+    
+    [PyExcept (types body)
+              (CExcept types
+                       (desugar body))]))

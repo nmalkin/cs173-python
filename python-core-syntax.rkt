@@ -35,7 +35,7 @@ ParselTongue.
   [CDict (contents : (hashof CExpr CExpr))]
   [CRaise (expr : CExpr)]
   [CTryExceptElseFinally (try : CExpr) (excepts : (listof CExpr))
-                         (else : CExpr) (finally: CExpr)]
+                         (orelse : CExpr) (finally : CExpr)]
   [CExcept (types : (listof symbol)) (body : CExpr)])
 
 (define-type CVal
