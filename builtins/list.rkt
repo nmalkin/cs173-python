@@ -54,7 +54,7 @@
                     (cond
                      [(empty? lst) (VFalse)]
                      [(cons? lst)
-                       (if (is? val (first lst))
+                       (if (equal? val (first lst))
                          (VTrue)
                          (contains (rest lst) val))]))])
    (some (contains self-list test))))

@@ -356,9 +356,9 @@
                     ['Is (if (is? varg1 varg2)
                            (v*s*e (VTrue) sarg2 envarg2)
                            (v*s*e (VFalse) sarg2 envarg2))]
-                    ['IsNot (if (equal? varg1 varg2)
-                           (v*s*e (VFalse) sarg2 envarg2)
-                           (v*s*e (VTrue) sarg2 envarg2))]
+                    ['IsNot (if (not (is? varg1 varg2))
+                           (v*s*e (VTrue) sarg2 envarg2)
+                           (v*s*e (VFalse) sarg2 envarg2))]
                     [else (error 'interp (string-append "Haven't implemented a
                                                         case yet: "
                                                         (symbol->string
