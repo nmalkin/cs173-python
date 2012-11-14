@@ -343,6 +343,10 @@
                          (display ""))]
     [else (error 'interp "'return' outside of function")]))
 
+(define (is? [v1 : CVal]
+             [v2 : CVal]) : boolean
+  (equal? v1 v2))
+
 (define (interp-cprim2 [prim : symbol] 
                        [arg1 : CExpr]
                        [arg2 : CExpr]
@@ -355,7 +359,7 @@
              [v*s*e (varg2 sarg2 envarg2) 
                   (case prim
                     ;; Handle Is, IsNot, In, NotIn
-                    ['Is (if (equal? varg1 varg2)
+                    ['Is (if (is? varg1 varg2)
                            (v*s*e (VTrue) sarg2 envarg2)
                            (v*s*e (VFalse) sarg2 envarg2))]
                     ['IsNot (if (equal? varg1 varg2)
