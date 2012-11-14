@@ -32,7 +32,11 @@ ParselTongue.
   [CBuiltinPrim (op : symbol) (args : (listof CExpr))]
   [CList (values : (listof CExpr))]
   [CTuple (values : (listof CExpr))]
-  [CDict (contents : (hashof CExpr CExpr))])
+  [CDict (contents : (hashof CExpr CExpr))]
+  [CRaise (expr : CExpr)]
+  [CTryExceptElseFinally (try : CExpr) (excepts : (listof CExpr))
+                         (else : CExpr) (finally: CExpr)]
+  [CExcept (types : (listof symbol)) (body : CExpr)])
 
 (define-type CVal
   [VStr (s : string)]
@@ -66,6 +70,7 @@ ParselTongue.
 
 (define-type Result
   [v*s*e (v : CVal) (s : Store) (e : Env)]
-  [Return (v : CVal) (s : Store) (e : Env)])
+  [Return (v : CVal) (s : Store) (e : Env)]
+  [Exception (v : CVal) (s : Store) (e : Env)])
 
 (define-type-alias object-dict (hashof symbol Address))

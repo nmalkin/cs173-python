@@ -62,11 +62,6 @@
                      (CFunc (list 'self)
                             (CReturn (CBuiltinPrim 'strlen
                                          (list
-                                           (CId 'self))))))
-                  (def '__bool__
-                     (CFunc (list 'self)
-                            (CReturn (CBuiltinPrim 'strbool
-                                         (list
                                            (CId 'self))))))))))
 
 (define (make-builtin-str [s : string]) : CExpr
@@ -138,12 +133,6 @@
                     (some (MetaNum
                             (string-length (MetaStr-s mval1))))
                     (hash empty)))))
-
-(define (strbool [args : (listof CVal)]) : (optionof CVal)
-  (check-types args 'str
-     (some (if (string=? (MetaStr-s mval1) "")
-               (VFalse)
-               (VTrue)))))
 
 (define (strmin [args : (listof CVal)]) : (optionof CVal)
   (check-types args 'str

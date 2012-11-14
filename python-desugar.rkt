@@ -24,7 +24,7 @@
                         [comparators : (listof PyExpr)]) : CExpr
   (local [(define first-right (desugar (first comparators)))
           (define l-expr (desugar l))
-          (define first-comp (desugar (PyBinOp  l (first ops) (first comparators))))]
+          (define first-comp (desugar (PyBinOp l (first ops) (first comparators))))]
          (if (> (length comparators) 1) 
            (CIf first-comp
                 (desugar-compop (first comparators) (rest ops) (rest comparators))
@@ -48,7 +48,7 @@
 
     ; for now just desugar raise as error
     ; TODO: implement real exceptions
-    [PyRaise (expr) (CError (desugar expr))]
+    [PyRaise (expr) (CRaise (desugar expr))]
 
     [PyPass () (CApp (CFunc empty (CNone)) empty)] ;PyPass is an empty lambda
 

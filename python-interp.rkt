@@ -207,7 +207,8 @@
                                        ;; todo: real exceptions
                                        (error 'interp (string-append "Builtin error for "
                                                                      (symbol->string
-                                                                       op)))))]))
+                                                                       op)))))]
+    [CRaise (expr) (type-case Result (interp-env expr env sto))]))
 
     ;[else (error 'interp "haven't implemented a case yet")]))
 

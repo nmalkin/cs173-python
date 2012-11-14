@@ -59,6 +59,11 @@ that calls the primitive `print`.
     'Exception
     (some (MetaClass 'TypeError))))
 
+(define make-type-error
+  (CObject
+    'TypeError
+    (some (MetaClass 'TypeError))))
+
 (define len-lambda
   (CFunc (list 'self)
     (CReturn

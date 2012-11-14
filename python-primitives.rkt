@@ -91,7 +91,6 @@ primitives here.
     ['str* (str* args)]
     ['strcmp (strcmp args)]
     ['strlen (strlen args)]
-    ['strbool (strbool args)]
     ['strmin (strmin args)]
     ['strmax (strmax args)]
     ['strin (strin args)]
