@@ -54,6 +54,17 @@
                                                   (list
                                                     (CId 'self)
                                                     (CId 'other))))))
+
+               (def '__abs__
+                    (CFunc (list 'self)
+                           (CIf (CBuiltinPrim 'num< 
+                                              (list 
+                                                (CId 'self)
+                                                (make-builtin-num 0)))
+                                (CReturn (CBuiltinPrim 'num-
+                                                       (list (make-builtin-num 0)
+                                                           (CId 'self))))
+                                (CReturn (CId 'self)))))
                (def '__lte__
                     (CFunc (list 'self 'other)
                            (CReturn (CBuiltinPrim 'num<=
