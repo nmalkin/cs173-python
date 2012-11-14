@@ -46,6 +46,11 @@ primitives here.
                                                     (* (MetaNum-n mval1) 
                                                        (MetaNum-n mval2))))
                                         (make-hash empty))))]
+    ['num/ (check-types args env sto 'num 'num 
+                        (some (VObject 'num (some (MetaNum 
+                                                    (* (MetaNum-n mval1) 
+                                                       (MetaNum-n mval2))))
+                                        (make-hash empty))))]
     ['num= (check-types args env sto 'num 'num 
                         (if (= (MetaNum-n mval1) (MetaNum-n mval2))
                           (some true-val)

@@ -20,12 +20,20 @@
                                          (list 
                                            (CId 'self) 
                                            (CId 'other))))))
+
                (def '__mult__ 
                     (CFunc (list 'self 'other) 
                            (CReturn (CBuiltinPrim 'num* 
                                          (list 
                                            (CId 'self) 
                                            (CId 'other))))))
+               (def '__div__ 
+                    (CFunc (list 'self 'other) 
+                           (CReturn (CBuiltinPrim 'num/
+                                         (list 
+                                           (CId 'self) 
+                                           (CId 'other))))))
+
                (def '__str__
                    (CFunc (list 'self)
                           (CReturn (CBuiltinPrim 'num-str
@@ -54,6 +62,18 @@
                                                   (list
                                                     (CId 'self)
                                                     (CId 'other))))))
+               (def '__invrt__
+                    (CFunc 
+                      (list 'self)
+                      (CReturn (CBuiltinPrim 'num-
+                                             (list 
+                                               (make-builtin-num 0) 
+                                               (CBuiltinPrim 'num+
+                                                   (list (CId 'self) 
+                                                         (make-builtin-num
+                                                           1))))))))
+
+
 
                (def '__abs__
                     (CFunc (list 'self)
@@ -64,7 +84,9 @@
                                 (CReturn (CBuiltinPrim 'num-
                                                        (list (make-builtin-num 0)
                                                            (CId 'self))))
-                                (CReturn (CId 'self)))))
+                                (CReturn (CBuiltinPrim 'num+
+                                                       (list (make-builtin-num 0)
+                                                           (CId 'self)))))))
                (def '__lte__
                     (CFunc (list 'self 'other)
                            (CReturn (CBuiltinPrim 'num<=
