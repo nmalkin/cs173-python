@@ -28,47 +28,47 @@ primitives here.
   (case op
     [(print) (begin (print arg) arg)]))
 
-(define (builtin-prim [op : symbol] [args : (listof CVal)]) : (optionof CVal)
+(define (builtin-prim [op : symbol] [args : (listof CVal)] 
+                      [env : Env] [sto : Store]) : (optionof CVal)
   (case op
-    ['num+ (check-types args 'num 'num 
+    ['num+ (check-types args env sto 'num 'num 
                         (some (VObject 'num (some (MetaNum 
                                                     (+ (MetaNum-n mval1) 
                                                        (MetaNum-n mval2))))
                                         (make-hash empty))))]
-    ['num- (check-types args 'num 'num 
+    ['num- (check-types args env sto 'num 'num 
                         (some (VObject 'num (some (MetaNum 
                                                     (- (MetaNum-n mval1) 
                                                        (MetaNum-n mval2))))
                                         (make-hash empty))))]
-    ['num* (check-types args 'num 'num 
+    ['num* (check-types args env sto 'num 'num 
                         (some (VObject 'num (some (MetaNum 
                                                     (* (MetaNum-n mval1) 
                                                        (MetaNum-n mval2))))
                                         (make-hash empty))))]
-    ['num= (check-types args 'num 'num 
+    ['num= (check-types args env sto 'num 'num 
                         (if (= (MetaNum-n mval1) (MetaNum-n mval2))
-                          (some (VTrue))
-                          (some (VFalse))))]
-    ['num> (check-types args 'num 'num 
+                          (some true-val)
+                          (some false-val)))]
+    ['num> (check-types args env sto 'num 'num 
                         (if (> (MetaNum-n mval1) (MetaNum-n mval2))
-                          (some (VTrue))
-                          (some (VFalse))))]
+                          (some true-val)
+                          (some false-val)))]
 
-    ['num< (check-types args 'num 'num 
+    ['num< (check-types args env sto 'num 'num 
                         (if (< (MetaNum-n mval1) (MetaNum-n mval2))
-                          (some (VTrue))
-                          (some (VFalse))))]
+                          (some true-val)
+                          (some false-val)))]
 
-    ['num>= (check-types args 'num 'num 
+    ['num>= (check-types args env sto 'num 'num 
                         (if (>= (MetaNum-n mval1) (MetaNum-n mval2))
-                          (some (VTrue))
-                          (some (VFalse))))]
+                          (some true-val)
+                          (some false-val)))]
 
-    ['num<= (check-types args 'num 'num 
+    ['num<= (check-types args env sto 'num 'num 
                         (if (<= (MetaNum-n mval1) (MetaNum-n mval2))
-                          (some (VTrue))
-                          (some (VFalse))))]
-
+                          (some true-val)
+                          (some false-val)))]
 
     ['num-str (let ([arg (first args)])
             (some (VObject 'str 
@@ -77,29 +77,29 @@ primitives here.
                                                                   arg))))))
                            (make-hash empty))))]
     ;string
-    ['str+ (str+ args)]
-    ['str= (streq args)]
-    ['str* (str* args)]
-    ['strcmp (strcmp args)]
-    ['strlen (strlen args)]
-    ['strbool (strbool args)]
-    ['strmin (strmin args)]
-    ['strmax (strmax args)]
-    ['strin (strin args)]
+    ['str+ (str+ args env sto)]
+    ['str= (streq args env sto)]
+    ['str* (str* args env sto)]
+    ['strcmp (strcmp args env sto)]
+    ['strlen (strlen args env sto)]
+    ['strbool (strbool args env sto)]
+    ['strmin (strmin args env sto)]
+    ['strmax (strmax args env sto)]
+    ['strin (strin args env sto)]
 
     ;list
-    ['list+ (list+ args)]
-    ['list-len (list-len args)]
-    ['list-in (list-in args)]
-    ['list-attr (list-attr args)]
-    ['list-str (list-str args)]
+    ['list+ (list+ args env sto)]
+    ['list-len (list-len args env sto)]
+    ['list-in (list-in args env sto)]
+    ['list-attr (list-attr args env sto)]
+    ['list-str (list-str args env sto)]
 
     ;tuple
-    ['tuple+ (tuple+ args)]
-    ['tuple-len (tuple-len args)]
-    ['tuple-in (tuple-in args)]
-    ['tuple-attr (tuple-attr args)]
-    ['tuple-str (tuple-str args)]
+    ['tuple+ (tuple+ args env sto)]
+    ['tuple-len (tuple-len args env sto)]
+    ['tuple-in (tuple-in args env sto)]
+    ['tuple-attr (tuple-attr args env sto)]
+    ['tuple-str (tuple-str args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]))

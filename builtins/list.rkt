@@ -36,39 +36,39 @@
                                                    (CId 'self)
                                                    (CId 'idx))))))))))
 
-(define (list+ (args : (listof CVal))) : (optionof CVal)
-  (check-types args 'list 'list
+(define (list+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'list 'list
                (some (VObject 'list
                               (some (MetaList
                                      (append (MetaList-v mval1)
                                              (MetaList-v mval2))))
                               (hash empty)))))
 
-(define (list-len (args : (listof CVal))) : (optionof CVal)
-  (check-types args 'list
+(define (list-len (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'list
                (some (VObject 'num
                               (some (MetaNum (length (MetaList-v mval1))))
                               (hash empty)))))
 
-(define (list-in [args : (listof CVal)]) : (optionof CVal)
+(define (list-in [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
  (letrec ([self-list (MetaList-v (some-v (VObject-mval (first args))))]
           [test (second args)]
           [contains (lambda ([lst : (listof CVal)] [val : CVal]) : CVal
                     (cond
-                     [(empty? lst) (VFalse)]
+                     [(empty? lst) false-val]
                      [(cons? lst)
                        (if (equal? val (first lst))
-                         (VTrue)
+                         true-val
                          (contains (rest lst) val))]))])
    (some (contains self-list test))))
 
-(define (list-attr (args : (listof CVal))) : (optionof CVal)
+(define (list-attr (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   ; here we'll eventually need to support slicin' and dicin' bro
-  (check-types args 'list 'num
+  (check-types args env sto 'list 'num
                (some (list-ref (MetaList-v mval1) (MetaNum-n mval2)))))
 
-(define (list-str (args : (listof CVal))) : (optionof CVal)
-  (check-types args 'list
+(define (list-str (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'list
                (some (VObject 'str 
                         (some (MetaStr
                                 (pretty-metaval mval1)))

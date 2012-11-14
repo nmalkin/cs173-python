@@ -36,8 +36,6 @@ ParselTongue.
 
 (define-type CVal
   [VStr (s : string)]
-  [VTrue]
-  [VFalse]
   [VNone]
   [VObject (antecedent : symbol) (mval : (optionof MetaVal)) (dict : object-dict)]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)]
@@ -69,3 +67,15 @@ ParselTongue.
   [Return (v : CVal) (s : Store) (e : Env)])
 
 (define-type-alias object-dict (hashof symbol Address))
+
+(define (lookup x env)
+  (cond
+    [(empty? env) (error 'interp (string-append "Unbound identifier: " (symbol->string x)))]
+    [else (type-case (optionof Address) (hash-ref (first env) x)
+            [some (v) v]
+            [none () (lookup x (rest env))])]))
+
+(define (fetch w sto env)
+  (type-case (optionof CVal) (hash-ref sto w)
+    [some (v) (v*s*e v sto env)]
+    [none () (error 'interp (string-append "No value at address " (Address->string w)))]))

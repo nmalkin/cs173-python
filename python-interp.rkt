@@ -3,6 +3,7 @@
 (require "python-core-syntax.rkt"
          "python-primitives.rkt"
          "builtins/object.rkt"
+         "builtins/bool.rkt"
          "util.rkt"
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
          (typed-in racket/base (expt : (number number -> number)))
@@ -44,8 +45,8 @@
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
     (type-case CExpr expr
     [CStr (s) (v*s*e (VStr s) sto env)]
-    [CTrue () (v*s*e (VTrue) sto env)]
-    [CFalse () (v*s*e (VFalse) sto env)]
+    [CTrue () (v*s*e true-val sto env)]
+    [CFalse () (v*s*e false-val sto env)]
     [CNone () (v*s*e (VNone) sto env)]
 
     [CClass (name base body)
@@ -63,7 +64,6 @@
 			(v*s*e (get-field attr vval eval sval) sval eval)]
 		 [else (error 'interp "'return' outside function")])]
 			
-    
     [CSeq (e1 e2) (type-case Result (interp-env e1 env sto)
                     [v*s*e (v1 s1 new-env) (interp-env e2 new-env s1)]
                     [Return (v1 s1 new-env) (Return v1 s1 new-env)])]
@@ -116,9 +116,10 @@
                   [else (error 'interp "'return' outside of function")])]
 
     [CIf (i t e) (type-case Result (interp-env i env sto)
-                       [v*s*e (vi si envi) (type-case CVal (truthy? vi)
-                                         [VTrue () (interp-env t envi si)]
-                                         [else (interp-env e envi si)])]
+                       [v*s*e (vi si envi) 
+                              (if (truthy? vi)
+                                (interp-env t envi si) 
+                                (interp-env e envi si))]
                        [else (error 'interp "'return' outside of function")])]
 
     [CId (x) (let ([w (lookup x env)])
@@ -191,9 +192,9 @@
             (type-case Result (interp-env arg env sto)
               [v*s*e (varg sarg envarg) 
                    (case prim
-                     ['Not (type-case CVal (truthy? varg)
-                             [VTrue () (v*s*e (VFalse) sarg envarg)]
-                             [else (v*s*e (VTrue) sarg envarg)])]
+                     ['Not (if (truthy? varg)
+                             (v*s*e false-val sarg envarg)
+                             (v*s*e true-val sarg envarg))]
                      [else (v*s*e (python-prim1 prim varg) sarg envarg)])]
               [else (error 'interp "'return' outside of function")])]
     
@@ -202,7 +203,8 @@
     
     [CBuiltinPrim (op args) (local [(define-values (val-list new-s new-e)
                                       (interp-cascade args sto env))
-                                    (define mayb-val (builtin-prim op val-list))] 
+                                    (define mayb-val (builtin-prim op val-list
+                                                                   env sto))] 
 
                                    (if (some? mayb-val)
                                        (v*s*e (some-v mayb-val)
@@ -215,17 +217,6 @@
 
     ;[else (error 'interp "haven't implemented a case yet")]))
 
-(define (lookup x env)
-  (cond
-    [(empty? env) (error 'interp (string-append "Unbound identifier: " (symbol->string x)))]
-    [else (type-case (optionof Address) (hash-ref (first env) x)
-            [some (v) v]
-            [none () (lookup x (rest env))])]))
-
-(define (fetch w sto env)
-  (type-case (optionof CVal) (hash-ref sto w)
-    [some (v) (v*s*e v sto env)]
-    [none () (error 'interp (string-append "No value at address " (Address->string w)))]))
 
 (define (assign-to-id id v e s)
   (type-case (optionof Address) (hash-ref (first e) (CId-x id)) 
@@ -317,27 +308,24 @@
                              [MetaList (l) (set! where (mutability-check))]
                              ;;[MetaDict (d) (;; get loc of val in store)]
                              ;; immutable types should get a new store location
-                             [else (set! where (new-loc))]
-                             ))
+                             [else (set! where (new-loc))]))
                          (set! where (mutability-check)))]
               [else (set! where (new-loc))])
             (let ([e (cons (hash-set (first ext) (first args) where) (rest ext))]
                   [s (hash-set sto where (first vals))])
                  (bind-args (rest args) (rest vals) (rest arges) env e s))))]))
 
-(define (truthy? [val : CVal]) : CVal
+(define (truthy? [val : CVal]) : boolean
   (type-case CVal val
     [VStr (s) (if (string=? "" s)
-              (VFalse) 
-              (VTrue))]
-    [VTrue () val]
-    [VFalse () val]
-    [VNone () (VFalse)]
-    [VClosure (e a b) (VTrue)]
+              false 
+              true)]
+    [VNone () false]
+    [VClosure (e a b) true]
     [VObject (a mval d) (truthy-object? (VObject a mval d))]
     [VDict (c) (if (empty? (hash-keys c))
-                           (VFalse)
-                           (VTrue))]))
+                           true
+                           false)]))
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
@@ -360,11 +348,11 @@
                   (case prim
                     ;; Handle Is, IsNot, In, NotIn
                     ['Is (if (is? varg1 varg2)
-                           (v*s*e (VTrue) sarg2 envarg2)
-                           (v*s*e (VFalse) sarg2 envarg2))]
+                           (v*s*e true-val sarg2 envarg2)
+                           (v*s*e false-val sarg2 envarg2))]
                     ['IsNot (if (not (is? varg1 varg2))
-                           (v*s*e (VTrue) sarg2 envarg2)
-                           (v*s*e (VFalse) sarg2 envarg2))]
+                           (v*s*e true-val sarg2 envarg2)
+                           (v*s*e false-val sarg2 envarg2))]
                     [else (error 'interp (string-append "Haven't implemented a
                                                         case yet: "
                                                         (symbol->string

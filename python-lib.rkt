@@ -6,6 +6,7 @@
          "builtins/list.rkt"
          "builtins/tuple.rkt"
          "builtins/object.rkt"
+         "builtins/bool.rkt"
          "util.rkt"
          (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a)))))
 
@@ -94,34 +95,32 @@ that calls the primitive `print`.
           '__max__)
         (list (CId 'self))))))
 
-(define true-val
-  (CTrue))
-
-(define false-val
-  (CFalse))
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
 
 (define lib-functions
-  (list (bind 'True true-val)
-        (bind 'False false-val)
+  (list (bind 'True (CTrue))
+        (bind 'False (CFalse))
         (bind 'None (CNone))
 
         ; dummies
         (bind 'object (CNone))
         (bind 'num (CNone))
         (bind 'str (CNone))
+        (bind 'bool (CNone))
 
         (bind 'object object-class)
         (bind 'num (num-class 'num))
         (bind 'str str-class)
         (bind 'list list-class)
         (bind 'tuple tuple-class)
+        (bind 'bool bool-class)
         (bind 'len len-lambda)
         (bind 'min min-lambda)
         (bind 'max max-lambda)
         (bind 'print print-lambda)
+
         (bind 'Exception exception)
         (bind 'TypeError type-error)
         (bind '___assertEqual assert-equal-lambda)

@@ -37,16 +37,16 @@
                                                    (CId 'idx))))))
 ))))
 
-(define (tuple+ (args : (listof CVal))) : (optionof CVal)
-  (check-types args 'tuple 'tuple
+(define (tuple+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'tuple 'tuple
                (some (VObject 'tuple
                               (some (MetaTuple
                                      (append (MetaTuple-v mval1)
                                              (MetaTuple-v mval2))))
                               (hash empty)))))
 
-(define (tuple-len (args : (listof CVal))) : (optionof CVal)
-  (check-types args 'tuple
+(define (tuple-len (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'tuple
                (some (VObject 'num
                               (some (MetaNum (length (MetaTuple-v mval1))))
                               (hash empty)))))
