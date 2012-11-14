@@ -7,7 +7,7 @@
          "builtins/tuple.rkt"
          "builtins/object.rkt"
          "util.rkt"
-)
+         (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a)))))
 
 #|
 
@@ -38,6 +38,12 @@ that calls the primitive `print`.
 (define assert-equal-lambda
   (CFunc (list 'check1 'check2)
     (CIf (CApp (CGetField (CId 'check1) '__eq__) (list (CId 'check1) (CId 'check2)))
+         (CNone)
+         (CError (CStr "Assert failed")))))
+
+(define assert-is-lambda
+  (CFunc (list 'check1 'check2)
+    (CIf (CPrim2 'Is (CId 'check1) (CId 'check2))
          (CNone)
          (CError (CStr "Assert failed")))))
 
@@ -104,6 +110,12 @@ that calls the primitive `print`.
   (list (bind 'True true-val)
         (bind 'False false-val)
         (bind 'None (CNone))
+
+        ; dummies
+        (bind 'object (CNone))
+        (bind 'num (CNone))
+        (bind 'str (CNone))
+
         (bind 'object object-class)
         (bind 'num (num-class 'num))
         (bind 'str str-class)
@@ -118,16 +130,10 @@ that calls the primitive `print`.
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
-        ))
+        (bind '___assertIs assert-is-lambda)))
 
-(define (python-lib expr)
-  (local [(define (python-lib/recur libs)
-            (cond [(empty? libs) expr]
-                  [(cons? libs)
-                   (type-case LibBinding (first libs)
-                     (bind (name value)
-                           (CLet name value
-                                 (python-lib/recur (rest libs)))))]))]
-    (python-lib/recur lib-functions)))
-
-
+(define (python-lib [expr : CExpr]) : CExpr
+  (seq-ops (append
+             (map (lambda(b) (CAssign (CId (bind-left b)) (bind-right b)))
+                      lib-functions)
+             (list expr))))

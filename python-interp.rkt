@@ -54,7 +54,7 @@
                         (v*s*e (VObject base 
                                         (some (MetaClass name)) 
                                         (first ebody)) 
-                               sbody ebody)]
+                               sbody env)]
                  [else (error 'interp "'return' outside of function")])]
     
     [CGetField (value attr)
@@ -87,8 +87,7 @@
                                 (some (MetaList val-list))
                                 (make-hash empty))
                       new-s
-                      new-e
-                      ))]
+                      new-e))]
 
     [CTuple (values)
            (local [(define-values (val-list new-s new-e)
@@ -97,8 +96,7 @@
                                 (some (MetaTuple val-list))
                                 (make-hash empty))
                       new-s
-                      new-e
-                      ))]
+                      new-e))]
 
     ;; deal with pythonic scope here
     ;; only for ids!
@@ -252,7 +250,7 @@
   (type-case CVal c
     [VObject (antecedent mval d) 
                     (let ([w (hash-ref (VObject-dict c) n)])
-              (type-case (optionof Address) (hash-ref (VObject-dict c) n)
+              (type-case (optionof Address) w
                 [some (w) (v*s*e-v (fetch w s e))]
                 [none () (let ([base (v*s*e-v (fetch (lookup antecedent e) s e))])
                            (cond 
@@ -356,6 +354,12 @@
              [v*s*e (varg2 sarg2 envarg2) 
                   (case prim
                     ;; Handle Is, IsNot, In, NotIn
+                    ['Is (if (is? varg1 varg2)
+                           (v*s*e (VTrue) sarg2 envarg2)
+                           (v*s*e (VFalse) sarg2 envarg2))]
+                    ['IsNot (if (not (is? varg1 varg2))
+                           (v*s*e (VTrue) sarg2 envarg2)
+                           (v*s*e (VFalse) sarg2 envarg2))]
                     [else (error 'interp (string-append "Haven't implemented a
                                                         case yet: "
                                                         (symbol->string

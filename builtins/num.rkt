@@ -14,6 +14,12 @@
                                          (list 
                                            (CId 'self) 
                                            (CId 'other))))))
+               (def '__sub__ 
+                    (CFunc (list 'self 'other) 
+                           (CReturn (CBuiltinPrim 'num-
+                                         (list 
+                                           (CId 'self) 
+                                           (CId 'other))))))
                (def '__mult__ 
                     (CFunc (list 'self 'other) 
                            (CReturn (CBuiltinPrim 'num* 
@@ -22,8 +28,8 @@
                                            (CId 'other))))))
                (def '__str__
                    (CFunc (list 'self)
-                          (CBuiltinPrim 'str
-                                        (list (CId 'self)))))
+                          (CReturn (CBuiltinPrim 'str
+                                        (list (CId 'self))))))
                (def '__eq__
                     (CFunc (list 'self 'other)
                            (CReturn (CBuiltinPrim 'num=
@@ -39,6 +45,18 @@
                (def '__lt__
                     (CFunc (list 'self 'other)
                            (CReturn (CBuiltinPrim 'num<
+                                                  (list
+                                                    (CId 'self)
+                                                    (CId 'other))))))
+               (def '__gte__
+                    (CFunc (list 'self 'other)
+                           (CReturn (CBuiltinPrim 'num>=
+                                                  (list
+                                                    (CId 'self)
+                                                    (CId 'other))))))
+               (def '__lte__
+                    (CFunc (list 'self 'other)
+                           (CReturn (CBuiltinPrim 'num<=
                                                   (list
                                                     (CId 'self)
                                                     (CId 'other))))))))))

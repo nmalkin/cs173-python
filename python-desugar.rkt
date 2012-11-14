@@ -5,6 +5,16 @@
          "util.rkt"
          "builtins/num.rkt" 
          "builtins/str.rkt")
+(require (typed-in racket/base (number->string : (number -> string))))
+
+
+; generates a new unique variable name that isn't allowed by user code 
+(define new-id
+  (let ([n (box 0)])
+    (lambda ()
+      (begin
+        (set-box! n (add1 (unbox n)))
+        (string->symbol (string-append (number->string (unbox n)) "var" ))))))
 
 (define (desugar-boolop [op : symbol] [values : (listof PyExpr)]) : CExpr
   (local [(define first-val (desugar (first values)))]
@@ -61,6 +71,8 @@
                (case op 
                  ['Add (CApp (CGetField left-c '__add__) 
                              (list left-c right-c))]
+                 ['Sub (CApp (CGetField left-c '__sub__) 
+                             (list left-c right-c))]
                  ['Mult (CApp (CGetField left-c '__mult__)
                               (list left-c right-c))]
                  ['Eq (CApp (CGetField left-c '__eq__)
@@ -69,14 +81,12 @@
                             (list left-c right-c))]
                  ['Lt (CApp (CGetField left-c '__lt__)
                             (list left-c right-c))]
+                 ['LtE (CApp (CGetField left-c '__lte__)
+                            (list left-c right-c))]
+                 ['GtE (CApp (CGetField left-c '__gte__)
+                            (list left-c right-c))]
                  ['NotEq (desugar (PyUnaryOp 'Not (PyBinOp left 'Eq right)))]
 
-                 ['LtE (desugar (PyBoolOp 'Or
-                                          (list (PyBinOp left 'Eq right)
-                                                (PyBinOp left 'Lt right))))]
-                 ['GtE (desugar (PyBoolOp 'Or
-                                          (list (PyBinOp left 'Eq right)
-                                                (PyBinOp left 'Gt right))))]
                  ['In (CApp (CFunc (list 'self 'test)
                                    (CSeq
                                      (CAssign (CId '__infunc__)
@@ -96,12 +106,14 @@
                                                                   "argument of type '___'" 
                                                                   "is not iterable")))))))))
                             (list right-c left-c))]
+
                  [else (CPrim2 op (desugar left) (desugar right))]))]
 
     [PyUnaryOp (op operand)
-               (CPrim1 op
-                       (desugar operand))]
-
+               (case op
+                 ['USub (desugar (PyBinOp (PyNum 0) 'Sub operand))]
+                 ['UAdd (desugar (PyBinOp (PyNum 0) 'Add operand))]
+                 [else (CPrim1 op (desugar operand))])]
     [PyBoolOp (op values) (desugar-boolop op values)]
               
     [PyCompOp (l op rights) (desugar-compop l op rights)]
@@ -125,6 +137,17 @@
 
     [PyList (values)
             (CList (map desugar values))]
+
+    [PySubscript (left ctx slice)
+                 (if (symbol=? ctx 'Load)
+                   (let ([left-id (new-id)])
+                     (CLet left-id 
+                           (desugar left)
+                           (CApp (CGetField (CId left-id)
+                                            '__attr__)
+                                 (list (CId left-id) (desugar slice)))))
+                   (CNone))]
+
     [PyTuple (values)
             (CTuple (map desugar values))]
 

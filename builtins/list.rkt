@@ -18,6 +18,19 @@
                            (CReturn (CBuiltinPrim 'list-len
                                                   (list
                                                    (CId 'self))))))
+                  (def '__in__
+                    (CFunc (list 'self 'test)
+                           (CReturn (CBuiltinPrim 'list-in
+                                                  (list
+                                                   (CId 'self)
+                                                   (CId 'test)
+                                                   )))))
+                  (def '__attr__
+                    (CFunc (list 'self 'idx)
+                           (CReturn (CBuiltinPrim 'list-attr
+                                                  (list
+                                                   (CId 'self)
+                                                   (CId 'idx))))))
 ))))
 
 (define (list+ (args : (listof CVal))) : (optionof CVal)
@@ -33,4 +46,21 @@
                (some (VObject 'num
                               (some (MetaNum (length (MetaList-v mval1))))
                               (hash empty)))))
+
+(define (list-in [args : (listof CVal)]) : (optionof CVal)
+ (letrec ([self-list (MetaList-v (some-v (VObject-mval (first args))))]
+          [test (second args)]
+          [contains (lambda ([lst : (listof CVal)] [val : CVal]) : CVal
+                    (cond
+                     [(empty? lst) (VFalse)]
+                     [(cons? lst)
+                       (if (equal? val (first lst))
+                         (VTrue)
+                         (contains (rest lst) val))]))])
+   (some (contains self-list test))))
+
+(define (list-attr (args : (listof CVal))) : (optionof CVal)
+  ; here we'll eventually need to support slicin' and dicin' bro
+  (check-types args 'list 'num
+               (some (list-ref (MetaList-v mval1) (MetaNum-n mval2)))))
 

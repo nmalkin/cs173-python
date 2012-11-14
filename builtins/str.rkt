@@ -1,7 +1,8 @@
 #lang plai-typed
 
 (require "../python-core-syntax.rkt"
-         "../util.rkt")
+         "../util.rkt"
+         "num.rkt")
 (require (typed-in racket/base (string=? : (string string -> boolean)))
          (typed-in racket/base (string>? : (string string -> boolean)))
          (typed-in racket/base (string<? : (string string -> boolean)))
@@ -36,6 +37,13 @@
                                          (list
                                           (CId 'self)
                                           (CId 'other))))))
+                  (def '__eq__
+                    (CFunc (list 'self 'other)
+                           (CReturn (CBuiltinPrim 'str=
+                                         (list
+                                          (CId 'self)
+                                          (CId 'other))))))
+
                   (def '__cmp__
                      (CFunc (list 'self 'other)
                             (CReturn (CBuiltinPrim 'strcmp
@@ -58,6 +66,7 @@
                             (CReturn (CBuiltinPrim 'strmax
                                          (list
                                            (CId 'self))))))
+
                   (def '__len__
                      (CFunc (list 'self)
                             (CReturn (CBuiltinPrim 'strlen
@@ -116,6 +125,13 @@
                           [(string>? str1 str2) 1]
                           [(string=? str1 str2) 0]))))
                     (hash empty)))))
+(define (streq [args : (listof CVal)]) : (optionof CVal)
+  (check-types args 'str 'str 
+               (let ([str1 (MetaStr-s mval1)] 
+                     [str2 (MetaStr-s mval2)]) 
+                 (if (string=? str1 str2) 
+                   (some (VTrue)) 
+                   (some (VFalse))))))
 
 (define (strin [args : (listof CVal)]) : (optionof CVal)
   (check-types args 'str 'str

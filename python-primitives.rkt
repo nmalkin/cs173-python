@@ -60,6 +60,11 @@ primitives here.
                                                     (+ (MetaNum-n mval1) 
                                                        (MetaNum-n mval2))))
                                         (make-hash empty))))]
+    ['num- (check-types args 'num 'num 
+                        (some (VObject 'num (some (MetaNum 
+                                                    (- (MetaNum-n mval1) 
+                                                       (MetaNum-n mval2))))
+                                        (make-hash empty))))]
     ['num* (check-types args 'num 'num 
                         (some (VObject 'num (some (MetaNum 
                                                     (* (MetaNum-n mval1) 
@@ -79,13 +84,26 @@ primitives here.
                           (some (VTrue))
                           (some (VFalse))))]
 
+    ['num>= (check-types args 'num 'num 
+                        (if (>= (MetaNum-n mval1) (MetaNum-n mval2))
+                          (some (VTrue))
+                          (some (VFalse))))]
+
+    ['num<= (check-types args 'num 'num 
+                        (if (<= (MetaNum-n mval1) (MetaNum-n mval2))
+                          (some (VTrue))
+                          (some (VFalse))))]
+
 
     ['str (let ([arg (first args)])
             (some (VStr (number->string (MetaNum-n (some-v 
                                                     (VObject-mval arg)))))))]
     ['str+ (str+ args)]
+    ['str= (streq args)]
     ['list+ (list+ args)]
     ['list-len (list-len args)]
+    ['list-in (list-in args)]
+    ['list-attr (list-attr args)]
     ['tuple+ (tuple+ args)]
     ['tuple-len (tuple-len args)]
     ['str* (str* args)]
