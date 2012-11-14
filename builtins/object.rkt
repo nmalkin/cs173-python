@@ -84,6 +84,7 @@
                  [MetaNum (n) (if (= n 0) false true)]
                  [MetaStr (s) (if (= (string-length s) 0) false true)]
                  [MetaList (v) (if (= (length v) 0) false true)]
+                 [MetaTuple (v) (if (= (length v) 0) false true)]
                  [else true]))
    true))
 
