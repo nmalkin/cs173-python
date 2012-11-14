@@ -102,6 +102,7 @@ primitives here.
     ['str= (streq args)]
     ['list+ (list+ args)]
     ['list-len (list-len args)]
+    ['list-attr (list-attr args)]
     ['tuple+ (tuple+ args)]
     ['tuple-len (tuple-len args)]
     ['str* (str* args)]

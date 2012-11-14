@@ -173,6 +173,19 @@ structure that you define in python-syntax.rkt
                  ('ctx ctx))
      (PyTuple (map get-structured-python values))]
 
+    [(hash-table ('nodetype "Subscript")
+                 ('value val)
+                 ('ctx context)
+                 ('slice s))
+     (PySubscript (get-structured-python val)
+                  (nodetype->symbol context)
+                  (get-structured-python s))]
+
+    [(hash-table ('nodetype "Index")
+                 ('value val))
+     (get-structured-python val)]
+
+
     [(list-no-order (hash-table (k v) ...) ..2)
      (PySeq (map get-structured-python pyjson))]
     
