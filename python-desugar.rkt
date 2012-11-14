@@ -5,6 +5,16 @@
          "util.rkt"
          "builtins/num.rkt" 
          "builtins/str.rkt")
+(require (typed-in racket/base (number->string : (number -> string))))
+
+
+; generates a new unique variable name that isn't allowed by user code 
+(define new-id
+  (let ([n (box 0)])
+    (lambda ()
+      (begin
+        (set-box! n (add1 (unbox n)))
+        (string->symbol (string-append (number->string (unbox n)) "var" ))))))
 
 (define (desugar-boolop [op : symbol] [values : (listof PyExpr)]) : CExpr
   (local [(define first-val (desugar (first values)))]
@@ -96,6 +106,7 @@
                                                                   "argument of type '___'" 
                                                                   "is not iterable")))))))))
                             (list right-c left-c))]
+
                  [else (CPrim2 op (desugar left) (desugar right))]))]
 
     [PyUnaryOp (op operand)
@@ -126,6 +137,17 @@
 
     [PyList (values)
             (CList (map desugar values))]
+
+    [PySubscript (left ctx slice)
+                 (if (symbol=? ctx 'Load)
+                   (let ([left-id (new-id)])
+                     (CLet left-id 
+                           (desugar left)
+                           (CApp (CGetField (CId left-id)
+                                            '__attr__)
+                                 (list (CId left-id) (desugar slice)))))
+                   (CNone))]
+
     [PyTuple (values)
             (CTuple (map desugar values))]
 

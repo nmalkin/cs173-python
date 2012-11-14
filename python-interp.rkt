@@ -87,8 +87,7 @@
                                 (some (MetaList val-list))
                                 (make-hash empty))
                       new-s
-                      new-e
-                      ))]
+                      new-e))]
 
     [CTuple (values)
            (local [(define-values (val-list new-s new-e)
@@ -97,8 +96,7 @@
                                 (some (MetaTuple val-list))
                                 (make-hash empty))
                       new-s
-                      new-e
-                      ))]
+                      new-e))]
 
     ;; deal with pythonic scope here
     ;; only for ids!

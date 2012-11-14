@@ -34,6 +34,9 @@
   [PyReturn (value : PyExpr)]
   [PyApp (fun : PyExpr) (args : (listof PyExpr))]
 
+  ;
+  [PySubscript (left : PyExpr) (context : symbol) (slice : PyExpr)]
+
   ; builtin data structures
   [PyStr (s : string)]
   [PyDict (keys : (listof PyExpr)) (values : (listof PyExpr))]

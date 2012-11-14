@@ -18,7 +18,6 @@
                            (CReturn (CBuiltinPrim 'list-len
                                                   (list
                                                    (CId 'self))))))
-
                   (def '__in__
                     (CFunc (list 'self 'test)
                            (CReturn (CBuiltinPrim 'list-in
@@ -26,6 +25,12 @@
                                                    (CId 'self)
                                                    (CId 'test)
                                                    )))))
+                  (def '__attr__
+                    (CFunc (list 'self 'idx)
+                           (CReturn (CBuiltinPrim 'list-attr
+                                                  (list
+                                                   (CId 'self)
+                                                   (CId 'idx))))))
 ))))
 
 (define (list+ (args : (listof CVal))) : (optionof CVal)
@@ -53,3 +58,9 @@
                          (VTrue)
                          (contains (rest lst) val))]))])
    (some (contains self-list test))))
+
+(define (list-attr (args : (listof CVal))) : (optionof CVal)
+  ; here we'll eventually need to support slicin' and dicin' bro
+  (check-types args 'list 'num
+               (some (list-ref (MetaList-v mval1) (MetaNum-n mval2)))))
+
