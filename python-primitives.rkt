@@ -97,6 +97,9 @@ primitives here.
     ;tuple
     ['tuple+ (tuple+ args)]
     ['tuple-len (tuple-len args)]
+    ['tuple-in (tuple-in args)]
+    ['tuple-attr (tuple-attr args)]
+    ['tuple-str (tuple-str args)]
 
     ;object 
     ['obj-str (obj-str args)]))
