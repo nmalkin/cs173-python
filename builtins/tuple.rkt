@@ -51,25 +51,25 @@
                               (some (MetaNum (length (MetaTuple-v mval1))))
                               (hash empty)))))
 
-(define (tuple-in [args : (listof CVal)]) : (optionof CVal)
+(define (tuple-in [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
  (letrec ([self-list (MetaTuple-v (some-v (VObject-mval (first args))))]
           [test (second args)]
           [contains (lambda ([lst : (listof CVal)] [val : CVal]) : CVal
                     (cond
-                     [(empty? lst) (VFalse)]
+                     [(empty? lst) false-val]
                      [(cons? lst)
                        (if (equal? val (first lst))
-                         (VTrue)
+                         true-val
                          (contains (rest lst) val))]))])
    (some (contains self-list test))))
 
-(define (tuple-attr (args : (listof CVal))) : (optionof CVal)
+(define (tuple-attr (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   ; TODO: slicing
-  (check-types args 'tuple 'num
+  (check-types args env sto 'tuple 'num
                (some (list-ref (MetaTuple-v mval1) (MetaNum-n mval2)))))
 
-(define (tuple-str (args : (listof CVal))) : (optionof CVal)
-  (check-types args 'tuple
+(define (tuple-str (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'tuple
                (some (VObject 'str
                         (some (MetaStr
                                 (pretty-metaval mval1)))
