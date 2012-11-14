@@ -150,15 +150,21 @@
                             [Return (vb sb eb) (v*s*e vb sb env)]))]
           [VObject (b mval d)
                    (if (and (some? mval) (MetaClass? (some-v mval)))
+                      ; We're calling a class.
+                            ; Get its constructor
                       (let ([f (get-field '__init__ vfun efun sfun)]
+                            ; Create an empty object. This will be the instance of that class.
                             [o (new-object (MetaClass-c (some-v mval)) efun sfun)])
                         (type-case CVal f
                           [VClosure (cenv argxs body)
+                                    ; interpret the arguments to the constructor
                              (local [(define-values (argvs sc ec)
                                        (interp-cascade arges sfun efun))
+                                     ; bind the (interpreted) arguments to the constructor
                                      (define-values (e s) 
                                          (bind-args argxs (cons o argvs) 
                                                     (cons (CId 'init) arges) efun cenv sc))]
+                                        ; interpret the constructor body
                                         (type-case Result (interp-env body e s)
                                           [v*s*e (vb sb eb) (v*s*e 
                                              (let ([obj (v*s*e-v 
