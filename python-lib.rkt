@@ -110,6 +110,15 @@ that calls the primitive `print`.
           '__abs__)
         (list (CId 'self))))))
 
+(define int-lambda
+  (CFunc (list 'self)
+    (CReturn
+      (CApp
+        (CGetField
+          (CId 'self)
+          '__int__)
+        (list (CId 'self))))))
+
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
@@ -135,6 +144,7 @@ that calls the primitive `print`.
         (bind 'min min-lambda)
         (bind 'max max-lambda)
         (bind 'abs abs-lambda)
+        (bind 'int int-lambda)
         (bind 'print print-lambda)
 
         (bind 'Exception exception)
