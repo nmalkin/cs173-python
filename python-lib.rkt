@@ -24,7 +24,9 @@ that calls the primitive `print`.
 (define print-lambda
   (CFunc (list 'to-print)
     (CSeq 
-      (CPrim1 'print (CId 'to-print))
+      (CPrim1 'print (CApp 
+                       (CGetField (CId 'to-print) '__str__) 
+                       (list (CId 'to-print))))
       (CNone))))
 
 (define assert-true-lambda

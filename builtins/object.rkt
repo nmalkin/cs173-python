@@ -4,6 +4,7 @@
 (require "../python-core-syntax.rkt" 
          "../util.rkt"
          "num.rkt"
+         "str.rkt"
          (typed-in racket/base (string-length : (string -> number))))
 
 (define object-class
@@ -19,6 +20,12 @@
                                     (list 
                                       (CId 'self)
                                       (CId 'other))))))
+
+               (def '__str__ 
+                    (CFunc (list 'self) 
+                           (CReturn (CBuiltinPrim 'obj-str (list (CId
+                                                                   'self))))))
+
                (def '__cmp__
                     (CFunc (list 'self 'other)
                            ;TODO: MAKE THIS AN EXCEPTION
@@ -77,5 +84,20 @@
                  [MetaStr (s) (if (= (string-length s) 0) (VFalse) (VTrue))]
                  [else (VTrue)]))
     (VTrue)))
+
+(define (obj-str (args : (listof CVal))) : (optionof CVal)
+  (local [(define o (first args))]
+         (type-case CVal o
+            [VObject (ante mval d)
+                     (some (VObject 'str 
+                        (some (MetaStr
+                       (string-append "<instance of " 
+                           (string-append 
+                             (if (symbol=? ante 'none)
+                               "Object"
+                               (symbol->string ante))
+                             ">")))) (make-hash empty)))]
+            [else (error 'obj-str "Non object")])))
+
 
 

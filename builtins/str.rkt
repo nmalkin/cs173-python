@@ -37,6 +37,9 @@
                                          (list
                                           (CId 'self)
                                           (CId 'other))))))
+                  (def '__str__
+                       (CFunc (list 'self)
+                              (CReturn (CId 'self))))
                   (def '__eq__
                     (CFunc (list 'self 'other)
                            (CReturn (CBuiltinPrim 'str=

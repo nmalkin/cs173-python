@@ -25,13 +25,16 @@
                                                    (CId 'self)
                                                    (CId 'test)
                                                    )))))
+                  (def '__str__
+                       (CFunc (list 'self)
+                              (CReturn (CBuiltinPrim 'list-str
+                                                     (list (CId 'self))))))
                   (def '__attr__
                     (CFunc (list 'self 'idx)
                            (CReturn (CBuiltinPrim 'list-attr
                                                   (list
                                                    (CId 'self)
-                                                   (CId 'idx))))))
-))))
+                                                   (CId 'idx))))))))))
 
 (define (list+ (args : (listof CVal))) : (optionof CVal)
   (check-types args 'list 'list
@@ -64,3 +67,9 @@
   (check-types args 'list 'num
                (some (list-ref (MetaList-v mval1) (MetaNum-n mval2)))))
 
+(define (list-str (args : (listof CVal))) : (optionof CVal)
+  (check-types args 'list
+               (some (VObject 'str 
+                        (some (MetaStr
+                                (pretty-metaval mval1)))
+                        (make-hash empty)))))

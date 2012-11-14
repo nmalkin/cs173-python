@@ -3,8 +3,9 @@
 (require "python-core-syntax.rkt")
 
 (require
- (typed-in racket/base 
-           (hash-for-each : ((hashof 'a 'b) ('c 'd -> 'e) -> void))))
+ (typed-in racket/string (string-join : ((listof string) string -> string)))
+ (typed-in racket/base (hash-for-each : ((hashof 'a 'b) ('c 'd -> 'e) -> void)))
+ (typed-in racket/base (number->string : (number -> string))))
 
 ; a file for utility functions that aren't specific to python stuff
 
@@ -75,3 +76,28 @@
              [v2 : CVal]) : boolean
   (eq? v1 v2))
 
+(define (pretty arg)
+  (type-case CVal arg
+    [VStr (s) (string-append "'" (string-append s "'"))]
+    [VTrue () "True"]
+    [VFalse () "False"]
+    [VDict (contents) ""]
+    [VNone () "None"]
+    [VObject (a mval d) (if (some? mval)
+                            (pretty-metaval (some-v mval))
+                            "Can't print non-builtin object.")]
+    [VClosure (env args body) (error 'pretty "Can't print closures yet")]))
+
+(define (pretty-metaval mval)
+  (type-case MetaVal mval
+    [MetaNum (n) (number->string n)]
+    [MetaStr (s) s]
+    [MetaClass (c) (symbol->string c)]
+    [MetaList (v) (string-append
+                   (string-append "["
+                                  (string-join (map pretty v) ", "))
+                   "]")]
+    [MetaTuple (v) (string-append
+                   (string-append "("
+                                  (string-join (map pretty v) ", "))
+                   ")")]))

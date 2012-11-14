@@ -5,6 +5,7 @@
          "builtins/str.rkt"
          "builtins/list.rkt"
          "builtins/tuple.rkt"
+         "builtins/object.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
          (typed-in racket/base (number->string : (number -> string))))
 
@@ -19,32 +20,6 @@ primitives here.
 |#
 
 (require (typed-in racket/base [display : (string -> void)]))
-
-(define (pretty arg)
-  (type-case CVal arg
-    [VStr (s) (string-append "'" (string-append s "'"))]
-    [VTrue () "True"]
-    [VFalse () "False"]
-    [VDict (contents) (dict-str contents)]
-    [VNone () "None"]
-    [VObject (a mval d) (if (some? mval)
-                            (pretty-metaval (some-v mval))
-                            "Can't print non-builtin object.")]
-    [VClosure (env args body) (error 'pretty "Can't print closures yet")]))
-
-(define (pretty-metaval mval)
-  (type-case MetaVal mval
-    [MetaNum (n) (number->string n)]
-    [MetaStr (s) s]
-    [MetaClass (c) (symbol->string c)]
-    [MetaList (v) (string-append
-                   (string-append "["
-                                  (string-join (map pretty v) ", "))
-                   "]")]
-    [MetaTuple (v) (string-append
-                   (string-append "("
-                                  (string-join (map pretty v) ", "))
-                   ")")]))
 
 (define (print arg)
   (display (pretty arg)))
@@ -95,17 +70,15 @@ primitives here.
                           (some (VFalse))))]
 
 
-    ['str (let ([arg (first args)])
-            (some (VStr (number->string (MetaNum-n (some-v 
-                                                    (VObject-mval arg)))))))]
+    ['num-str (let ([arg (first args)])
+            (some (VObject 'str 
+                           (some (MetaStr 
+                             (number->string (MetaNum-n (some-v (VObject-mval
+                                                                  arg))))))
+                           (make-hash empty))))]
+    ;string
     ['str+ (str+ args)]
     ['str= (streq args)]
-    ['list+ (list+ args)]
-    ['list-len (list-len args)]
-    ['list-in (list-in args)]
-    ['list-attr (list-attr args)]
-    ['tuple+ (tuple+ args)]
-    ['tuple-len (tuple-len args)]
     ['str* (str* args)]
     ['strcmp (strcmp args)]
     ['strlen (strlen args)]
@@ -113,7 +86,20 @@ primitives here.
     ['strmin (strmin args)]
     ['strmax (strmax args)]
     ['strin (strin args)]
-))
+
+    ;list
+    ['list+ (list+ args)]
+    ['list-len (list-len args)]
+    ['list-in (list-in args)]
+    ['list-attr (list-attr args)]
+    ['list-str (list-str args)]
+
+    ;tuple
+    ['tuple+ (tuple+ args)]
+    ['tuple-len (tuple-len args)]
+
+    ;object 
+    ['obj-str (obj-str args)]))
 
 
 (define (dict-str (contents : (hashof CVal CVal)))
