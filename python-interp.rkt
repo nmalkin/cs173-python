@@ -343,10 +343,6 @@
                          (display ""))]
     [else (error 'interp "'return' outside of function")]))
 
-(define (is? [v1 : CVal]
-             [v2 : CVal]) : boolean
-  (equal? v1 v2))
-
 (define (interp-cprim2 [prim : symbol] 
                        [arg1 : CExpr]
                        [arg2 : CExpr]

@@ -69,3 +69,9 @@
                        body)
                      (none)))
                (none))))]))
+
+
+(define (is? [v1 : CVal]
+             [v2 : CVal]) : boolean
+  (equal? v1 v2))
+
