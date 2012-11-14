@@ -336,8 +336,8 @@
     [VClosure (e a b) (VTrue)]
     [VObject (a mval d) (truthy-object? (VObject a mval d))]
     [VDict (c) (if (empty? (hash-keys c))
-                           (VTrue)
-                           (VFalse))]))
+                           (VFalse)
+                           (VTrue))]))
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
