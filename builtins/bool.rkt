@@ -21,6 +21,12 @@
                            (CReturn (CApp (CGetField (CId 'self) '__add__) 
                                           (list (CId 'self) 
                                                 (make-builtin-num 0))))))
+
+               (def '__float__
+                    (CFunc (list 'self)
+                           (CReturn (CApp (CGetField (CId 'self) '__add__) 
+                                          (list (CId 'self) 
+                                                (make-builtin-num 0.0))))))
                     
                     
                     ))))
