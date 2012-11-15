@@ -241,14 +241,13 @@ structure that you define in python-syntax.rkt
        (get-structured-python target)
        (get-structured-python value))]
 
-    [(list-no-order (hash-table (k v) ...) ..2)
+    [(list (hash-table (k v) ...) ..2)
      (PySeq (map get-structured-python pyjson))]
     
-    [(list-no-order (hash-table (k v) ...))
+    [(list (hash-table (k v) ...))
      (get-structured-python (first pyjson))]
 
-    [(list)
-     (PyPass)]
+    [(list) (PyPass)] 
     
     [empty (PyPass)]
 

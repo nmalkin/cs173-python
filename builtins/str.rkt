@@ -74,7 +74,13 @@
                      (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'strlen
                                          (list
-                                           (CId 'self))))))))))
+                                           (CId 'self))))))
+                  (def '__attr__
+                     (CFunc (list 'self 'idx) (none)
+                            (CReturn (CBuiltinPrim 'strattr
+                                         (list
+                                           (CId 'self)
+                                           (CId 'idx))))))))))
 
 (define (make-builtin-str [s : string]) : CExpr
   (CObject
@@ -186,3 +192,15 @@
                                        (map char->integer
                                           (string->list (MetaStr-s mval1))))))))
                     (hash empty)))))
+
+(define (strattr [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  ; handle slicing here?  
+  (check-types args env sto 'str 'num
+     (some (VObject 'str
+                    (some (MetaStr
+                            (make-string 1
+                                         (string-ref 
+                                           (MetaStr-s mval1)
+                                           (MetaNum-n mval2)))))
+                    (hash empty)))))
+

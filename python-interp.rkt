@@ -356,6 +356,7 @@
                               env sto))]
     
     [CTryExceptElseFinally (try excepts orelse finally)
+       (begin ;(display try) (display "\n\n")
          (type-case Result (interp-env try env sto)
             [v*s*e (vtry stry etry)
                    (type-case Result (interp-env orelse etry stry)
@@ -377,7 +378,7 @@
                                                       (Exception vtry stry etry)))]
                  (if (Exception? result)
                      result
-                     (interp-env finally (v*s*e-e result) (v*s*e-s result)))))])]
+                     (interp-env finally (v*s*e-e result) (v*s*e-s result)))))]))]
 
     ;; add names to this
     [CExcept (types name body) (interp-env body env sto)]))
