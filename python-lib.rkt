@@ -36,6 +36,7 @@ that calls the primitive `print`.
 
 (define assert-false-lambda
   (CFunc (list 'check-false)
+         (some 'var-args)
     (CIf (CId 'check-false) (CError (CStr "Assert failed")) (CTrue))))
 
 (define assert-equal-lambda
@@ -55,6 +56,9 @@ that calls the primitive `print`.
     (CIf (CPrim2 'Is (CId 'check1) (CId 'check2))
          (CError (CStr "Assert failed"))
          (CNone))))
+
+;(define assert-raises-lambda
+;  (CFunc (list
 
 (define exception
   (CClass

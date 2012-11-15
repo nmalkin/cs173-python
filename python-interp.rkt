@@ -14,32 +14,41 @@
          (typed-in racket/base (string<=? : (string string -> boolean)))
          (typed-in racket/base (string>=? : (string string -> boolean)))
          (typed-in racket/base (for-each : (('a -> void) (listof number) -> 'b)))
-         (typed-in racket/base (raise-user-error : (string -> 'a))))
+         (typed-in racket/base (raise-user-error : (string -> 'a)))
+         (typed-in racket/base (ormap : (('a -> boolean) (listof 'a) -> 'a))))
 
 
 ;; interp-cascade, interprets a list of expressions with an initial store,
-;; environment and produces the list of values and the final environment and
+;; environment and produces the list of results and the final environment and
 ;; store using the values/define-values 
 (define (interp-cascade [exprs : (listof CExpr)] 
                         [init-s : Store]
-                        [init-e : Env]) : ((listof CVal) * Store * Env)
+                        [init-e : Env]) : ((listof Result) * Store * Env)
   (local [(define (rec-cascade exprs e s)
             (cond [(empty? exprs) empty]
-                  [(cons? exprs) (let ([first-r (interp-env (first exprs)
-                                                           e s)])
-                                   (cons first-r
-                                         (rec-cascade (rest exprs)
-                                                      (v*s*e-e first-r)
-                                                      (v*s*e-s first-r))))]))
+                  [(cons? exprs) (let ([first-r (interp-env (first exprs) e s)])
+                                   (type-case Result first-r
+                                     [v*s*e (vfr sfr efr)
+                                            (cons first-r
+                                                  (rec-cascade (rest exprs) efr sfr))]
+                                     [Return (vfr sfr efr) 
+                                             (list (return-exception efr sfr))]
+                                     [Exception (vfr sfr efr)
+                                                (list first-r)]))]))
          (define result-list (rec-cascade exprs init-e init-s))]
 
-         (values (map v*s*e-v result-list) 
-                 (if (cons? result-list)
-                     (v*s*e-s (first (reverse result-list)))
-                     init-s)
-                 (if (cons? result-list)
-                     (v*s*e-e (first (reverse result-list)))
-                     init-e))))
+         (let ([results (filter Exception? result-list)])
+           (if (< 0 (length results))
+               (values results
+                       (Exception-s (first results))
+                       (Exception-e (first results)))
+               (values result-list
+                       (if (cons? result-list)
+                           (v*s*e-s (first (reverse result-list)))
+                           init-s)
+                       (if (cons? result-list)
+                           (v*s*e-e (first (reverse result-list)))
+                           init-e))))))
 
 
 ;; interp-env : CExpr * Env * Store -> Result
@@ -74,33 +83,41 @@
     
     ;; note that for now we're assuming that dict keys and values aren't going
     ;; to mess with the environment and store, but this might be wrong
-    [CDict (contents) (v*s*e
-                        (VDict (lists->hash 
-                               (map (lambda(k) (v*s*e-v (interp-env k env sto)))
-                                    (hash-keys contents))
-                               (map (lambda(k) (v*s*e-v (interp-env (some-v (hash-ref contents k))
-                                                           env sto)))
-                                    (hash-keys contents))))
-                        sto
-                        env)]
+    ;[CDict (contents) (v*s*e
+    ;                    (VDict (lists->hash 
+    ;                           (map (lambda(k) (v*s*e-v (interp-env k env sto)))
+    ;                                (hash-keys contents))
+    ;                           (map (lambda(k) (v*s*e-v (interp-env (some-v (hash-ref contents k))
+    ;                                                       env sto)))
+    ;                                (hash-keys contents))))
+    ;                    sto
+    ;                    env)]
 
     [CList (values)
-           (local [(define-values (val-list new-s new-e)
+           (local [(define-values (result-list new-s new-e)
                                       (interp-cascade values sto env))]
-               (v*s*e (VObject 'list
-                                (some (MetaList val-list))
-                                (make-hash empty))
-                      new-s
-                      new-e))]
+               (let ([exn? (filter Exception? result-list)])
+                   (if (< 0 (length exn?))
+                       (first exn?)
+                       (let ([val-list (map v*s*e-v result-list)])
+                         (v*s*e (VObject 'list
+                                         (some (MetaList val-list))
+                                         (make-hash empty))
+                                new-s
+                                new-e)))))]
 
     [CTuple (values)
-           (local [(define-values (val-list new-s new-e)
+           (local [(define-values (result-list new-s new-e)
                                       (interp-cascade values sto env))]
-               (v*s*e (VObject 'tuple
-                                (some (MetaTuple val-list))
-                                (make-hash empty))
-                      new-s
-                      new-e))]
+               (let ([exn? (filter Exception? result-list)])
+                   (if (< 0 (length exn?))
+                       (first exn?) 
+                      (let ([val-list (map v*s*e-v result-list)])
+                       (v*s*e (VObject 'tuple
+                                       (some (MetaTuple val-list))
+                                       (make-hash empty))
+                              new-s
+                              new-e)))))]
 
     ;; deal with pythonic scope here
     ;; only for ids!
@@ -161,28 +178,37 @@
         (vfun sfun efun) 
         (type-case CVal vfun
           [VClosure (cenv argxs body)
-                      (local [(define-values (argvs sc ec) (interp-cascade arges sfun efun))
-                              (define-values (e s) (bind-args argxs argvs arges efun cenv sc))]
+                      (local [(define-values (argvs-r sc ec) (interp-cascade arges sfun efun))]
+                         (let ([exn? (filter Exception? argvs-r)])
+                            (if (< 0 (length exn?))
+                                (first exn?)
+                                (let ([argvs (map v*s*e-v argvs-r)])
+                                  (local [(define-values (e s) 
+                                          (bind-args argxs argvs arges efun cenv sc))]
                           (type-case Result (interp-env body e s)
                             [v*s*e (vb sb eb) (v*s*e (VNone) sb env)]
                             [Return (vb sb eb) (v*s*e vb sb env)]
-                            [Exception (vb sb eb) (Exception vb sb env)]))]
+                            [Exception (vb sb eb) (Exception vb sb env)]))))))]
           [VObject (b mval d)
                    (if (and (some? mval) (MetaClass? (some-v mval)))
                       ; We're calling a class.
-                            ; Get its constructor
+                      ; Get its constructor
                       (let ([f (get-field '__init__ vfun efun sfun)]
                             ; Create an empty object. This will be the instance of that class.
                             [o (new-object (MetaClass-c (some-v mval)) efun sfun)])
                         (type-case CVal f
                           [VClosure (cenv argxs body)
                                     ; interpret the arguments to the constructor
-                             (local [(define-values (argvs sc ec)
-                                       (interp-cascade arges sfun efun))
-                                     ; bind the (interpreted) arguments to the constructor
-                                     (define-values (e s) 
-                                         (bind-args argxs (cons o argvs) 
-                                                    (cons (CId 'init) arges) efun cenv sc))]
+                             (local [(define-values (argvs-r sc ec)
+                                       (interp-cascade arges sfun efun))]
+                                    (let ([exn? (filter Exception? argvs-r)])
+                                        (if (< 0 (length exn?))
+                                            (first exn?)
+                                          (let ([argvs (map v*s*e-v argvs-r)])
+                                           ; bind the (interpreted) arguments to the constructor
+                                           (local [(define-values (e s) 
+                                                    (bind-args argxs (cons o argvs) 
+                                                      (cons (CId 'init) arges) efun cenv sc))]
                                         ; interpret the constructor body
                                         (type-case Result (interp-env body e s)
                                           [v*s*e (vb sb eb) (v*s*e 
@@ -192,7 +218,7 @@
                                                obj)
                                              sb env)]
                                           [Return (vb sb eb) (v*s*e vb sb env)]
-                                          [Exception (vb sb eb) (Exception vb sb env)]))]
+                                          [Exception (vb sb eb) (Exception vb sb env)]))))))]
                           [else (error 'interp 
                                        "__init__ not found. THIS SHOULDN'T HAPPEN.")]))
                                          
@@ -222,11 +248,14 @@
     ;; implement this
     [CPrim2 (prim arg1 arg2) (interp-cprim2 prim arg1 arg2 sto env)]
     
-    [CBuiltinPrim (op args) (local [(define-values (val-list new-s new-e)
-                                      (interp-cascade args sto env))
-                                    (define mayb-val (builtin-prim op val-list
-                                                                   env sto))] 
-
+    [CBuiltinPrim (op args) (local [(define-values (result-list new-s new-e)
+                                      (interp-cascade args sto env))]
+                               (let ([exn? (filter Exception? result-list)])
+                                 (if (< 0 (length exn?))
+                                     (first exn?)
+                                     (let ([val-list (map v*s*e-v result-list)])
+                                       (local [(define mayb-val 
+                                               (builtin-prim op val-list env sto))] 
                                    (if (some? mayb-val)
                                        (v*s*e (some-v mayb-val)
                                               new-s
@@ -234,7 +263,7 @@
                                        ;; todo: real exceptions
                                        (error 'interp (string-append "Builtin error for "
                                                                      (symbol->string
-                                                                       op)))))]
+                                                                       op)))))))))]
     [CRaise (expr) (type-case Result (interp-env expr env sto)
                      [v*s*e (vexpr sexpr eexpr) 
                             (mk-exception 'TypeError
@@ -262,9 +291,9 @@
             [Exception (vtry stry etry) (Exception vtry stry etry)])]
                        ;; handle excepts here
     
-    [CExcept (types body) (error 'interp "WTF is an except?")]))
+    [CExcept (types body) (error 'interp "WTF is an except?")]
 
-    ;[else (error 'interp "haven't implemented a case yet")]))
+    [else (error 'interp "haven't implemented a case yet")]))
 
 (define (assign-to-id id v e s)
   (type-case (optionof Address) (hash-ref (first e) (CId-x id)) 
@@ -374,9 +403,11 @@
                         type 
                         arg)
                       env sto)])
-    (Exception (v*s*e-v exception)
-               (v*s*e-s exception)
-               (v*s*e-e exception))))
+    (if (Exception? exception)
+               exception
+               (Exception (v*s*e-v exception)
+                          (v*s*e-s exception)
+                          (v*s*e-e exception)))))
 
 (define (return-exception [env : Env] [sto : Store]) : Result
   (mk-exception 'SyntaxError "'return' outside function" env sto))
