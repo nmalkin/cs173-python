@@ -162,11 +162,8 @@ that calls the primitive `print`.
         (bind 'object (CNone))
         (bind 'num (CNone))
         (bind 'str (CNone))
-<<<<<<< HEAD
         (bind 'Exception (CNone))
-=======
         (bind 'bool (CNone))
->>>>>>> be82eb9305acb3ee2e2b0fd6bff7cf8c21c79cdf
 
         (bind 'object object-class)
         (bind 'num (num-class 'num))

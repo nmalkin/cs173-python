@@ -46,8 +46,8 @@
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
     (type-case CExpr expr
     [CStr (s) (v*s*e (VObject 'str (some (MetaStr s)) (hash empty)) sto env)]
-    [CTrue () (v*s*e (VTrue) sto env)]
-    [CFalse () (v*s*e (VFalse) sto env)]
+    [CTrue () (v*s*e true-val sto env)]
+    [CFalse () (v*s*e false-val sto env)]
     [CNone () (v*s*e (VNone) sto env)]
 
     [CClass (name base body)
@@ -410,8 +410,8 @@
                                              (fetch (some-v
                                                       (hash-ref 
                                                         (VObject-dict vexpr) 'args))
-                                                    sexpr))))))
-                                     ": ")]))
+                                                    sexpr)))))
+                                     ": "))]))
 
 (define (interp-cprim2 [prim : symbol] 
                        [arg1 : CExpr]
