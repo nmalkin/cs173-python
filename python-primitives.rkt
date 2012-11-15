@@ -111,6 +111,7 @@ primitives here.
     ;dict
     ['dict-len (dict-len args env sto)]
     ['dict-str (dict-str args env sto)]
+    ['dict-clear (dict-clear args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]))

@@ -17,6 +17,11 @@
                    (CFunc (list 'self)
                           (CReturn (CBuiltinPrim 'dict-str
                                                      (list (CId 'self))))))
+
+              (def 'clear
+                   (CFunc (list 'self)
+                          (CReturn (CBuiltinPrim 'dict-clear
+                                                     (list (CId 'self))))))
 ))))
 
 
@@ -32,4 +37,13 @@
                         (some (MetaStr
                                 (pretty-metaval mval1)))
                         (make-hash empty)))))
+
+(define (dict-clear (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (let ([contents (MetaDict-contents mval1)])
+                 (begin
+                   ; remove all key-value pairs from hash
+                   (map (lambda (key) (hash-remove! contents key))
+                        (hash-keys contents))
+                   (some (VNone))))))
 
