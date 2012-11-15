@@ -104,6 +104,8 @@
                                                                   "is not iterable")))))))))
                             (list right-c left-c))]
 
+                 ['NotIn (desugar (PyUnaryOp 'Not (PyBinOp left 'In right)))]
+
                  [else (CPrim2 op (desugar left) (desugar right))]))]
 
     [PyUnaryOp (op operand)
