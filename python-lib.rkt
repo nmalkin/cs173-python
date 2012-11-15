@@ -238,7 +238,9 @@ that calls the primitive `print`.
                (open-input-file file)
                python-path))))
        (list "pylib/any.py"
-             "pylib/all.py")))
+             "pylib/all.py"
+             "pylib/assertraises.py")))
+             
 
 (define-type-alias Lib (CExpr -> CExpr))
 
