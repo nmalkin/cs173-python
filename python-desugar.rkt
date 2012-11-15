@@ -190,7 +190,13 @@
     
     [PyExcept (types body)
               (CExcept types
+                       (none)
                        (desugar body))]
+
+    [PyExceptAs (types name body)
+                (CExcept types
+                         (some name)
+                         (desugar body))]
 
     [PyAugAssign (op target value)
                  (CAssign (desugar target)

@@ -215,14 +215,18 @@ structure that you define in python-syntax.rkt
                  ('type type)
                  ('name name)
                  ('body body))
-     (let ([types (get-structured-python type)]) 
-       (cond
-          [(PyTuple? types) (PyExcept (map PyId-x (PyTuple-values types))
-                                      (get-structured-python body))]
-          [(PyId? types) (PyExcept (list (PyId-x types))
-                                   (get-structured-python body))]
-          [else (PyExcept empty
-                          (get-structured-python body))]))]
+     (let ([types (get-structured-python type)])
+       (let ([type-exprs 
+               (cond
+                  [(PyTuple? types) (map PyId-x (PyTuple-values types))]
+                  [(PyId? types) (list (PyId-x types))]
+                  [else empty])])
+         (if (string? name)
+           (PyExceptAs type-exprs
+                       (string->symbol name)
+                       (get-structured-python body))
+           (PyExcept type-exprs
+                     (get-structured-python body)))))]
 
     [(hash-table ('nodetype "AugAssign")
                  ('op op)

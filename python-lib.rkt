@@ -75,6 +75,10 @@ that calls the primitive `print`.
          (CError (CStr "Assert failed"))
          (CNone))))
 
+(define fail-lambda
+  (CFunc (list 'arg) (none)
+    (CError (CId 'arg))))
+
 (define exception
   (CClass
     'Exception
@@ -212,7 +216,8 @@ that calls the primitive `print`.
         (bind '___assertIs assert-is-lambda)
         (bind '___assertIsNot assert-isnot-lambda)
         (bind '___assertIn assert-in-lambda)
-        (bind '___assertNotIn assert-notin-lambda)))
+        (bind '___assertNotIn assert-notin-lambda)
+        (bind '___fail fail-lambda)))
 
 ;; these are builtin functions that we have written in actual python files which
 ;; are pulled in here and desugared for lib purposes

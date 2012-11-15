@@ -55,8 +55,8 @@
 (define (interp-excepts [excepts : (listof CExpr)]
                         [sto : Store]
                         [env : Env]
-                        [exn : CVal]) : Result
-  (local [(define exn-type (VObject-antecedent exn))
+                        [exn : Result]) : Result
+  (local [(define exn-type (VObject-antecedent (Exception-v exn)))
           (define (find-match type exps)
             (cond
               [(empty? exps) (none)]
@@ -68,7 +68,11 @@
           (define match? (find-match exn-type excepts))]
 
     (if (some? match?)
-      (let ([result (interp-env (some-v match?) env sto)])
+      (let ([as-name (CExcept-name (some-v match?))])
+        (let ([result
+                (if (some? as-name)
+                    (interp-let (some-v as-name) exn (CExcept-body (some-v match?)))
+                    (interp-env (some-v match?) env sto))])
         (type-case Result result
           [v*s*e (vbody sbody ebody) (v*s*e (VNone) sbody ebody)]
           [Return (vbody sbody ebody) (return-exception ebody sbody)]
@@ -81,10 +85,20 @@
                                                      'args))
                                            sbody))))
                                    "No active exception to reraise")
-                       (Exception exn sbody ebody)
-                       result)]))
+                       (Exception (Exception-v exn) sbody ebody)
+                       result)])))
       (v*s*e (VNone) sto env))))
  
+(define (interp-let [name : symbol] [value : Result] [body : CExpr]) : Result
+  (let ([loc (new-loc)])
+    (type-case Result value
+      [v*s*e (vb sb eb)
+             (interp-env body
+                         (cons (hash-set (first eb) name loc) (rest eb))
+                         (hash-set sb loc vb))]
+      [Return (vb sb eb) (return-exception eb sb)]
+      [Exception (vb sb eb) (Exception vb sb eb)])))
+
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
   (type-case CExpr expr
@@ -175,7 +189,7 @@
     
     [CError (e) (type-case Result (interp-env e env sto)
                   [v*s*e (ve se ee)
-                         (raise-user-error (string-append "CERROR: " (pretty ve)))]
+                         (raise-user-error (pretty ve))]
                   [Return (ve se ee) (return-exception ee se)]
                   [Exception (ve se ee) (Exception ve se ee)])]
 
@@ -202,14 +216,9 @@
                              env)]
 
     [CLet (x bind body)
-          (letrec ([w (new-loc)])
-            (type-case Result (interp-env bind env sto)
-              [v*s*e (vb sb eb)
-                     (interp-env body
-                                 (cons (hash-set (first eb) x w) (rest eb))
-                                 (hash-set sb w vb))]
-              [Return (vb sb eb) (return-exception eb sb)]
-              [Exception (vb sb eb) (Exception vb sb eb)]))]
+          (let ([w (new-loc)]
+                [result (interp-env bind env sto)])
+            (interp-let x result body))]
 
     [CApp (fun arges)
      (type-case Result (interp-env fun env sto)
@@ -338,13 +347,15 @@
             [Return (vtry stry etry) (return-exception etry stry)]
             ;; handle excepts here
             [Exception (vtry stry etry)
-               (local [(define result (interp-excepts excepts stry etry vtry))]
+                       (begin ;(display etry) (display "\n\n")
+               (local [(define result (interp-excepts excepts stry etry
+                                                      (Exception vtry stry etry)))]
                  (if (Exception? result)
                      result
-                     (interp-env finally (v*s*e-e result) (v*s*e-s result))))])]
+                     (interp-env finally (v*s*e-e result) (v*s*e-s result)))))])]
 
     ;; add names to this
-    [CExcept (types body) (interp-env body env sto)]))
+    [CExcept (types name body) (interp-env body env sto)]))
 
 
     ;[else (error 'interp "haven't implemented a case yet")]))
