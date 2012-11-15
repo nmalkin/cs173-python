@@ -5,6 +5,7 @@
          "builtins/str.rkt"
          "builtins/list.rkt"
          "builtins/tuple.rkt"
+         "builtins/dict.rkt"
          "builtins/object.rkt"
          "builtins/bool.rkt"
          "util.rkt"
@@ -15,7 +16,7 @@
          (typed-in racket/base (open-input-file : ('a -> 'b)))
 
          "python-desugar.rkt"
-         (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a)))))
+         (typed-in racket/base (append : ((listof 'a) (listof 'a) (listof 'a) -> (listof 'a)))))
 
 #|
 
@@ -180,6 +181,7 @@ that calls the primitive `print`.
         (bind 'str str-class)
         (bind 'list list-class)
         (bind 'tuple tuple-class)
+        (bind 'dict dict-class)
         (bind 'bool bool-class)
         (bind 'len len-lambda)
         (bind 'min min-lambda)
@@ -219,5 +221,5 @@ that calls the primitive `print`.
   (seq-ops (append
              (map (lambda(b) (CAssign (CId (bind-left b)) (bind-right b)))
                       lib-functions)
-           ;  pylib-programs
+             pylib-programs
              (list expr))))

@@ -5,7 +5,11 @@
 (require
  (typed-in racket/string (string-join : ((listof string) string -> string)))
  (typed-in racket/base (hash-for-each : ((hashof 'a 'b) ('c 'd -> 'e) -> void)))
- (typed-in racket/base (number->string : (number -> string))))
+ (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
+ (typed-in racket/base (number->string : (number -> string)))
+ (typed-in racket/base (car : (('a * 'b)  -> 'a)))
+ (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
+ )
 
 ; a file for utility functions that aren't specific to python stuff
 
@@ -90,7 +94,6 @@
 (define (pretty arg)
   (type-case CVal arg
     [VStr (s) (string-append "'" (string-append s "'"))]
-    [VDict (contents) ""]
     [VNone () "None"]
     [VObject (a mval d) (if (some? mval)
                             (pretty-metaval (some-v mval))
@@ -109,7 +112,19 @@
     [MetaTuple (v) (string-append
                    (string-append "("
                                   (string-join (map pretty v) ", "))
-                   ")")]))
+                   ")")]
+    [MetaDict (contents)
+              (string-append
+              (string-append "{"
+                             (string-join
+                               (map (lambda (pair)
+                                      (string-append (pretty (car pair))
+                                        (string-append ": "
+                                                       (pretty (cdr pair)))))
+                                    (hash->list contents))
+                               ", "))
+              "}")]
+    ))
 
 ; generates a new unique variable name that isn't allowed by user code 
 (define new-id

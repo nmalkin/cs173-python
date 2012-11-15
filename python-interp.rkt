@@ -16,7 +16,10 @@
          (typed-in racket/base (string>=? : (string string -> boolean)))
          (typed-in racket/base (for-each : (('a -> void) (listof number) -> 'b)))
          (typed-in racket/base (raise-user-error : (string -> 'a)))
-         (typed-in racket/base (ormap : (('a -> boolean) (listof 'a) -> 'a))))
+         (typed-in racket/base (ormap : (('a -> boolean) (listof 'a) -> 'a)))
+         (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
+         (typed-in racket/base (car : (('a * 'b)  -> 'a)))
+         (typed-in racket/base (cdr : (('a * 'b)  -> 'b))))
 
 
 ;; interp-cascade, interprets a list of expressions with an initial store,
@@ -114,15 +117,20 @@
     
     ;; note that for now we're assuming that dict keys and values aren't going
     ;; to mess with the environment and store, but this might be wrong
-    ;[CDict (contents) (v*s*e
-    ;                    (VDict (lists->hash 
-    ;                           (map (lambda(k) (v*s*e-v (interp-env k env sto)))
-    ;                                (hash-keys contents))
-    ;                           (map (lambda(k) (v*s*e-v (interp-env (some-v (hash-ref contents k))
-    ;                                                       env sto)))
-    ;                                (hash-keys contents))))
-    ;                    sto
-    ;                    env)]
+    [CDict (contents)
+           (letrec ([interped-hash (make-hash empty)]
+                    [interp-pairs (lambda (lst)
+                                  (map (lambda (pair)
+                                       (hash-set! interped-hash
+                                                   (v*s*e-v (interp-env (car pair) env sto))
+                                                   (v*s*e-v (interp-env (cdr pair) env sto))))
+                                      lst))])
+             (begin
+               (interp-pairs (hash->list contents))
+               (v*s*e (VObject 'dict
+                                (some (MetaDict interped-hash))
+                                (make-hash empty))
+                      sto env)))]
 
     [CList (values)
            (local [(define-values (result-list new-s new-e)
@@ -336,10 +344,10 @@
                      (interp-env finally (v*s*e-e result) (v*s*e-s result))))])]
 
     ;; add names to this
-    [CExcept (types body) (interp-env body env sto)]
+    [CExcept (types body) (interp-env body env sto)]))
 
 
-    [else (error 'interp "haven't implemented a case yet")]))
+    ;[else (error 'interp "haven't implemented a case yet")]))
 
 (define (assign-to-id id v e s)
   (type-case (optionof Address) (hash-ref (first e) (CId-x id)) 
@@ -480,10 +488,7 @@
               true)]
     [VNone () false]
     [VClosure (e a s b) true]
-    [VObject (a mval d) (truthy-object? (VObject a mval d))]
-    [VDict (c) (if (empty? (hash-keys c))
-                           false
-                           true)]))
+    [VObject (a mval d) (truthy-object? (VObject a mval d))]))
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))

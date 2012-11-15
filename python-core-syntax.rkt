@@ -42,14 +42,14 @@ ParselTongue.
   [VStr (s : string)]
   [VNone]
   [VObject (antecedent : symbol) (mval : (optionof MetaVal)) (dict : object-dict)]
-  [VClosure (env : Env) (args : (listof symbol)) (star-arg : (optionof symbol)) (body : CExpr)]
-  [VDict (contents : (hashof CVal CVal))])
+  [VClosure (env : Env) (args : (listof symbol)) (star-arg : (optionof symbol)) (body : CExpr)])
 
 (define-type MetaVal
              [MetaNum (n : number)]
              [MetaStr (s : string)]
              [MetaList (v : (listof CVal))]
              [MetaTuple (v : (listof CVal))]
+             [MetaDict (contents : (hashof CVal CVal))]
              [MetaClass (c : symbol)])
              
 

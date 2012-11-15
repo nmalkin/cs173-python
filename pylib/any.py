@@ -13,6 +13,4 @@ def any(l):
             return anyrec(l, i+1)
     return anyrec(l, 0)
 
-any(10)
-
 

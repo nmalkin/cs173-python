@@ -7,9 +7,9 @@ def all(l):
         if l.__len__() == i:
             return True
         elif l[i]:
-            return anyrec(l, i+1)
+            return allrec(l, i+1)
         else:
             return False
-    return anyrec(l, 0)
+    return allrec(l, 0)
 
 
