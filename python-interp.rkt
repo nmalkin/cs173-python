@@ -292,7 +292,12 @@
                                  (Exception velse selse eelse)])]
             [Return (vtry stry etry) (return-exception etry stry)]
             ;; handle excepts here
-            [Exception (vtry stry etry) (Exception vtry stry etry)])]
+            [Exception (vtry stry etry) 
+               (local [(define-values (values new-s new-env) (interp-cascade excepts sto env))]
+                  (let ([exn? (filter Exception? values)])
+                    (if (< 0 (length exn?))
+                        (first exn?)
+                        (interp-env finally env sto))))])]
     
     [CExcept (types body) (error 'interp "WTF is an except?")]
 
