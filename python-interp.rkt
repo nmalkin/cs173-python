@@ -72,7 +72,7 @@
     [CGetField (value attr)
 	       (type-case Result (interp-env value env sto)
                     [v*s*e (vval sval eval)
-                           (v*s*e (get-field attr vval eval sval) sval eval)]
+                           (get-field attr vval eval sval)]
                     [Return (vval sval eval) (return-exception eval sval)]
                     [Exception (vval sval eval) (Exception vval sval eval)])]
 			
@@ -193,7 +193,7 @@
                    (if (and (some? mval) (MetaClass? (some-v mval)))
                       ; We're calling a class.
                       ; Get its constructor
-                      (let ([f (get-field '__init__ vfun efun sfun)]
+                      (let ([f (v*s*e-v (get-field '__init__ vfun efun sfun))]
                             ; Create an empty object. This will be the instance of that class.
                             [o (new-object (MetaClass-c (some-v mval)) efun sfun)])
                         (type-case CVal f
@@ -265,11 +265,14 @@
                                                                      (symbol->string
                                                                        op)))))))))]
     [CRaise (expr) (type-case Result (interp-env expr env sto)
-                     [v*s*e (vexpr sexpr eexpr) 
-                            (mk-exception 'TypeError
-                                       "exceptions must derive from BaseException"
-                                       eexpr
-                                       sexpr)]
+                     [v*s*e (vexpr sexpr eexpr)
+                            (cond
+                              [(and (VObject? vexpr) (object-is? vexpr 'Exception env sto))
+                                    (Exception vexpr sexpr eexpr)]
+                              [else (mk-exception 'TypeError
+                                                  "exceptions must derive from BaseException"
+                                                  eexpr
+                                                  sexpr)])]
                      [Return (vexpr sexpr eexpr) (return-exception eexpr sexpr)]
                      [Exception (vexpr sexpr eexpr) (Exception vexpr sexpr eexpr)])]
     
@@ -288,8 +291,8 @@
                       [Exception (velse selse eelse)
                                  (Exception velse selse eelse)])]
             [Return (vtry stry etry) (return-exception etry stry)]
+            ;; handle excepts here
             [Exception (vtry stry etry) (Exception vtry stry etry)])]
-                       ;; handle excepts here
     
     [CExcept (types body) (error 'interp "WTF is an except?")]
 
@@ -319,18 +322,21 @@
 ;; order in which base class dicts are traversed depends on truth value of super
 ;; depth-first, left-to-right if super = #f
 ;; left-to-right, depth-second if super = #t
-(define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : CVal
+(define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : Result
   (type-case CVal c
     [VObject (antecedent mval d) 
                     (let ([w (hash-ref (VObject-dict c) n)])
               (type-case (optionof Address) w
-                [some (w) (fetch w s)]
-                [none () (let ([base (fetch (some-v (lookup antecedent e)) s)])
-                           (cond 
-                             [(VNone? base) (error 'interp 
-                                                   (string-append "Function not found: " 
-                                                          (symbol->string n)))]
-                             [else (get-field n base e s)]))]))]
+                [some (w) (v*s*e (fetch w s) s e)]
+                [none () (let ([mayb-base (lookup antecedent e)])
+                           (if (some? mayb-base)
+                             (let ([base (fetch (some-v mayb-base) s)])
+                                 (get-field n base e s))
+                             (mk-exception 'AttributeError
+                                           (string-append 
+                                             "object has no attribute '"
+                                             (string-append (symbol->string n) "'"))
+                                           e s)))]))]
     [else (error 'interp "Not an object with functions.")]))
 
 

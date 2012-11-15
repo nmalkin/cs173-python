@@ -134,7 +134,7 @@ structure that you define in python-syntax.rkt
               (map PyId-x (map get-structured-python bases))
               (get-structured-python body))]
     
-    [(hash-table ('nodetype "FunctionDef")FunctionDef
+    [(hash-table ('nodetype "FunctionDef")
                  ('name name)
                  ('body body)
                  ('decorator_list dl)
@@ -190,11 +190,13 @@ structure that you define in python-syntax.rkt
                  ('finalbody fbody))
      (let ([TEE (get-structured-python body)]
            [F (get-structured-python fbody)])
-       (let ([try (PyTryExceptElseFinally-try TEE)]
-             [excepts (PyTryExceptElseFinally-except TEE)]
-             [orelse (PyTryExceptElseFinally-orelse TEE)]
-             [finally F])
-         (PyTryExceptElseFinally try excepts orelse finally)))]
+       (if (PyTryExceptElseFinally? TEE)
+         (let ([try (PyTryExceptElseFinally-try TEE)]
+               [excepts (PyTryExceptElseFinally-except TEE)]
+               [orelse (PyTryExceptElseFinally-orelse TEE)]
+               [finally F])
+           (PyTryExceptElseFinally try excepts orelse finally))
+           (PyTryExceptElseFinally TEE empty (PyPass) F)))]
 
     [(hash-table ('nodetype "TryExcept")
                  ('body body)
@@ -210,11 +212,14 @@ structure that you define in python-syntax.rkt
                  ('name name)
                  ('body body))
      (let ([types (get-structured-python type)])
-       (if (PyTuple? types)
-         (PyExcept (map PyId-x (PyTuple-values types))
-                   (get-structured-python body))
-         (PyExcept (PyId-x type)
-                   (get-structured-python body))))]
+       (cond
+         [(PyTuple? types) (PyExcept (map PyId-x (PyTuple-values types))
+                                     (get-structured-python body))]
+         [(PyId? types) (PyExcept (list (PyId-x types))
+                                  (get-structured-python body))]
+         [else (PyExcept empty
+                         (get-structured-python body))]))]
+
     [(hash-table ('nodetype "AugAssign")
                  ('op op)
                  ('target target)
