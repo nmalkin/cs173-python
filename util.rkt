@@ -9,6 +9,9 @@
 
 ; a file for utility functions that aren't specific to python stuff
 
+(define python-path "/usr/local/bin/python3.2")
+(define (set-pypath p)
+  (set! python-path p))
 
 ; lists->hash - given two parallel list produce a mutable hash mapping 
 ; values from one to values in the other
@@ -107,6 +110,15 @@
                    (string-append "("
                                   (string-join (map pretty v) ", "))
                    ")")]))
+
+; generates a new unique variable name that isn't allowed by user code 
+(define new-id
+  (let ([n (box 0)])
+    (lambda ()
+      (begin
+        (set-box! n (add1 (unbox n)))
+        (string->symbol (string-append (number->string (unbox n)) "var" ))))))
+
 (define true-val
   (VObject
     'bool

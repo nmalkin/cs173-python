@@ -9,6 +9,7 @@
          "python-desugar.rkt"
          "python-lib.rkt"
          "run-tests.rkt"
+         "util.rkt"
          "python-evaluator.rkt")
 
 (define (python-test-runner _ port)
@@ -29,8 +30,6 @@
   (desugar
    (get-structured-python
     (parse-python/port port python-path))))
-
-(define python-path "/usr/local/bin/python3.2")
 
 (command-line
   #:once-each
@@ -57,8 +56,8 @@
   ("--test-py" dirname "Run all tests in dirname using python"
    (display (results-summary (run-tests (mk-python-cmdline-eval python-path) dirname))))
 
-  ("--python-path" path "Set the python path"
-   (set! python-path path))
+  ("--python-path" path "Set the python path" 
+   (set-pypath path))
 
   ("--progress-report" dirname "Generate a soft report"
    (printf "~a\n"

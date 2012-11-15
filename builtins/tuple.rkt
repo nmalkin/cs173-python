@@ -13,6 +13,12 @@
                                                   (list
                                                    (CId 'self)
                                                    (CId 'other))))))
+                  (def '__mult__
+                    (CFunc (list 'self 'other)
+                           (CReturn (CBuiltinPrim 'tuple*
+                                                  (list
+                                                   (CId 'self)
+                                                   (CId 'other))))))
                   (def '__len__
                     (CFunc (list 'self)
                            (CReturn (CBuiltinPrim 'tuple-len
@@ -44,6 +50,20 @@
                                      (append (MetaTuple-v mval1)
                                              (MetaTuple-v mval2))))
                               (hash empty)))))
+
+(define (tuple* (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'tuple 'num
+               (letrec ([tuple-list (MetaTuple-v mval1)]
+                        [repetitions (MetaNum-n mval2)]
+                        [repeat (lambda ([lst : (listof CVal)] [reps : number]) : (listof CVal)
+                                  (cond
+                                    [(= reps 0) (list)]
+                                    [(= reps 1) lst]
+                                    [(> reps 1) (append lst (repeat lst (sub1 reps)))]))])
+               (some (VObject 'tuple
+                              (some (MetaTuple
+                                     (repeat tuple-list repetitions)))
+                              (hash empty))))))
 
 (define (tuple-len (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'tuple

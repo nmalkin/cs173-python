@@ -22,7 +22,7 @@ primitives here.
 (require (typed-in racket/base [display : (string -> void)]))
 
 (define (print arg)
-  (display (pretty arg)))
+  (display (string-append (pretty arg) "\n")))
 
 (define (python-prim1 op arg)
   (case op
@@ -101,6 +101,7 @@ primitives here.
 
     ;tuple
     ['tuple+ (tuple+ args env sto)]
+    ['tuple* (tuple* args env sto)]
     ['tuple-len (tuple-len args env sto)]
     ['tuple-in (tuple-in args env sto)]
     ['tuple-attr (tuple-attr args env sto)]

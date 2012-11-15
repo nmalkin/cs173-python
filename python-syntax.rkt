@@ -5,6 +5,7 @@
   [PyIf (test : PyExpr) (body : PyExpr) (orelse : PyExpr)]
   [PySeq (es : (listof PyExpr))]
   [PyAssign (targets : (listof PyExpr)) (value : PyExpr)]
+  [PyAugAssign (op : symbol) (target : PyExpr) (value : PyExpr)]
 
   ; primitive literals
   [PyNum (n : number)]
