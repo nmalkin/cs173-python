@@ -3,8 +3,9 @@
 (require "python-core-syntax.rkt")
 
 (require
- (typed-in racket/base 
-           (hash-for-each : ((hashof 'a 'b) ('c 'd -> 'e) -> void))))
+ (typed-in racket/string (string-join : ((listof string) string -> string)))
+ (typed-in racket/base (hash-for-each : ((hashof 'a 'b) ('c 'd -> 'e) -> void)))
+ (typed-in racket/base (number->string : (number -> string))))
 
 ; a file for utility functions that aren't specific to python stuff
 
@@ -43,24 +44,24 @@
 
 (define-syntax (check-types x)
   (syntax-case x ()
-    [(check-types args t1 body)
+    [(check-types args env sto t1 body)
      (with-syntax ([mval1 (datum->syntax x 'mval1)])
        #'(let ([arg1 (first args)])
-           (if (and (VObject? arg1) (symbol=? (VObject-antecedent arg1) t1))
+           (if (and (VObject? arg1) (object-is? arg1 t1 env sto))
                (let ([mayb-mval1 (VObject-mval arg1)])
                  (if (some? mayb-mval1)
                      (let ([mval1 (some-v mayb-mval1)])
                        body)
                      (none)))
                (none))))]
-    [(check-types args t1 t2 body)
+    [(check-types args env sto t1 t2 body)
      (with-syntax ([mval1 (datum->syntax x 'mval1)]
                    [mval2 (datum->syntax x 'mval2)])
        #'(let ([arg1 (first args)]
                [arg2 (second args)])
            (if (and (VObject? arg1) (VObject? arg2)
-                    (symbol=? (VObject-antecedent arg1) t1)
-                    (symbol=? (VObject-antecedent arg2) t2))
+                    (object-is? arg1 t1 env sto)
+                    (object-is? arg2 t2 env sto))
                (let ([mayb-mval1 (VObject-mval arg1)]
                      [mayb-mval2 (VObject-mval arg2)])
                  (if (and (some? mayb-mval1) (some? mayb-mval2))
@@ -69,9 +70,51 @@
                        body)
                      (none)))
                (none))))]))
-
+;; returns true if the given o is an object of the given class or somehow a
+;; subclass of that one 
+(define (object-is? [o : CVal] [c : symbol] [env : Env] [s : Store]) : boolean
+  (cond
+    [(symbol=? (VObject-antecedent o) 'none) false]
+    [(symbol=? (VObject-antecedent o) c) true]
+    [else (object-is?
+            (fetch (some-v (lookup (VObject-antecedent o) env)) s)
+                     c env s)]))
 
 (define (is? [v1 : CVal]
              [v2 : CVal]) : boolean
   (eq? v1 v2))
 
+(define (pretty arg)
+  (type-case CVal arg
+    [VStr (s) (string-append "'" (string-append s "'"))]
+    [VDict (contents) ""]
+    [VNone () "None"]
+    [VObject (a mval d) (if (some? mval)
+                            (pretty-metaval (some-v mval))
+                            "Can't print non-builtin object.")]
+    [VClosure (env args body) (error 'pretty "Can't print closures yet")]))
+
+(define (pretty-metaval mval)
+  (type-case MetaVal mval
+    [MetaNum (n) (number->string n)]
+    [MetaStr (s) s]
+    [MetaClass (c) (symbol->string c)]
+    [MetaList (v) (string-append
+                   (string-append "["
+                                  (string-join (map pretty v) ", "))
+                   "]")]
+    [MetaTuple (v) (string-append
+                   (string-append "("
+                                  (string-join (map pretty v) ", "))
+                   ")")]))
+(define true-val
+  (VObject
+    'bool
+    (some (MetaNum 1))
+    (make-hash empty)))
+
+(define false-val
+  (VObject
+    'bool
+    (some (MetaNum 0))
+    (make-hash empty)))

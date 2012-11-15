@@ -4,6 +4,8 @@
 (require "../python-core-syntax.rkt" 
          "../util.rkt"
          "num.rkt"
+         "str.rkt"
+         "bool.rkt"
          (typed-in racket/base (string-length : (string -> number))))
 
 (define object-class
@@ -19,6 +21,12 @@
                                     (list 
                                       (CId 'self)
                                       (CId 'other))))))
+
+               (def '__str__ 
+                    (CFunc (list 'self) 
+                           (CReturn (CBuiltinPrim 'obj-str (list (CId
+                                                                   'self))))))
+
                (def '__cmp__
                     (CFunc (list 'self 'other)
                            ;TODO: MAKE THIS AN EXCEPTION
@@ -68,14 +76,30 @@
                                                   (make-builtin-num 0)))))))))))
 
 
-;; produces VTrue if the object is truthy and VFalse if it is not
-(define (truthy-object? [o : CVal]) : CVal
+;; produces true-val if the object is truthy and false-val if it is not
+(define (truthy-object? [o : CVal]) : boolean
   (if (some? (VObject-mval o))
     (let ([mval (some-v (VObject-mval o))])
       (type-case MetaVal mval
-                 [MetaNum (n) (if (= n 0) (VFalse) (VTrue))]
-                 [MetaStr (s) (if (= (string-length s) 0) (VFalse) (VTrue))]
-                 [else (VTrue)]))
-    (VTrue)))
+                 [MetaNum (n) (if (= n 0) false true)]
+                 [MetaStr (s) (if (= (string-length s) 0) false true)]
+                 [MetaList (v) (if (= (length v) 0) false true)]
+                 [MetaTuple (v) (if (= (length v) 0) false true)]
+                 [else true]))
+   true))
+
+(define (obj-str (args : (listof CVal))) : (optionof CVal)
+  (local [(define o (first args))]
+         (type-case CVal o
+            [VObject (ante mval d)
+                     (some (VObject 'str 
+                        (some (MetaStr
+                       (string-append "<instance of " 
+                           (string-append 
+                             (if (symbol=? ante 'none)
+                               "Object"
+                               (symbol->string ante)) ">")))) (make-hash empty)))]
+            [else (error 'obj-str "Non object")])))
+
 
 

@@ -40,8 +40,6 @@ ParselTongue.
 
 (define-type CVal
   [VStr (s : string)]
-  [VTrue]
-  [VFalse]
   [VNone]
   [VObject (antecedent : symbol) (mval : (optionof MetaVal)) (dict : object-dict)]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)]
@@ -74,3 +72,15 @@ ParselTongue.
   [Exception (v : CVal) (s : Store) (e : Env)])
 
 (define-type-alias object-dict (hashof symbol Address))
+
+(define (lookup [x : symbol] [env : Env]) : (optionof Address)
+  (cond
+    [(empty? env) (none)]
+    [else (type-case (optionof Address) (hash-ref (first env) x)
+            [some (v) (some v)]
+            [none () (lookup x (rest env))])]))
+
+(define (fetch [w : Address] [sto : Store]) : CVal
+  (type-case (optionof CVal) (hash-ref sto w)
+    [some (v) v]
+    [none () (error 'interp (string-append "No value at address " (Address->string w)))]))

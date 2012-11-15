@@ -75,6 +75,8 @@
                              (list left-c right-c))]
                  ['Mult (CApp (CGetField left-c '__mult__)
                               (list left-c right-c))]
+                 ['Div (CApp (CGetField left-c '__div__)
+                              (list left-c right-c))]
                  ['Eq (CApp (CGetField left-c '__eq__)
                             (list left-c right-c))]
                  ['Gt (CApp (CGetField left-c '__gt__)
@@ -113,6 +115,8 @@
                (case op
                  ['USub (desugar (PyBinOp (PyNum 0) 'Sub operand))]
                  ['UAdd (desugar (PyBinOp (PyNum 0) 'Add operand))]
+                 ['Invert (CApp (CGetField (desugar operand) '__invrt__)
+                                (list (desugar operand)))]
                  [else (CPrim1 op (desugar operand))])]
     [PyBoolOp (op values) (desugar-boolop op values)]
               

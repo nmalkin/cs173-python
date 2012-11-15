@@ -6,6 +6,7 @@
          "builtins/list.rkt"
          "builtins/tuple.rkt"
          "builtins/object.rkt"
+         "builtins/bool.rkt"
          "util.rkt"
          (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a)))))
 
@@ -24,7 +25,9 @@ that calls the primitive `print`.
 (define print-lambda
   (CFunc (list 'to-print)
     (CSeq 
-      (CPrim1 'print (CId 'to-print))
+      (CPrim1 'print (CApp 
+                       (CGetField (CId 'to-print) '__str__) 
+                       (list (CId 'to-print))))
       (CNone))))
 
 (define assert-true-lambda
@@ -46,6 +49,12 @@ that calls the primitive `print`.
     (CIf (CPrim2 'Is (CId 'check1) (CId 'check2))
          (CNone)
          (CError (CStr "Assert failed")))))
+
+(define assert-isnot-lambda
+  (CFunc (list 'check1 'check2)
+    (CIf (CPrim2 'Is (CId 'check1) (CId 'check2))
+         (CError (CStr "Assert failed"))
+         (CNone))))
 
 (define exception
   (CClass
@@ -113,35 +122,66 @@ that calls the primitive `print`.
           '__max__)
         (list (CId 'self))))))
 
-(define true-val
-  (CTrue))
+(define abs-lambda
+  (CFunc (list 'self)
+    (CReturn
+      (CApp
+        (CGetField
+          (CId 'self)
+          '__abs__)
+        (list (CId 'self))))))
 
-(define false-val
-  (CFalse))
+(define int-lambda
+  (CFunc (list 'self)
+    (CReturn
+      (CApp
+        (CGetField
+          (CId 'self)
+          '__int__)
+        (list (CId 'self))))))
+
+(define float-lambda
+  (CFunc (list 'self)
+    (CReturn
+      (CApp
+        (CGetField
+          (CId 'self)
+          '__float__)
+        (list (CId 'self))))))
+
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
 
 (define lib-functions
-  (list (bind 'True true-val)
-        (bind 'False false-val)
+  (list (bind 'True (CTrue))
+        (bind 'False (CFalse))
         (bind 'None (CNone))
 
         ; dummies
         (bind 'object (CNone))
         (bind 'num (CNone))
         (bind 'str (CNone))
+<<<<<<< HEAD
         (bind 'Exception (CNone))
+=======
+        (bind 'bool (CNone))
+>>>>>>> be82eb9305acb3ee2e2b0fd6bff7cf8c21c79cdf
 
         (bind 'object object-class)
         (bind 'num (num-class 'num))
         (bind 'str str-class)
         (bind 'list list-class)
         (bind 'tuple tuple-class)
+        (bind 'bool bool-class)
         (bind 'len len-lambda)
         (bind 'min min-lambda)
         (bind 'max max-lambda)
+        (bind 'abs abs-lambda)
+        (bind 'int int-lambda)
+        (bind 'float float-lambda)
         (bind 'print print-lambda)
+
         (bind 'Exception exception)
         (bind 'TypeError (make-exception-class 'TypeError))
         (bind 'SyntaxError (make-exception-class 'SyntaxError))
@@ -149,7 +189,8 @@ that calls the primitive `print`.
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
-        (bind '___assertIs assert-is-lambda)))
+        (bind '___assertIs assert-is-lambda)
+        (bind '___assertIsNot assert-isnot-lambda)))
 
 (define (python-lib [expr : CExpr]) : CExpr
   (seq-ops (append
