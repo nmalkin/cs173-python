@@ -64,13 +64,13 @@ that calls the primitive `print`.
          (CNone))))
 
 (define assert-in-lambda
-  (CFunc (list 'check1 'check2)
+  (CFunc (list 'check1 'check2) (none)
     (CIf (desugar (PyBinOp (PyId 'check1 'DUMMY) 'In (PyId 'check2 'DUMMY)))
          (CNone)
          (CError (CStr "Assert failed")))))
 
 (define assert-notin-lambda
-  (CFunc (list 'check1 'check2)
+  (CFunc (list 'check1 'check2) (none)
     (CIf (desugar (PyBinOp (PyId 'check1 'DUMMY) 'In (PyId 'check2 'DUMMY)))
          (CError (CStr "Assert failed"))
          (CNone))))
