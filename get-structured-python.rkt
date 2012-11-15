@@ -185,6 +185,14 @@ structure that you define in python-syntax.rkt
                  ('value val))
      (get-structured-python val)]
 
+    [(hash-table ('nodetype "AugAssign")
+                 ('op op)
+                 ('target target)
+                 ('value value))
+     (PyAugAssign
+       (nodetype->symbol op)
+       (get-structured-python target)
+       (get-structured-python value))]
 
     [(list-no-order (hash-table (k v) ...) ..2)
      (PySeq (map get-structured-python pyjson))]

@@ -175,4 +175,12 @@
     
     [PyDotField (value attr)
                 (CGetField (desugar value)
-                           attr)]))
+                           attr)]
+
+    [PyAugAssign (op target value)
+                 (CAssign (desugar target)
+                          (desugar (PyBinOp target op value)))]
+    ; XXX: target is interpreted twice, independently.
+    ; Is there any case where this might cause problems?
+
+))
