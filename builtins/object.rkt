@@ -86,6 +86,7 @@
                  [MetaStr (s) (if (= (string-length s) 0) false true)]
                  [MetaList (v) (if (= (length v) 0) false true)]
                  [MetaTuple (v) (if (= (length v) 0) false true)]
+                 [MetaDict (contents) (if (= (length (hash-keys contents)) 0) false true)]
                  [else true]))
    true))
 
