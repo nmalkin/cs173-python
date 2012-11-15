@@ -128,9 +128,10 @@
                    (desugar body)))]
     
     [PyFunc (name args body)
-            (CAssign (CId name)
-                     (CFunc args
-                            (desugar body)))]
+            (CLet name (CNone)
+                (CAssign (CId name)
+                         (CFunc args
+                                (desugar body))))]
     
     [PyReturn (value)
               (CReturn (desugar value))]
