@@ -8,6 +8,13 @@
          "builtins/object.rkt"
          "builtins/bool.rkt"
          "util.rkt"
+         (typed-in "get-structured-python.rkt"
+                   (get-structured-python : ('a -> 'b)))
+         (typed-in "parse-python.rkt"
+                   (parse-python/port : ('a string -> 'b)))
+         (typed-in racket/base (open-input-file : ('a -> 'b)))
+
+         "python-desugar.rkt"
          (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a)))))
 
 #|
@@ -20,7 +27,6 @@ that calls the primitive `print`.
 
 |#
 
-(define-type-alias Lib (CExpr -> CExpr))
 
 (define print-lambda
   (CFunc (list 'to-print)
@@ -128,7 +134,6 @@ that calls the primitive `print`.
           '__float__)
         (list (CId 'self))))))
 
-
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
 
@@ -142,6 +147,8 @@ that calls the primitive `print`.
         (bind 'num (CNone))
         (bind 'str (CNone))
         (bind 'bool (CNone))
+        (bind 'any (CNone))
+        (bind 'all (CNone))
 
         (bind 'object object-class)
         (bind 'num (num-class 'num))
@@ -165,8 +172,23 @@ that calls the primitive `print`.
         (bind '___assertIs assert-is-lambda)
         (bind '___assertIsNot assert-isnot-lambda)))
 
+;; these are builtin functions that we have written in actual python files which
+;; are pulled in here and desugared for lib purposes
+(define pylib-programs
+  (map (lambda(file) 
+         (desugar 
+           (get-structured-python 
+             (parse-python/port 
+               (open-input-file file)
+               python-path))))
+       (list "pylib/any.py"
+             "pylib/all.py")))
+
+(define-type-alias Lib (CExpr -> CExpr))
+
 (define (python-lib [expr : CExpr]) : CExpr
   (seq-ops (append
              (map (lambda(b) (CAssign (CId (bind-left b)) (bind-right b)))
                       lib-functions)
+           ;  pylib-programs
              (list expr))))

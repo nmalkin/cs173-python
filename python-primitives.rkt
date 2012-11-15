@@ -22,7 +22,7 @@ primitives here.
 (require (typed-in racket/base [display : (string -> void)]))
 
 (define (print arg)
-  (display (pretty arg)))
+  (display (string-append (pretty arg) "\n")))
 
 (define (python-prim1 op arg)
   (case op
