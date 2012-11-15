@@ -7,6 +7,7 @@
          "builtins/tuple.rkt"
          "builtins/dict.rkt"
          "builtins/object.rkt"
+         "builtins/bool.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
          (typed-in racket/base (number->string : (number -> string))))
 
@@ -113,6 +114,12 @@ primitives here.
     ['dict-str (dict-str args env sto)]
     ['dict-clear (dict-clear args env sto)]
     ['dict-in (dict-in args env sto)]
+    ['dict-update (dict-update args env sto)]
 
     ;object 
-    ['obj-str (obj-str args)]))
+    ['obj-str (obj-str args)]
+
+    ;bool
+    ['bool-init (bool-init args env sto)]
+
+))

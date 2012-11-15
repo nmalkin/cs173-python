@@ -10,24 +10,34 @@
     'bool
     'num
     (seq-ops (list
+               (def '__init__
+                    (CFunc (list 'self 'arg) (none)
+                           (CReturn (CBuiltinPrim 'bool-init
+                                                  (list
+                                                   (CId 'self)
+                                                   (CId 'arg)
+                                                   )))))
+
                (def '__str__
                     (CFunc (list 'self) (none)
                            (CIf (CApp (CGetField (CId 'self) '__eq__)
-                                      (list (CId 'self) (make-builtin-num 1)))
+                                      (list (CId 'self) (make-builtin-num 1))
+                                      (none))
                                 (CReturn (make-builtin-str "True"))
                                 (CReturn (make-builtin-str "False")))))
                (def '__int__
                     (CFunc (list 'self) (none)
                            (CReturn (CApp (CGetField (CId 'self) '__add__) 
                                           (list (CId 'self) 
-                                                (make-builtin-num 0))))))
+                                                (make-builtin-num 0))
+                                          (none)))))
 
                (def '__float__
                     (CFunc (list 'self) (none)
                            (CReturn (CApp (CGetField (CId 'self) '__add__) 
                                           (list (CId 'self) 
-                                                (make-builtin-num 0.0))))))
-                    
+                                                (make-builtin-num 0.0))
+                                          (none)))))
                     ))))
 (define (make-builtin-bool [b : boolean]) : CExpr
   (CObject 
@@ -36,3 +46,14 @@
       (if b 
         (MetaNum 1)
         (MetaNum 0)))))
+
+(define (bool-init [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (let ([other (second args)]) ; FIXME: what if (second args) DNE?
+    (type-case MetaVal (some-v (VObject-mval other))
+      ; special-case MetaDict argument: true if non-zero length
+      ; TODO: should probably use truthy? check and handle any generic input
+      [MetaDict (contents)
+                (if (> (length (hash-keys contents)) 0)
+                  (some true-val)
+                  (some false-val))]
+      [else (some false-val)])))

@@ -37,44 +37,54 @@
                     (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
                                     (CApp (CGetField (CId 'self) '__cmp__)
-                                          (list (CId 'self) (CId 'other))))
+                                          (list (CId 'self) (CId 'other))
+                                          (none)))
                                  (CReturn (CApp (CGetField (CId '_cmpresult) '__gt__)
                                             (list (CId '_cmpresult)
-                                                  (make-builtin-num 0)))))))
+                                                  (make-builtin-num 0))
+                                            (none))))))
                (def '__lt__
                     (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
                                     (CApp (CGetField (CId 'self) '__cmp__)
-                                          (list (CId 'self) (CId 'other))))
+                                          (list (CId 'self) (CId 'other))
+                                    (none)))
                                  (CReturn (CApp (CGetField (CId '_cmpresult) '__lt__)
                                             (list (CId '_cmpresult)
-                                                  (make-builtin-num 0)))))))
+                                                  (make-builtin-num 0))
+                                            (none))))))
                (def '__lt__
                     (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
                                     (CApp (CGetField (CId 'self) '__cmp__)
-                                          (list (CId 'self) (CId 'other))))
+                                          (list (CId 'self) (CId 'other))
+                                          (none)))
                                  (CReturn (CApp (CGetField (CId '_cmpresult) '__lt__)
                                             (list (CId '_cmpresult)
-                                                  (make-builtin-num 0)))))))
+                                                  (make-builtin-num 0))
+                                            (none))))))
                (def '__lte__
                     (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
                                     (CApp (CGetField (CId 'self) '__cmp__)
-                                          (list (CId 'self) (CId 'other))))
+                                          (list (CId 'self) (CId 'other))
+                                          (none)))
                                  (CReturn (CApp (CGetField (CId '_cmpresult)
                                                            '__lte__)
                                             (list (CId '_cmpresult)
-                                                  (make-builtin-num 0)))))))
+                                                  (make-builtin-num 0))
+                                            (none))))))
                (def '__gte__
                     (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
                                     (CApp (CGetField (CId 'self) '__cmp__)
-                                          (list (CId 'self) (CId 'other))))
+                                          (list (CId 'self) (CId 'other))
+                                          (none)))
                                  (CReturn (CApp (CGetField (CId '_cmpresult)
                                                            '__gte__)
                                             (list (CId '_cmpresult)
-                                                  (make-builtin-num 0)))))))))))
+                                                  (make-builtin-num 0))
+                                            (none))))))))))
 
 
 ;; produces true-val if the object is truthy and false-val if it is not
@@ -86,6 +96,7 @@
                  [MetaStr (s) (if (= (string-length s) 0) false true)]
                  [MetaList (v) (if (= (length v) 0) false true)]
                  [MetaTuple (v) (if (= (length v) 0) false true)]
+                 [MetaDict (contents) (if (= (length (hash-keys contents)) 0) false true)]
                  [else true]))
    true))
 

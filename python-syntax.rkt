@@ -40,6 +40,7 @@
                 (sarg : symbol) (body : PyExpr)]
   [PyReturn (value : PyExpr)]
   [PyApp (fun : PyExpr) (args : (listof PyExpr))]
+  [PyAppStarArg (fun : PyExpr) (args : (listof PyExpr)) (stararg : PyExpr)]
 
   ;
   [PySubscript (left : PyExpr) (context : symbol) (slice : PyExpr)]
