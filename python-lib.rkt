@@ -15,7 +15,7 @@
          (typed-in racket/base (open-input-file : ('a -> 'b)))
 
          "python-desugar.rkt"
-         (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a)))))
+         (typed-in racket/base (append : ((listof 'a) (listof 'a) (listof 'a) -> (listof 'a)))))
 
 #|
 
@@ -190,5 +190,5 @@ that calls the primitive `print`.
   (seq-ops (append
              (map (lambda(b) (CAssign (CId (bind-left b)) (bind-right b)))
                       lib-functions)
-           ;  pylib-programs
+             pylib-programs
              (list expr))))
