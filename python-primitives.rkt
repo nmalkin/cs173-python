@@ -101,6 +101,7 @@ primitives here.
 
     ;tuple
     ['tuple+ (tuple+ args env sto)]
+    ['tuple* (tuple* args env sto)]
     ['tuple-len (tuple-len args env sto)]
     ['tuple-in (tuple-in args env sto)]
     ['tuple-attr (tuple-attr args env sto)]
