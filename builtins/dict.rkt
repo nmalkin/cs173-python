@@ -2,6 +2,8 @@
 
 (require "../python-core-syntax.rkt")
 (require "../util.rkt")
+(require
+  (typed-in racket/base (hash-has-key? : ((hashof 'a 'b) 'a -> boolean))))
 
 (define dict-class : CExpr
   (CClass
@@ -22,6 +24,14 @@
                    (CFunc (list 'self) (none)
                           (CReturn (CBuiltinPrim 'dict-clear
                                                      (list (CId 'self))))))
+
+              (def '__in__
+                (CFunc (list 'self 'other) (none)
+                       (CReturn (CBuiltinPrim 'dict-in
+                                              (list
+                                               (CId 'self)
+                                               (CId 'other)
+                                               )))))
 ))))
 
 
@@ -47,3 +57,9 @@
                         (hash-keys contents))
                    (some (VNone))))))
 
+(define (dict-in [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (let ([contents (MetaDict-contents mval1)])
+                 (if (hash-has-key? contents (second args)) ; FIXME: what if (second args) DNE?
+                     (some true-val)
+                     (some false-val)))))
