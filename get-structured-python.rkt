@@ -140,11 +140,21 @@ structure that you define in python-syntax.rkt
                  ('decorator_list dl)
                  ('args args)
                  ('returns returns))
-     (PyFunc (string->symbol name)
-             (map (lambda(arg)
-                    (string->symbol (hash-ref arg 'arg)))
-                  (hash-ref args 'args))
-             (get-structured-python body))]
+     (if (not (string?  (hash-ref args 'vararg)))
+       (PyFunc (string->symbol name) 
+               (map (lambda(arg) 
+                      (string->symbol (hash-ref arg 'arg))) 
+                    (hash-ref args 'args)) 
+             (get-structured-python body))
+
+       (PyFuncVarArg (string->symbol name) 
+               (map (lambda(arg) 
+                      (string->symbol (hash-ref arg 'arg))) 
+                    (hash-ref args 'args)) 
+               (string->symbol (hash-ref args 'vararg))
+             (get-structured-python body)))]
+
+
     
     [(hash-table ('nodetype "Return")
                  ('value value))
@@ -190,13 +200,13 @@ structure that you define in python-syntax.rkt
                  ('finalbody fbody))
      (let ([TEE (get-structured-python body)]
            [F (get-structured-python fbody)])
-       (if (PyTryExceptElseFinally? TEE)
-         (let ([try (PyTryExceptElseFinally-try TEE)]
-               [excepts (PyTryExceptElseFinally-except TEE)]
-               [orelse (PyTryExceptElseFinally-orelse TEE)]
-               [finally F])
-           (PyTryExceptElseFinally try excepts orelse finally))
-           (PyTryExceptElseFinally TEE empty (PyPass) F)))]
+        (if (PyTryExceptElseFinally? TEE)
+          (let ([try (PyTryExceptElseFinally-try TEE)]
+                [excepts (PyTryExceptElseFinally-except TEE)]
+                [orelse (PyTryExceptElseFinally-orelse TEE)]
+                [finally F])
+            (PyTryExceptElseFinally try excepts orelse finally))
+            (PyTryExceptElseFinally TEE empty (PyPass) F)))]
 
     [(hash-table ('nodetype "TryExcept")
                  ('body body)
@@ -211,14 +221,14 @@ structure that you define in python-syntax.rkt
                  ('type type)
                  ('name name)
                  ('body body))
-     (let ([types (get-structured-python type)])
+     (let ([types (get-structured-python type)]) 
        (cond
-         [(PyTuple? types) (PyExcept (map PyId-x (PyTuple-values types))
-                                     (get-structured-python body))]
-         [(PyId? types) (PyExcept (list (PyId-x types))
-                                  (get-structured-python body))]
-         [else (PyExcept empty
-                         (get-structured-python body))]))]
+          [(PyTuple? types) (PyExcept (map PyId-x (PyTuple-values types))
+                                      (get-structured-python body))]
+          [(PyId? types) (PyExcept (list (PyId-x types))
+                                   (get-structured-python body))]
+          [else (PyExcept empty
+                          (get-structured-python body))]))]
 
     [(hash-table ('nodetype "AugAssign")
                  ('op op)

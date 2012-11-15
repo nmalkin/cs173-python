@@ -53,7 +53,7 @@
     ; TODO: implement real exceptions
     [PyRaise (expr) (CRaise (desugar expr))]
 
-    [PyPass () (CApp (CFunc empty (CNone)) empty)] ;PyPass is an empty lambda
+    [PyPass () (CApp (CFunc empty (none) (CNone)) empty)] ;PyPass is an empty lambda
 
     [PyIf (test body orelse)
           (CIf (desugar test) (desugar body) (desugar orelse))]
@@ -82,7 +82,7 @@
                             (list left-c right-c))]
                  ['NotEq (desugar (PyUnaryOp 'Not (PyBinOp left 'Eq right)))]
 
-                 ['In (CApp (CFunc (list 'self 'test)
+                 ['In (CApp (CFunc (list 'self 'test) (none)
                                    (CSeq
                                      (CAssign (CId '__infunc__)
                                               (CGetField (CId 'self)
@@ -116,14 +116,20 @@
     [PyCompOp (l op rights) (desugar-compop l op rights)]
 
     [PyLam (args body)
-           (CFunc args 
+           (CFunc args (none)
                   (CReturn                   
                    (desugar body)))]
     
     [PyFunc (name args body)
             (CLet name (CNone)
                 (CAssign (CId name)
-                         (CFunc args
+                         (CFunc args (none)
+                                (desugar body))))]
+
+    [PyFuncVarArg (name args sarg body)
+            (CLet name (CNone)
+                (CAssign (CId name)
+                         (CFunc args (some sarg)
                                 (desugar body))))]
     
     [PyReturn (value)
