@@ -14,7 +14,7 @@
          (typed-in "parse-python.rkt"
                    (parse-python/port : ('a string -> 'b)))
          (typed-in racket/base (open-input-file : ('a -> 'b)))
-
+         "python-syntax.rkt"
          "python-desugar.rkt"
          (typed-in racket/base (append : ((listof 'a) (listof 'a) (listof 'a) -> (listof 'a)))))
 
@@ -60,6 +60,18 @@ that calls the primitive `print`.
 (define assert-isnot-lambda
   (CFunc (list 'check1 'check2)
     (CIf (CPrim2 'Is (CId 'check1) (CId 'check2))
+         (CError (CStr "Assert failed"))
+         (CNone))))
+
+(define assert-in-lambda
+  (CFunc (list 'check1 'check2)
+    (CIf (desugar (PyBinOp (PyId 'check1 'DUMMY) 'In (PyId 'check2 'DUMMY)))
+         (CNone)
+         (CError (CStr "Assert failed")))))
+
+(define assert-notin-lambda
+  (CFunc (list 'check1 'check2)
+    (CIf (desugar (PyBinOp (PyId 'check1 'DUMMY) 'In (PyId 'check2 'DUMMY)))
          (CError (CStr "Assert failed"))
          (CNone))))
 
@@ -172,7 +184,9 @@ that calls the primitive `print`.
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
         (bind '___assertIs assert-is-lambda)
-        (bind '___assertIsNot assert-isnot-lambda)))
+        (bind '___assertIsNot assert-isnot-lambda)
+        (bind '___assertIn assert-in-lambda)
+        (bind '___assertNotIn assert-notin-lambda)))
 
 ;; these are builtin functions that we have written in actual python files which
 ;; are pulled in here and desugared for lib purposes
