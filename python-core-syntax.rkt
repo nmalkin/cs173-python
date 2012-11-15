@@ -25,7 +25,7 @@ ParselTongue.
   [CId (x : symbol)]
   [CLet (x : symbol) (bind : CExpr) (body : CExpr)]
   [CApp (fun : CExpr) (args : (listof CExpr))]
-  [CFunc (args : (listof symbol)) (body : CExpr)]
+  [CFunc (args : (listof symbol)) (star-args : (optionof symbol)) (body : CExpr)]
   [CReturn (value : CExpr)]
   [CPrim1 (prim : symbol) (arg : CExpr)]
   [CPrim2 (prim : symbol) (arg1 : CExpr) (arg2 : CExpr)]
@@ -42,7 +42,7 @@ ParselTongue.
   [VStr (s : string)]
   [VNone]
   [VObject (antecedent : symbol) (mval : (optionof MetaVal)) (dict : object-dict)]
-  [VClosure (env : Env) (args : (listof symbol)) (body : CExpr)]
+  [VClosure (env : Env) (args : (listof symbol)) (star-arg : (optionof symbol)) (body : CExpr)]
   [VDict (contents : (hashof CVal CVal))])
 
 (define-type MetaVal

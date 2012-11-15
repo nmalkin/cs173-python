@@ -8,40 +8,45 @@
    'tuple
    'object
    (seq-ops (list (def '__add__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'tuple+
                                                   (list
                                                    (CId 'self)
                                                    (CId 'other))))))
                   (def '__mult__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'tuple*
                                                   (list
                                                    (CId 'self)
                                                    (CId 'other))))))
                   (def '__len__
-                    (CFunc (list 'self)
+                    (CFunc (list 'self) (none)
                            (CReturn (CBuiltinPrim 'tuple-len
                                                   (list
                                                    (CId 'self))))))
                   (def '__in__
-                    (CFunc (list 'self 'test)
+                    (CFunc (list 'self 'test) (none)
                            (CReturn (CBuiltinPrim 'tuple-in
                                                   (list
                                                    (CId 'self)
                                                    (CId 'test)
                                                    )))))
                   (def '__str__
-                       (CFunc (list 'self)
+                       (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'tuple-str
                                                      (list (CId 'self))))))
                   (def '__attr__
-                    (CFunc (list 'self 'idx)
+                    (CFunc (list 'self 'idx) (none)
                            (CReturn (CBuiltinPrim 'tuple-attr
                                                   (list
                                                    (CId 'self)
                                                    (CId 'idx))))))
 ))))
+
+(define (make-builtin-tuple [l : (listof CVal)]) : CVal
+  (VObject 'tuple
+           (some (MetaTuple l))
+           (make-hash empty)))
 
 (define (tuple+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'tuple 'tuple

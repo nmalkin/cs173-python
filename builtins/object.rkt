@@ -14,26 +14,27 @@
     'none 
     (seq-ops (list
                (def '__init__ 
-                    (CFunc (list 'self) (CId 'self)))
+                    (CFunc (list 'self) (none)
+                           (CId 'self)))
                (def '__eq__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'eq
                                     (list 
                                       (CId 'self)
                                       (CId 'other))))))
 
                (def '__str__ 
-                    (CFunc (list 'self) 
+                    (CFunc (list 'self)  (none)
                            (CReturn (CBuiltinPrim 'obj-str (list (CId
                                                                    'self))))))
 
                (def '__cmp__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            ;TODO: MAKE THIS AN EXCEPTION
                            (CError (CStr "NotImplemented"))))
 
                (def '__gt__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
                                     (CApp (CGetField (CId 'self) '__cmp__)
                                           (list (CId 'self) (CId 'other))))
@@ -41,7 +42,7 @@
                                             (list (CId '_cmpresult)
                                                   (make-builtin-num 0)))))))
                (def '__lt__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
                                     (CApp (CGetField (CId 'self) '__cmp__)
                                           (list (CId 'self) (CId 'other))))
@@ -49,7 +50,7 @@
                                             (list (CId '_cmpresult)
                                                   (make-builtin-num 0)))))))
                (def '__lt__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
                                     (CApp (CGetField (CId 'self) '__cmp__)
                                           (list (CId 'self) (CId 'other))))
@@ -57,7 +58,7 @@
                                             (list (CId '_cmpresult)
                                                   (make-builtin-num 0)))))))
                (def '__lte__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
                                     (CApp (CGetField (CId 'self) '__cmp__)
                                           (list (CId 'self) (CId 'other))))
@@ -66,7 +67,7 @@
                                             (list (CId '_cmpresult)
                                                   (make-builtin-num 0)))))))
                (def '__gte__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
                                     (CApp (CGetField (CId 'self) '__cmp__)
                                           (list (CId 'self) (CId 'other))))

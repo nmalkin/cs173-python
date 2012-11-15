@@ -26,52 +26,52 @@
                   ;             'str
                   ;             (some (MetaVal (CId 'inputstr)))))))
                   (def '__add__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'str+
                                                   (list
                                                    (CId 'self)
                                                    (CId 'other))))))
                   (def '__mult__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'str*
                                          (list
                                           (CId 'self)
                                           (CId 'other))))))
                   (def '__str__
-                       (CFunc (list 'self)
+                       (CFunc (list 'self) (none)
                               (CReturn (CId 'self))))
                   (def '__eq__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'str=
                                          (list
                                           (CId 'self)
                                           (CId 'other))))))
 
                   (def '__cmp__
-                     (CFunc (list 'self 'other)
+                     (CFunc (list 'self 'other) (none)
                             (CReturn (CBuiltinPrim 'strcmp
                                          (list
                                            (CId 'self)
                                            (CId 'other))))))
                   (def '__in__
-                     (CFunc (list 'self 'test)
+                     (CFunc (list 'self 'test) (none)
                             (CReturn (CBuiltinPrim 'strin
                                          (list
                                            (CId 'self)
                                            (CId 'test))))))
                   (def '__min__
-                     (CFunc (list 'self)
+                     (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'strmin
                                          (list
                                            (CId 'self))))))
                   (def '__max__
-                     (CFunc (list 'self)
+                     (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'strmax
                                          (list
                                            (CId 'self))))))
 
                   (def '__len__
-                     (CFunc (list 'self)
+                     (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'strlen
                                          (list
                                            (CId 'self))))))))))

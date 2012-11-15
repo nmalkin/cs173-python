@@ -8,29 +8,29 @@
    'list
    'object
    (seq-ops (list (def '__add__
-                    (CFunc (list 'self 'other)
+                    (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'list+
                                                   (list
                                                    (CId 'self)
                                                    (CId 'other))))))
                   (def '__len__
-                    (CFunc (list 'self)
+                    (CFunc (list 'self) (none)
                            (CReturn (CBuiltinPrim 'list-len
                                                   (list
                                                    (CId 'self))))))
                   (def '__in__
-                    (CFunc (list 'self 'test)
+                    (CFunc (list 'self 'test) (none)
                            (CReturn (CBuiltinPrim 'list-in
                                                   (list
                                                    (CId 'self)
                                                    (CId 'test)
                                                    )))))
                   (def '__str__
-                       (CFunc (list 'self)
+                       (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'list-str
                                                      (list (CId 'self))))))
                   (def '__attr__
-                    (CFunc (list 'self 'idx)
+                    (CFunc (list 'self 'idx) (none)
                            (CReturn (CBuiltinPrim 'list-attr
                                                   (list
                                                    (CId 'self)
