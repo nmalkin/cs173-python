@@ -51,7 +51,9 @@
 
     ; for now just desugar raise as error
     ; TODO: implement real exceptions
-    [PyRaise (expr) (CRaise (desugar expr))]
+    [PyRaise (expr) (CRaise (if (PyPass? expr)
+                                (none)
+                                (some (desugar expr))))]
 
     [PyPass () (CApp (CFunc empty (none) (CNone)) empty)] ;PyPass is an empty lambda
 

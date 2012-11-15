@@ -106,7 +106,9 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Raise") 
                  ('exc exc)
                  ('cause c))
-     (PyRaise (get-structured-python exc))]
+     (if (char? exc)
+       (PyRaise (PyPass))
+       (PyRaise (get-structured-python exc)))]
 
     [(hash-table ('nodetype "arg")
                  ('arg arg))
@@ -153,8 +155,6 @@ structure that you define in python-syntax.rkt
                     (hash-ref args 'args)) 
                (string->symbol (hash-ref args 'vararg))
              (get-structured-python body)))]
-
-
     
     [(hash-table ('nodetype "Return")
                  ('value value))
@@ -200,13 +200,7 @@ structure that you define in python-syntax.rkt
                  ('finalbody fbody))
      (let ([TEE (get-structured-python body)]
            [F (get-structured-python fbody)])
-        (if (PyTryExceptElseFinally? TEE)
-          (let ([try (PyTryExceptElseFinally-try TEE)]
-                [excepts (PyTryExceptElseFinally-except TEE)]
-                [orelse (PyTryExceptElseFinally-orelse TEE)]
-                [finally F])
-            (PyTryExceptElseFinally try excepts orelse finally))
-            (PyTryExceptElseFinally TEE empty (PyPass) F)))]
+            (PyTryExceptElseFinally TEE empty (PyPass) F))]
 
     [(hash-table ('nodetype "TryExcept")
                  ('body body)

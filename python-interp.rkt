@@ -27,16 +27,14 @@
                         [init-e : Env]) : ((listof Result) * Store * Env)
   (local [(define (rec-cascade exprs e s)
             (cond [(empty? exprs) empty]
-                  [(cons? exprs) (let ([first-r (interp-env (first exprs) e s)])
-                                   (type-case Result first-r
-                                     [v*s*e (vfr sfr efr)
-                                            (cons first-r
-                                                  (rec-cascade (rest exprs) efr sfr))]
-                                     [Return (vfr sfr efr) 
-                                             (list (return-exception efr sfr))]
-                                     [Exception (vfr sfr efr)
-                                                (list first-r)]))]))
-         (define result-list (rec-cascade exprs init-e init-s))]
+                  [(cons? exprs)
+                     (let ([first-r (interp-env (first exprs) e s)])
+                       (type-case Result first-r
+                         [v*s*e (vfr sfr efr)
+                                (cons first-r (rec-cascade (rest exprs) efr sfr))]
+                         [Return (vfr sfr efr) (list (return-exception efr sfr))]
+                         [Exception (vfr sfr efr) (list first-r)]))]))
+          (define result-list (rec-cascade exprs init-e init-s))]
 
          (let ([results (filter Exception? result-list)])
            (if (< 0 (length results))
@@ -51,10 +49,42 @@
                            (v*s*e-e (first (reverse result-list)))
                            init-e))))))
 
+(define (interp-excepts [excepts : (listof CExpr)]
+                        [sto : Store]
+                        [env : Env]
+                        [exn : CVal]) : Result
+  (local [(define exn-type (VObject-antecedent exn))
+          (define (find-match type exps)
+            (cond
+              [(empty? exps) (none)]
+              [(cons? exps)
+                 (if (or (member exn-type (CExcept-types (first exps)))
+                         (empty? (CExcept-types (first exps))))
+                     (some (first exps))
+                     (find-match type (rest exps)))]))
+          (define match? (find-match exn-type excepts))]
 
+    (if (some? match?)
+      (let ([result (interp-env (some-v match?) env sto)])
+        (type-case Result result
+          [v*s*e (vbody sbody ebody) (v*s*e (VNone) sbody ebody)]
+          [Return (vbody sbody ebody) (return-exception ebody sbody)]
+          [Exception (vbody sbody ebody)
+                     (if (string=? (MetaStr-s
+                                     (some-v
+                                       (VObject-mval 
+                                         (fetch 
+                                           (some-v (hash-ref (VObject-dict vbody)
+                                                     'args))
+                                           sbody))))
+                                   "No active exception to reraise")
+                       (Exception exn sbody ebody)
+                       result)]))
+      (v*s*e (VNone) sto env))))
+ 
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
-    (type-case CExpr expr
+  (type-case CExpr expr
     [CStr (s) (v*s*e (VObject 'str (some (MetaStr s)) (hash empty)) sto env)]
     [CTrue () (v*s*e true-val sto env)]
     [CFalse () (v*s*e false-val sto env)]
@@ -124,14 +154,14 @@
     ;; only for ids!
     [CAssign (t v) 
              (type-case Result (interp-env v env sto)
-               [v*s*e (vv sv venv) 
+               [v*s*e (vv sv venv)
                      (type-case CExpr t
                                 [CId (x) (assign-to-id t vv venv sv)]
                                 [CGetField (o a) (assign-to-field o a vv venv sv)]
                                 [else (mk-exception 'SyntaxError
-                                                 "can't assign to literals"
-                                                 venv
-                                                 sv)])]
+                                                    "can't assign to literals"
+                                                    venv
+                                                    sv)])]
                [Return (vv sv ev) (return-exception ev sv)]
                [Exception (vv sv ev) (Exception vv sv ev)])]
     
@@ -229,7 +259,8 @@
        [Exception (vfun sfun efun) (Exception vfun sfun efun)])]
 
     [CFunc (args sargs body) 
-           (v*s*e (VClosure (cons (hash empty) env) args sargs body) sto env)]    
+           (v*s*e (VClosure (cons (hash empty) env) args sargs body) sto env)]
+
     [CReturn (value) (type-case Result (interp-env value env sto)
                        [v*s*e (vv sv ev) (Return vv sv ev)]
                        [Return (vv sv ev) (return-exception ev sv)]
@@ -265,24 +296,29 @@
                                        (error 'interp (string-append "Builtin error for "
                                                                      (symbol->string
                                                                        op)))))))))]
-    [CRaise (expr) (type-case Result (interp-env expr env sto)
-                     [v*s*e (vexpr sexpr eexpr)
-                            (cond
-                              [(and (VObject? vexpr) (object-is? vexpr 'Exception env sto))
-                                    (Exception vexpr sexpr eexpr)]
-                              [else (mk-exception 'TypeError
-                                                  "exceptions must derive from BaseException"
-                                                  eexpr
-                                                  sexpr)])]
-                     [Return (vexpr sexpr eexpr) (return-exception eexpr sexpr)]
-                     [Exception (vexpr sexpr eexpr) (Exception vexpr sexpr eexpr)])]
+    [CRaise (expr) 
+            (if (some? expr)
+                (type-case Result (interp-env (some-v expr) env sto)
+                  [v*s*e (vexpr sexpr eexpr)
+                         (cond
+                           [(and (VObject? vexpr) (object-is? vexpr 'Exception env sto))
+                            (Exception vexpr sexpr eexpr)]
+                           [else (mk-exception 'TypeError
+                                               "exceptions must derive from BaseException"
+                                               eexpr
+                                               sexpr)])]
+                  [Return (vexpr sexpr eexpr) (return-exception eexpr sexpr)]
+                  [Exception (vexpr sexpr eexpr) (Exception vexpr sexpr eexpr)])
+                (mk-exception 'RuntimeError
+                              "No active exception to reraise"
+                              env sto))]
     
     [CTryExceptElseFinally (try excepts orelse finally)
          (type-case Result (interp-env try env sto)
             [v*s*e (vtry stry etry)
-                   (type-case Result (interp-env orelse env sto)
+                   (type-case Result (interp-env orelse etry stry)
                       [v*s*e (velse selse eelse)
-                             (type-case Result (interp-env finally env sto)
+                             (type-case Result (interp-env finally eelse selse)
                                 [v*s*e (vfin sfin efin)
                                        (v*s*e (VNone) sfin efin)]
                                 [Return (vfin sfin efin) (return-exception efin sfin)]
@@ -293,14 +329,15 @@
                                  (Exception velse selse eelse)])]
             [Return (vtry stry etry) (return-exception etry stry)]
             ;; handle excepts here
-            [Exception (vtry stry etry) 
-               (local [(define-values (values new-s new-env) (interp-cascade excepts sto env))]
-                  (let ([exn? (filter Exception? values)])
-                    (if (< 0 (length exn?))
-                        (first exn?)
-                        (interp-env finally env sto))))])]
-    
-    [CExcept (types body) (error 'interp "WTF is an except?")]
+            [Exception (vtry stry etry)
+               (local [(define result (interp-excepts excepts stry etry vtry))]
+                 (if (Exception? result)
+                     result
+                     (interp-env finally (v*s*e-e result) (v*s*e-s result))))])]
+
+    ;; add names to this
+    [CExcept (types body) (interp-env body env sto)]
+
 
     [else (error 'interp "haven't implemented a case yet")]))
 

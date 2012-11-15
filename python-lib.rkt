@@ -194,6 +194,7 @@ that calls the primitive `print`.
         (bind 'SyntaxError (make-exception-class 'SyntaxError))
         (bind 'NameError (make-exception-class 'NameError))
         (bind 'AttributeError (make-exception-class 'AttributeError))
+        (bind 'RuntimeError (make-exception-class 'RuntimeError))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)

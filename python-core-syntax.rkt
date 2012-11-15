@@ -33,7 +33,7 @@ ParselTongue.
   [CList (values : (listof CExpr))]
   [CTuple (values : (listof CExpr))]
   [CDict (contents : (hashof CExpr CExpr))]
-  [CRaise (expr : CExpr)]
+  [CRaise (expr : (optionof CExpr))]
   [CTryExceptElseFinally (try : CExpr) (excepts : (listof CExpr))
                          (orelse : CExpr) (finally : CExpr)]
   [CExcept (types : (listof symbol)) (body : CExpr)])
