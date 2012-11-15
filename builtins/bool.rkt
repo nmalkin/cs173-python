@@ -21,21 +21,23 @@
                (def '__str__
                     (CFunc (list 'self) (none)
                            (CIf (CApp (CGetField (CId 'self) '__eq__)
-                                      (list (CId 'self) (make-builtin-num 1)))
+                                      (list (CId 'self) (make-builtin-num 1))
+                                      (none))
                                 (CReturn (make-builtin-str "True"))
                                 (CReturn (make-builtin-str "False")))))
                (def '__int__
                     (CFunc (list 'self) (none)
                            (CReturn (CApp (CGetField (CId 'self) '__add__) 
                                           (list (CId 'self) 
-                                                (make-builtin-num 0))))))
+                                                (make-builtin-num 0))
+                                          (none)))))
 
                (def '__float__
                     (CFunc (list 'self) (none)
                            (CReturn (CApp (CGetField (CId 'self) '__add__) 
                                           (list (CId 'self) 
-                                                (make-builtin-num 0.0))))))
-                    
+                                                (make-builtin-num 0.0))
+                                          (none)))))
                     ))))
 (define (make-builtin-bool [b : boolean]) : CExpr
   (CObject 

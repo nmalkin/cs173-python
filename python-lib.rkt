@@ -34,7 +34,8 @@ that calls the primitive `print`.
     (CSeq 
       (CPrim1 'print (CApp 
                        (CGetField (CId 'to-print) '__str__) 
-                       (list (CId 'to-print))))
+                       (list (CId 'to-print))
+                       (none)))
       (CNone))))
 
 (define assert-true-lambda
@@ -47,7 +48,8 @@ that calls the primitive `print`.
 
 (define assert-equal-lambda
   (CFunc (list 'check1 'check2)  (none)
-    (CIf (CApp (CGetField (CId 'check1) '__eq__) (list (CId 'check1) (CId 'check2)))
+    (CIf (CApp (CGetField (CId 'check1) '__eq__) (list (CId 'check1) (CId 'check2))
+               (none))
          (CNone)
          (CError (CStr "Assert failed")))))
 
@@ -106,7 +108,8 @@ that calls the primitive `print`.
                                    '__class__)
                                  (CGetField
                                    (CId 'self)
-                                   'args))))))))))
+                                   'args))
+                               (none)))))))))
 
 (define (make-exception-class [name : symbol]) : CExpr
   (CClass
@@ -121,7 +124,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__len__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define min-lambda
   (CFunc (list 'self) (none)
@@ -130,7 +134,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__min__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define max-lambda
   (CFunc (list 'self) (none)
@@ -139,7 +144,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__max__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define abs-lambda
   (CFunc (list 'self) (none)
@@ -148,7 +154,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__abs__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define int-lambda
   (CFunc (list 'self) (none)
@@ -157,7 +164,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__int__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define float-lambda
   (CFunc (list 'self) (none)
@@ -166,7 +174,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__float__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])

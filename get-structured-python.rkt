@@ -20,7 +20,6 @@ structure that you define in python-syntax.rkt
 
 (define (get-structured-python pyjson)
   (begin
-    ;(display pyjson) (display "\n\n")
   (match pyjson
     [(hash-table ('nodetype "Module") ('body expr-list))
      (PySeq (map get-structured-python expr-list))]
@@ -35,8 +34,13 @@ structure that you define in python-syntax.rkt
                  ('starargs starargs) ;; ignoring starargs for now
                  ('args args-list)
                  ('func func-expr))
-     (PyApp (get-structured-python func-expr)
-            (map get-structured-python args-list))]
+     (if (equal? starargs #\nul)
+         (PyApp (get-structured-python func-expr)
+                (map get-structured-python args-list))
+         (PyAppStarArg
+           (get-structured-python func-expr)
+           (map get-structured-python args-list)
+           (get-structured-python starargs)))]
 
     [(hash-table ('nodetype "BinOp")
                  ('left l)
