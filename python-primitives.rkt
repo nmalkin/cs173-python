@@ -5,6 +5,7 @@
          "builtins/str.rkt"
          "builtins/list.rkt"
          "builtins/tuple.rkt"
+         "builtins/dict.rkt"
          "builtins/object.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
          (typed-in racket/base (number->string : (number -> string))))
@@ -107,10 +108,15 @@ primitives here.
     ['tuple-attr (tuple-attr args env sto)]
     ['tuple-str (tuple-str args env sto)]
 
+    ;dict
+    ['dict-len (dict-len args env sto)]
+    ['dict-str (dict-str args env sto)]
+
     ;object 
     ['obj-str (obj-str args)]))
 
 
+#|
 (define (dict-str (contents : (hashof CVal CVal)))
   (string-append "{" 
                  (string-append
@@ -124,4 +130,4 @@ primitives here.
                         (hash-keys contents))
                    ", ")
                   "}")))
-
+|#

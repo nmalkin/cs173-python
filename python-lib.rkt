@@ -5,6 +5,7 @@
          "builtins/str.rkt"
          "builtins/list.rkt"
          "builtins/tuple.rkt"
+         "builtins/dict.rkt"
          "builtins/object.rkt"
          "builtins/bool.rkt"
          "util.rkt"
@@ -155,6 +156,7 @@ that calls the primitive `print`.
         (bind 'str str-class)
         (bind 'list list-class)
         (bind 'tuple tuple-class)
+        (bind 'dict dict-class)
         (bind 'bool bool-class)
         (bind 'len len-lambda)
         (bind 'min min-lambda)
