@@ -52,6 +52,7 @@
                        (if (cons? result-list)
                            (v*s*e-e (first (reverse result-list)))
                            init-e))))))
+
 (define (interp-capp [fun : CExpr] [arges : (listof CExpr)] 
                      [stararg : (optionof CExpr)] [env : Env] [sto : Store]) : Result
  (type-case Result (interp-env fun env sto)
@@ -156,12 +157,12 @@
           [Return (vbody sbody ebody) (return-exception ebody sbody)]
           [Exception (vbody sbody ebody)
                      (if (string=? (MetaStr-s
-                                     (some-v
+                                     (some-v (VObject-mval (first (MetaTuple-v (some-v
                                        (VObject-mval 
                                          (fetch 
                                            (some-v (hash-ref (VObject-dict vbody)
                                                      'args))
-                                           sbody))))
+                                           sbody))))))))
                                    "No active exception to reraise")
                        (Exception (Exception-v exn) sbody ebody)
                        result)])))
@@ -174,8 +175,14 @@
              (interp-env body
                          (cons (hash-set (first eb) name loc) (rest eb))
                          (hash-set sb loc vb))]
-      [Return (vb sb eb) (return-exception eb sb)]
-      [Exception (vb sb eb) (Exception vb sb eb)])))
+      [Return (vb sb eb) 
+              (interp-env body
+                         (cons (hash-set (first eb) name loc) (rest eb))
+                         (hash-set sb loc vb))]
+      [Exception (vb sb eb)
+                 (interp-env body
+                         (cons (hash-set (first eb) name loc) (rest eb))
+                         (hash-set sb loc vb))])))
 
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
@@ -298,7 +305,16 @@
                 [result (interp-env bind env sto)])
             (interp-let x result body))]
 
-    [CApp (fun arges sarg) (interp-capp fun arges sarg env sto)]
+    [CApp (fun arges sarg) (begin (display "APP")
+                             (display fun) (display "\n")
+                             (display env) (display "\n\n")
+                             (interp-capp fun
+                                        arges
+                                        (if (none? sarg)
+                                          (some (CTuple empty))
+                                          sarg)
+                                        env
+                                        sto))]
 
     [CFunc (args sargs body) 
            (v*s*e (VClosure (cons (hash empty) env) args sargs body) sto env)]    
@@ -356,7 +372,6 @@
                               env sto))]
     
     [CTryExceptElseFinally (try excepts orelse finally)
-       (begin ;(display try) (display "\n\n")
          (type-case Result (interp-env try env sto)
             [v*s*e (vtry stry etry)
                    (type-case Result (interp-env orelse etry stry)
@@ -373,12 +388,11 @@
             [Return (vtry stry etry) (return-exception etry stry)]
             ;; handle excepts here
             [Exception (vtry stry etry)
-                       (begin ;(display etry) (display "\n\n")
                (local [(define result (interp-excepts excepts stry etry
                                                       (Exception vtry stry etry)))]
                  (if (Exception? result)
                      result
-                     (interp-env finally (v*s*e-e result) (v*s*e-s result)))))]))]
+                     (interp-env finally (v*s*e-e result) (v*s*e-s result))))])]
 
     ;; add names to this
     [CExcept (types name body) (interp-env body env sto)]))
@@ -457,7 +471,16 @@
                    [arges : (listof CExpr)] 
                    [env : Env] [ext : Env]
                    [sto : Store]) : (Env * Store)
-  (cond [(and (empty? args) (empty? vals)) (values ext sto)]
+  (cond [(and (empty? args) (empty? vals)) 
+              (if (some? sarg)
+                  (bind-args (list (some-v sarg))
+                             (none)
+                             (list (make-builtin-tuple empty))
+                             (list (make-builtin-num 0))
+                             env 
+                             ext
+                             sto)
+                  (values ext sto))]
         ;need to bind star args!
         [(and (empty? args) (some? sarg)) 
          (let ([star-tuple (make-builtin-tuple vals)])
@@ -539,13 +562,13 @@
                                    (string-join
                                      (list
                                        (symbol->string (VObject-antecedent vexpr))
-                                       (MetaStr-s
-                                         (some-v 
-                                           (VObject-mval
-                                             (fetch (some-v
-                                                      (hash-ref 
-                                                        (VObject-dict vexpr) 'args))
-                                                    sexpr)))))
+                                         (pretty-metaval
+                                           (some-v 
+                                             (VObject-mval
+                                               (fetch (some-v
+                                                        (hash-ref 
+                                                          (VObject-dict vexpr) 'args))
+                                                      sexpr)))))
                                      ": "))]))
 
 (define (interp-cprim2 [prim : symbol] 

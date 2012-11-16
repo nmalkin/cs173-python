@@ -87,7 +87,7 @@ that calls the primitive `print`.
     'object
     (seq-ops (list 
                (def '__init__
-                    (CFunc (list 'self 'args) (none)
+                    (CFunc (list 'self) (some 'args)
                            (CSeq 
                              (CAssign 
                                (CGetField
@@ -110,9 +110,11 @@ that calls the primitive `print`.
                                  (CGetField
                                    (CId 'self)
                                    '__class__)
-                                 (CGetField
-                                   (CId 'self)
-                                   'args))
+                                 (CGetField 
+                                   (CGetField
+                                     (CId 'self)
+                                     'args)
+                                   '__str__))
                                (none)))))))))
 
 (define (make-exception-class [name : symbol]) : CExpr
@@ -219,6 +221,7 @@ that calls the primitive `print`.
         (bind 'NameError (make-exception-class 'NameError))
         (bind 'AttributeError (make-exception-class 'AttributeError))
         (bind 'RuntimeError (make-exception-class 'RuntimeError))
+        (bind 'KeyError (make-exception-class 'KeyError))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
