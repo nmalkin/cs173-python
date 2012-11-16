@@ -28,7 +28,7 @@
                                                    (CId 'self))))))
                   (def '__list__
                        (CFunc (list 'self) (none)
-                              (CReturn (CBuiltin 'list-cpy
+                              (CReturn (CBuiltinPrim 'list-cpy
                                                  (list 
                                                    (CId 'self))))))
                   (def '__in__
