@@ -84,7 +84,7 @@
                                                                            0))
                                                                        l))
                                                        efun 
-                                                       (v*s*e-e sarg-r)
+                                                       cenv 
                                                        (v*s*e-s sarg-r))) 
                                           (bind-args argxs sarg argvs arges efun
                                                    cenv sc)))] 
@@ -305,16 +305,13 @@
                 [result (interp-env bind env sto)])
             (interp-let x result body))]
 
-    [CApp (fun arges sarg) (begin (display "APP")
-                             (display fun) (display "\n")
-                             (display env) (display "\n\n")
-                             (interp-capp fun
+    [CApp (fun arges sarg) (interp-capp fun
                                         arges
                                         (if (none? sarg)
                                           (some (CTuple empty))
                                           sarg)
                                         env
-                                        sto))]
+                                        sto)]
 
     [CFunc (args sargs body) 
            (v*s*e (VClosure (cons (hash empty) env) args sargs body) sto env)]    
