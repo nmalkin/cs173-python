@@ -15,6 +15,7 @@
   ;
   [PyRaise (expr : PyExpr)]
   [PyExcept (types : (listof symbol)) (body : PyExpr)]
+  [PyExceptAs (types : (listof symbol)) (name : symbol) (body : PyExpr)]
   [PyTryExceptElseFinally (try : PyExpr) (except : (listof PyExpr))
                           (orelse : PyExpr) (finally : PyExpr)]
   [PyPass]
@@ -39,6 +40,7 @@
                 (sarg : symbol) (body : PyExpr)]
   [PyReturn (value : PyExpr)]
   [PyApp (fun : PyExpr) (args : (listof PyExpr))]
+  [PyAppStarArg (fun : PyExpr) (args : (listof PyExpr)) (stararg : PyExpr)]
 
   ;
   [PySubscript (left : PyExpr) (context : symbol) (slice : PyExpr)]

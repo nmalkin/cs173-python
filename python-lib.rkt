@@ -34,7 +34,8 @@ that calls the primitive `print`.
     (CSeq 
       (CPrim1 'print (CApp 
                        (CGetField (CId 'to-print) '__str__) 
-                       (list (CId 'to-print))))
+                       (list (CId 'to-print))
+                       (none)))
       (CNone))))
 
 (define assert-true-lambda
@@ -47,7 +48,8 @@ that calls the primitive `print`.
 
 (define assert-equal-lambda
   (CFunc (list 'check1 'check2)  (none)
-    (CIf (CApp (CGetField (CId 'check1) '__eq__) (list (CId 'check1) (CId 'check2)))
+    (CIf (CApp (CGetField (CId 'check1) '__eq__) (list (CId 'check1) (CId 'check2))
+               (none))
          (CNone)
          (CError (CStr "Assert failed")))))
 
@@ -74,6 +76,10 @@ that calls the primitive `print`.
     (CIf (desugar (PyBinOp (PyId 'check1 'DUMMY) 'In (PyId 'check2 'DUMMY)))
          (CError (CStr "Assert failed"))
          (CNone))))
+
+(define fail-lambda
+  (CFunc (list 'arg) (none)
+    (CError (CId 'arg))))
 
 (define exception
   (CClass
@@ -106,7 +112,8 @@ that calls the primitive `print`.
                                    '__class__)
                                  (CGetField
                                    (CId 'self)
-                                   'args))))))))))
+                                   'args))
+                               (none)))))))))
 
 (define (make-exception-class [name : symbol]) : CExpr
   (CClass
@@ -121,7 +128,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__len__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define min-lambda
   (CFunc (list 'self) (none)
@@ -130,7 +138,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__min__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define max-lambda
   (CFunc (list 'self) (none)
@@ -139,7 +148,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__max__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define abs-lambda
   (CFunc (list 'self) (none)
@@ -148,7 +158,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__abs__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define int-lambda
   (CFunc (list 'self) (none)
@@ -157,7 +168,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__int__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define float-lambda
   (CFunc (list 'self) (none)
@@ -166,7 +178,8 @@ that calls the primitive `print`.
         (CGetField
           (CId 'self)
           '__float__)
-        (list (CId 'self))))))
+        (list (CId 'self))
+        (none)))))
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
@@ -212,7 +225,8 @@ that calls the primitive `print`.
         (bind '___assertIs assert-is-lambda)
         (bind '___assertIsNot assert-isnot-lambda)
         (bind '___assertIn assert-in-lambda)
-        (bind '___assertNotIn assert-notin-lambda)))
+        (bind '___assertNotIn assert-notin-lambda)
+        (bind '___fail fail-lambda)))
 
 ;; these are builtin functions that we have written in actual python files which
 ;; are pulled in here and desugared for lib purposes
@@ -224,7 +238,9 @@ that calls the primitive `print`.
                (open-input-file file)
                python-path))))
        (list "pylib/any.py"
-             "pylib/all.py")))
+             "pylib/all.py"
+             "pylib/assertraises.py")))
+             
 
 (define-type-alias Lib (CExpr -> CExpr))
 

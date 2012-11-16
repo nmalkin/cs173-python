@@ -93,6 +93,7 @@ primitives here.
     ['strmin (strmin args env sto)]
     ['strmax (strmax args env sto)]
     ['strin (strin args env sto)]
+    ['strattr (strattr args env sto)]
 
     ;list
     ['list+ (list+ args env sto)]

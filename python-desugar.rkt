@@ -55,7 +55,8 @@
                                 (none)
                                 (some (desugar expr))))]
 
-    [PyPass () (CApp (CFunc empty (none) (CNone)) empty)] ;PyPass is an empty lambda
+
+    [PyPass () (CApp (CFunc empty (none) (CNone)) empty (none))] ;PyPass is an empty lambda
 
     [PyIf (test body orelse)
           (CIf (desugar test) (desugar body) (desugar orelse))]
@@ -65,23 +66,32 @@
                    [right-c (desugar right)]) 
                (case op 
                  ['Add (CApp (CGetField left-c '__add__) 
-                             (list left-c right-c))]
+                             (list left-c right-c)
+                             (none))]
                  ['Sub (CApp (CGetField left-c '__sub__) 
-                             (list left-c right-c))]
+                             (list left-c right-c)
+                             (none))]
                  ['Mult (CApp (CGetField left-c '__mult__)
-                              (list left-c right-c))]
+                              (list left-c right-c)
+                              (none))]
                  ['Div (CApp (CGetField left-c '__div__)
-                              (list left-c right-c))]
+                              (list left-c right-c)
+                              (none))]
                  ['Eq (CApp (CGetField left-c '__eq__)
-                            (list left-c right-c))]
+                            (list left-c right-c)
+                            (none))]
                  ['Gt (CApp (CGetField left-c '__gt__)
-                            (list left-c right-c))]
+                            (list left-c right-c)
+                            (none))]
                  ['Lt (CApp (CGetField left-c '__lt__)
-                            (list left-c right-c))]
+                            (list left-c right-c)
+                            (none))]
                  ['LtE (CApp (CGetField left-c '__lte__)
-                            (list left-c right-c))]
+                            (list left-c right-c)
+                            (none))]
                  ['GtE (CApp (CGetField left-c '__gte__)
-                            (list left-c right-c))]
+                            (list left-c right-c)
+                            (none))]
                  ['NotEq (desugar (PyUnaryOp 'Not (PyBinOp left 'Eq right)))]
 
                  ['In (CApp (CFunc (list 'self 'test) (none)
@@ -94,15 +104,18 @@
                                             (CApp
                                               (CId '__infunc__)
                                               (list (CId 'self)
-                                                    (CId 'test))))
+                                                    (CId 'test))
+                                              (none)))
                                           (CApp (CId 'TypeError)
                                                 (list (CObject
                                                         'str
                                                         (some (MetaStr 
                                                                 (string-append
                                                                   "argument of type '___'" 
-                                                                  "is not iterable")))))))))
-                            (list right-c left-c))]
+                                                                  "is not iterable")))))
+                                                (none)))))
+                            (list right-c left-c)
+                            (none))]
 
                  ['NotIn (desugar (PyUnaryOp 'Not (PyBinOp left 'In right)))]
 
@@ -113,7 +126,8 @@
                  ['USub (desugar (PyBinOp (PyNum 0) 'Sub operand))]
                  ['UAdd (desugar (PyBinOp (PyNum 0) 'Add operand))]
                  ['Invert (CApp (CGetField (desugar operand) '__invrt__)
-                                (list (desugar operand)))]
+                                (list (desugar operand))
+                                (none))]
                  [else (CPrim1 op (desugar operand))])]
     [PyBoolOp (op values) (desugar-boolop op values)]
               
@@ -153,7 +167,8 @@
                            (desugar left)
                            (CApp (CGetField (CId left-id)
                                             '__attr__)
-                                 (list (CId left-id) (desugar slice)))))
+                                 (list (CId left-id) (desugar slice))
+                                 (none))))
                    (CNone))]
 
     [PyTuple (values)
@@ -164,10 +179,24 @@
              (if (CGetField? f)
                (let ([o (CGetField-value f)])
                  (CApp f
-                       (cons o (map desugar args))))
+                       (cons o (map desugar args))
+                       (none)))
                (CApp
                  (desugar fun)
-                 (map desugar args))))]
+                 (map desugar args)
+                 (none))))]
+
+    [PyAppStarArg (fun args sarg)
+           (let ([f (desugar fun)])
+             (if (CGetField? f)
+               (let ([o (CGetField-value f)])
+                 (CApp f
+                       (cons o (map desugar args))
+                       (none)))
+               (CApp
+                 (desugar fun)
+                 (map desugar args)
+                 (some (desugar sarg)))))]
     
     [PyClass (name bases body)
              (CAssign (CId name)
@@ -190,7 +219,13 @@
     
     [PyExcept (types body)
               (CExcept types
+                       (none)
                        (desugar body))]
+
+    [PyExceptAs (types name body)
+                (CExcept types
+                         (some name)
+                         (desugar body))]
 
     [PyAugAssign (op target value)
                  (CAssign (desugar target)

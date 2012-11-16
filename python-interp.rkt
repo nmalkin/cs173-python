@@ -5,6 +5,7 @@
          "builtins/object.rkt"
          "builtins/bool.rkt"
          "builtins/tuple.rkt"
+         "builtins/num.rkt"
          "util.rkt"
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
          (typed-in racket/base (expt : (number number -> number)))
@@ -51,12 +52,89 @@
                        (if (cons? result-list)
                            (v*s*e-e (first (reverse result-list)))
                            init-e))))))
+(define (interp-capp [fun : CExpr] [arges : (listof CExpr)] 
+                     [stararg : (optionof CExpr)] [env : Env] [sto : Store]) : Result
+ (type-case Result (interp-env fun env sto)
+   [v*s*e (vfun sfun efun) 
+    (type-case CVal vfun
+      [VClosure (cenv argxs sarg body)
+                  (local [(define-values (argvs-r sc ec) (interp-cascade arges sfun efun))]
+                     (let ([exn? (filter Exception? argvs-r)])
+                        (if (< 0 (length exn?))
+                            (first exn?)
+                            (let ([argvs (map v*s*e-v argvs-r)])
+                              (local [(define-values (e s)
+                                        (if (some? stararg)
+                                          (letrec ([sarg-r (interp-env (some-v
+                                                                         stararg) ec sc)]
+                                                   ;; todo: support other types
+                                                   ;; for star args
+                                                   [l (MetaTuple-v 
+                                                        (some-v 
+                                                          (VObject-mval 
+                                                            (v*s*e-v
+                                                              sarg-r))))])
+                                            (bind-args argxs 
+                                                       sarg 
+                                                       (append argvs l)
+                                                       (append arges (map
+                                                                       (lambda(x)
+                                                                         (make-builtin-num
+                                                                           0))
+                                                                       l))
+                                                       efun 
+                                                       (v*s*e-e sarg-r)
+                                                       (v*s*e-s sarg-r))) 
+                                          (bind-args argxs sarg argvs arges efun
+                                                   cenv sc)))] 
+
+                                     (type-case Result (interp-env body e s) 
+                                        [v*s*e (vb sb eb) (v*s*e (VNone) sb env)] 
+                                        [Return (vb sb eb) (v*s*e vb sb env)] 
+                                        [Exception (vb sb eb) (Exception vb sb env)]))))))]
+      [VObject (b mval d)
+               (if (and (some? mval) (MetaClass? (some-v mval)))
+                  ; We're calling a class.
+                  ; Get its constructor
+                  (let ([f (v*s*e-v (get-field '__init__ vfun efun sfun))]
+                        ; Create an empty object. This will be the instance of that class.
+                        [o (new-object (MetaClass-c (some-v mval)) efun sfun)])
+                    (type-case CVal f
+                      [VClosure (cenv argxs sarg body)
+                                ; interpret the arguments to the constructor
+                         (local [(define-values (argvs-r sc ec)
+                                   (interp-cascade arges sfun efun))]
+                                (let ([exn? (filter Exception? argvs-r)])
+                                    (if (< 0 (length exn?))
+                                        (first exn?)
+                                      (let ([argvs (map v*s*e-v argvs-r)])
+                                       ; bind the (interpreted) arguments to the constructor
+                                       (local [(define-values (e s) 
+                                                (bind-args argxs sarg (cons o argvs) 
+                                                  (cons (CId 'init) arges) efun cenv sc))]
+                                    ; interpret the constructor body
+                                    (type-case Result (interp-env body e s)
+                                      [v*s*e (vb sb eb) (v*s*e 
+                                         (let ([obj (fetch (some-v 
+                                                             (lookup (first argxs)
+                                                                     eb)) sb)])
+                                           obj)
+                                         sb env)]
+                                      [Return (vb sb eb) (v*s*e vb sb env)]
+                                      [Exception (vb sb eb) (Exception vb sb env)]))))))]
+                      [else (error 'interp 
+                                   "__init__ not found. THIS SHOULDN'T HAPPEN.")]))
+                                     
+                  (error 'interp "I dont know how to call objects yet, bro"))]
+      [else (error 'interp "Not a closure or constructor")])]
+   [Return (vfun sfun efun) (return-exception efun sfun)]
+   [Exception (vfun sfun efun) (Exception vfun sfun efun)]))
 
 (define (interp-excepts [excepts : (listof CExpr)]
                         [sto : Store]
                         [env : Env]
-                        [exn : CVal]) : Result
-  (local [(define exn-type (VObject-antecedent exn))
+                        [exn : Result]) : Result
+  (local [(define exn-type (VObject-antecedent (Exception-v exn)))
           (define (find-match type exps)
             (cond
               [(empty? exps) (none)]
@@ -68,7 +146,11 @@
           (define match? (find-match exn-type excepts))]
 
     (if (some? match?)
-      (let ([result (interp-env (some-v match?) env sto)])
+      (let ([as-name (CExcept-name (some-v match?))])
+        (let ([result
+                (if (some? as-name)
+                    (interp-let (some-v as-name) exn (CExcept-body (some-v match?)))
+                    (interp-env (some-v match?) env sto))])
         (type-case Result result
           [v*s*e (vbody sbody ebody) (v*s*e (VNone) sbody ebody)]
           [Return (vbody sbody ebody) (return-exception ebody sbody)]
@@ -81,10 +163,20 @@
                                                      'args))
                                            sbody))))
                                    "No active exception to reraise")
-                       (Exception exn sbody ebody)
-                       result)]))
+                       (Exception (Exception-v exn) sbody ebody)
+                       result)])))
       (v*s*e (VNone) sto env))))
  
+(define (interp-let [name : symbol] [value : Result] [body : CExpr]) : Result
+  (let ([loc (new-loc)])
+    (type-case Result value
+      [v*s*e (vb sb eb)
+             (interp-env body
+                         (cons (hash-set (first eb) name loc) (rest eb))
+                         (hash-set sb loc vb))]
+      [Return (vb sb eb) (return-exception eb sb)]
+      [Exception (vb sb eb) (Exception vb sb eb)])))
+
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
   (type-case CExpr expr
@@ -175,7 +267,7 @@
     
     [CError (e) (type-case Result (interp-env e env sto)
                   [v*s*e (ve se ee)
-                         (raise-user-error (string-append "CERROR: " (pretty ve)))]
+                         (raise-user-error (pretty ve))]
                   [Return (ve se ee) (return-exception ee se)]
                   [Exception (ve se ee) (Exception ve se ee)])]
 
@@ -202,72 +294,14 @@
                              env)]
 
     [CLet (x bind body)
-          (letrec ([w (new-loc)])
-            (type-case Result (interp-env bind env sto)
-              [v*s*e (vb sb eb)
-                     (interp-env body
-                                 (cons (hash-set (first eb) x w) (rest eb))
-                                 (hash-set sb w vb))]
-              [Return (vb sb eb) (return-exception eb sb)]
-              [Exception (vb sb eb) (Exception vb sb eb)]))]
+          (let ([w (new-loc)]
+                [result (interp-env bind env sto)])
+            (interp-let x result body))]
 
-    [CApp (fun arges)
-     (type-case Result (interp-env fun env sto)
-       [v*s*e 
-        (vfun sfun efun) 
-        (type-case CVal vfun
-          [VClosure (cenv argxs sarg body)
-                      (local [(define-values (argvs-r sc ec) (interp-cascade arges sfun efun))]
-                         (let ([exn? (filter Exception? argvs-r)])
-                            (if (< 0 (length exn?))
-                                (first exn?)
-                                (let ([argvs (map v*s*e-v argvs-r)])
-                                  (local [(define-values (e s) 
-                                          (bind-args argxs sarg argvs arges efun cenv sc))]
-                          (type-case Result (interp-env body e s)
-                            [v*s*e (vb sb eb) (v*s*e (VNone) sb env)]
-                            [Return (vb sb eb) (v*s*e vb sb env)]
-                            [Exception (vb sb eb) (Exception vb sb env)]))))))]
-          [VObject (b mval d)
-                   (if (and (some? mval) (MetaClass? (some-v mval)))
-                      ; We're calling a class.
-                      ; Get its constructor
-                      (let ([f (v*s*e-v (get-field '__init__ vfun efun sfun))]
-                            ; Create an empty object. This will be the instance of that class.
-                            [o (new-object (MetaClass-c (some-v mval)) efun sfun)])
-                        (type-case CVal f
-                          [VClosure (cenv argxs sarg body)
-                                    ; interpret the arguments to the constructor
-                             (local [(define-values (argvs-r sc ec)
-                                       (interp-cascade arges sfun efun))]
-                                    (let ([exn? (filter Exception? argvs-r)])
-                                        (if (< 0 (length exn?))
-                                            (first exn?)
-                                          (let ([argvs (map v*s*e-v argvs-r)])
-                                           ; bind the (interpreted) arguments to the constructor
-                                           (local [(define-values (e s) 
-                                                    (bind-args argxs sarg (cons o argvs) 
-                                                      (cons (CId 'init) arges) efun cenv sc))]
-                                        ; interpret the constructor body
-                                        (type-case Result (interp-env body e s)
-                                          [v*s*e (vb sb eb) (v*s*e 
-                                             (let ([obj (fetch (some-v 
-                                                                 (lookup (first argxs)
-                                                                         eb)) sb)])
-                                               obj)
-                                             sb env)]
-                                          [Return (vb sb eb) (v*s*e vb sb env)]
-                                          [Exception (vb sb eb) (Exception vb sb env)]))))))]
-                          [else (error 'interp 
-                                       "__init__ not found. THIS SHOULDN'T HAPPEN.")]))
-                                         
-                      (error 'interp "I dont know how to call objects yet, bro"))]
-          [else (error 'interp "Not a closure or constructor")])]
-       [Return (vfun sfun efun) (return-exception efun sfun)]
-       [Exception (vfun sfun efun) (Exception vfun sfun efun)])]
+    [CApp (fun arges sarg) (interp-capp fun arges sarg env sto)]
 
     [CFunc (args sargs body) 
-           (v*s*e (VClosure (cons (hash empty) env) args sargs body) sto env)]
+           (v*s*e (VClosure (cons (hash empty) env) args sargs body) sto env)]    
 
     [CReturn (value) (type-case Result (interp-env value env sto)
                        [v*s*e (vv sv ev) (Return vv sv ev)]
@@ -322,6 +356,7 @@
                               env sto))]
     
     [CTryExceptElseFinally (try excepts orelse finally)
+       (begin ;(display try) (display "\n\n")
          (type-case Result (interp-env try env sto)
             [v*s*e (vtry stry etry)
                    (type-case Result (interp-env orelse etry stry)
@@ -338,13 +373,15 @@
             [Return (vtry stry etry) (return-exception etry stry)]
             ;; handle excepts here
             [Exception (vtry stry etry)
-               (local [(define result (interp-excepts excepts stry etry vtry))]
+                       (begin ;(display etry) (display "\n\n")
+               (local [(define result (interp-excepts excepts stry etry
+                                                      (Exception vtry stry etry)))]
                  (if (Exception? result)
                      result
-                     (interp-env finally (v*s*e-e result) (v*s*e-s result))))])]
+                     (interp-env finally (v*s*e-e result) (v*s*e-s result)))))]))]
 
     ;; add names to this
-    [CExcept (types body) (interp-env body env sto)]))
+    [CExcept (types name body) (interp-env body env sto)]))
 
 
     ;[else (error 'interp "haven't implemented a case yet")]))
@@ -463,7 +500,8 @@
 (define (make-exception [name : symbol] [error : string]) : CExpr
   (CApp
     (CId name)
-    (list (CStr error))))
+    (list (CStr error))
+    (none)))
 
 (define (mk-exception [type : symbol] [arg : string]
                       [env : Env] [sto : Store]) : Result
