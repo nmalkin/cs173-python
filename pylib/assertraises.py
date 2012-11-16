@@ -1,8 +1,8 @@
 def ___assertRaises(exc, fun, *args):
     try:
         fun(*args)
-    except TypeError:
+    except exc:
         pass
     else:
-        raise RuntimeError("Assert failure")
+        print("Assert failure!")
 

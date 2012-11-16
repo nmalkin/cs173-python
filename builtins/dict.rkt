@@ -3,6 +3,7 @@
 (require "../python-core-syntax.rkt")
 (require "../util.rkt")
 (require
+  (typed-in racket/base (andmap : (('a -> boolean) (listof 'a) -> 'b)))
   (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
   (typed-in racket/base (car : (('a * 'b)  -> 'b)))
   (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
@@ -37,6 +38,14 @@
               (def '__in__
                 (CFunc (list 'self 'other) (none)
                        (CReturn (CBuiltinPrim 'dict-in
+                                              (list
+                                               (CId 'self)
+                                               (CId 'other)
+                                               )))))
+
+              (def '__eq__
+                (CFunc (list 'self 'other) (none)
+                       (CReturn (CBuiltinPrim 'dict-eq
                                               (list
                                                (CId 'self)
                                                (CId 'other)
@@ -82,3 +91,24 @@
                           (hash-set! target (car pair) (cdr pair)))
                         (hash->list extras))
                    (some (VNone))))))
+
+(define (dict-eq (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict 'dict
+               (let ([self (MetaDict-contents mval1)]
+                     [other (MetaDict-contents mval2)]
+                     [compare (lambda (me them) ; check that they have all my values
+                                (andmap
+                                  (lambda (pair)
+                                    ; get their value for the current key
+                                    (let ([their-value (hash-ref them (car pair))])
+                                      (if (some? their-value) ; if it exists,
+                                        (equal? (some-v their-value) ; compare it
+                                                (cdr pair)) ; with my value
+                                        #f))) ; if their value DNE, they're not the same
+                                  (hash->list me)))])
+                 (begin
+                   (if (and (compare self other)
+                            (compare other self))
+                     (some true-val)
+                     (some false-val))))))
+

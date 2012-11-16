@@ -116,6 +116,7 @@ primitives here.
     ['dict-clear (dict-clear args env sto)]
     ['dict-in (dict-in args env sto)]
     ['dict-update (dict-update args env sto)]
+    ['dict-eq (dict-eq args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]
