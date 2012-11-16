@@ -13,10 +13,23 @@
                                                   (list
                                                    (CId 'self)
                                                    (CId 'other))))))
+                  (def '__init__
+                       (CFunc (list 'self 'other) (none) 
+                              (CAssign
+                                (CId 'self)
+                                (CApp (CGetField (CId 'other) '__list__)
+                                             (list (CId 'other))
+                                             (none)))))
+
                   (def '__len__
                     (CFunc (list 'self) (none)
                            (CReturn (CBuiltinPrim 'list-len
                                                   (list
+                                                   (CId 'self))))))
+                  (def '__list__
+                       (CFunc (list 'self) (none)
+                              (CReturn (CBuiltin 'list-cpy
+                                                 (list 
                                                    (CId 'self))))))
                   (def '__in__
                     (CFunc (list 'self 'test) (none)
@@ -36,6 +49,11 @@
                                                    (CId 'self)
                                                    (CId 'idx))))))))))
 
+(define (make-builtin-list [l : (listof CVal)]) : CVal
+  (VObject 'list
+           (some (MetaList l))
+           (make-hash empty)))
+
 (define (list+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'list 'list
                (some (VObject 'list
@@ -49,6 +67,10 @@
                (some (VObject 'num
                               (some (MetaNum (length (MetaList-v mval1))))
                               (hash empty)))))
+(define (list-cpy [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof
+                                                                        CVal)
+  (check-types args env sto 'list
+       (some (make-builtin-list (MetaList-v mval1)))))
 
 (define (list-in [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
  (letrec ([self-list (MetaList-v (some-v (VObject-mval (first args))))]

@@ -75,6 +75,11 @@
                             (CReturn (CBuiltinPrim 'strlen
                                          (list
                                            (CId 'self))))))
+                  (def '__list__
+                     (CFunc (list 'self) (none)
+                            (CReturn (CBuiltinPrim 'strlist
+                                         (list
+                                           (CId 'self))))))
                   (def '__attr__
                      (CFunc (list 'self 'idx) (none)
                             (CReturn (CBuiltinPrim 'strattr
@@ -86,6 +91,19 @@
   (CObject
    'str
    (some (MetaStr s))))
+(define (strlist [args : (listof CVal)] [env : Env] [sto : Store])
+  : (optionof CVal)
+  (check-types args env sto 'str
+               (some (VObject 'list
+                              (some (MetaList 
+                                      (map
+                                        (lambda(s)
+                                         (VObject 'str 
+                                                  (some (MetaStr (make-string 1 s)))
+                                                  (make-hash empty)))
+                                        (string->list (MetaStr-s mval1)))))
+                              (make-hash empty)))))
+                                      
 
 (define (str+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'str 'str

@@ -58,7 +58,7 @@
  (type-case Result (interp-env fun env sto)
    [v*s*e (vfun sfun efun) 
     (type-case CVal vfun
-      [VClosure (cenv argxs sarg body)
+      [VClosure (cenv argxs vararg body)
                   (local [(define-values (argvs-r sc ec) (interp-cascade arges sfun efun))]
                      (let ([exn? (filter Exception? argvs-r)])
                         (if (< 0 (length exn?))
@@ -76,7 +76,7 @@
                                                             (v*s*e-v
                                                               sarg-r))))])
                                             (bind-args argxs 
-                                                       sarg 
+                                                       vararg 
                                                        (append argvs l)
                                                        (append arges (map
                                                                        (lambda(x)
@@ -86,7 +86,7 @@
                                                        efun 
                                                        (v*s*e-e sarg-r)
                                                        (v*s*e-s sarg-r))) 
-                                          (bind-args argxs sarg argvs arges efun
+                                          (bind-args argxs vararg argvs arges efun
                                                    cenv sc)))] 
 
                                      (type-case Result (interp-env body e s) 
@@ -101,7 +101,7 @@
                         ; Create an empty object. This will be the instance of that class.
                         [o (new-object (MetaClass-c (some-v mval)) efun sfun)])
                     (type-case CVal f
-                      [VClosure (cenv argxs sarg body)
+                      [VClosure (cenv argxs vararg body)
                                 ; interpret the arguments to the constructor
                          (local [(define-values (argvs-r sc ec)
                                    (interp-cascade arges sfun efun))]
@@ -111,7 +111,7 @@
                                       (let ([argvs (map v*s*e-v argvs-r)])
                                        ; bind the (interpreted) arguments to the constructor
                                        (local [(define-values (e s) 
-                                                (bind-args argxs sarg (cons o argvs) 
+                                                (bind-args argxs vararg (cons o argvs) 
                                                   (cons (CId 'init) arges) efun cenv sc))]
                                     ; interpret the constructor body
                                     (type-case Result (interp-env body e s)
@@ -305,16 +305,14 @@
                 [result (interp-env bind env sto)])
             (interp-let x result body))]
 
-    [CApp (fun arges sarg) (begin (display "APP")
-                             (display fun) (display "\n")
-                             (display env) (display "\n\n")
-                             (interp-capp fun
-                                        arges
+    [CApp (fun arges sarg) (interp-capp fun
+                                        arges 
+                                        ; hackhack todo: fix
                                         (if (none? sarg)
                                           (some (CTuple empty))
-                                          sarg)
-                                        env
-                                        sto))]
+                                            sarg)
+                                        env 
+                                        sto)]
 
     [CFunc (args sargs body) 
            (v*s*e (VClosure (cons (hash empty) env) args sargs body) sto env)]    

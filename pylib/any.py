@@ -3,7 +3,7 @@ def any(l):
         try:
             l.__attr__
         except Exception:
-            raise TypeError
+            raise TypeError("Not an iterable type")
 
         if l.__len__() == i:
             return False

@@ -1,7 +1,8 @@
 #lang plai-typed
 
 (require "../python-core-syntax.rkt")
-(require "../util.rkt")
+(require "../util.rkt"
+         "list.rkt")
 
 (define tuple-class : CExpr
   (CClass
@@ -31,6 +32,12 @@
                                                    (CId 'self)
                                                    (CId 'test)
                                                    )))))
+                  (def '__list__
+                     (CFunc (list 'self) (none)
+                            (CReturn (CBuiltinPrim 'tuple-list
+                                         (list
+                                           (CId 'self))))))
+
                   (def '__str__
                        (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'tuple-str
@@ -47,6 +54,15 @@
   (VObject 'tuple
            (some (MetaTuple l))
            (make-hash empty)))
+
+;; convert a tuple to a list
+(define (tuple-list (args : (listof CVal)) 
+                    [env : Env] [sto : Store]) : (optionof CVal)
+  (some (make-builtin-list (list (VObject 'num (some (MetaNum 1)) (make-hash
+                                                                    empty))))))
+  ;(check-types args env sto 'tuple
+  ;            (some 
+  ;              (make-builtin-list (MetaTuple-v mval1)))))
 
 (define (tuple+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'tuple 'tuple
