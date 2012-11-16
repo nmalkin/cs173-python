@@ -84,7 +84,7 @@
                                                                            0))
                                                                        l))
                                                        efun 
-                                                       (v*s*e-e sarg-r)
+                                                       cenv 
                                                        (v*s*e-s sarg-r))) 
                                           (bind-args argxs vararg argvs arges efun
                                                    cenv sc)))] 
@@ -306,12 +306,11 @@
             (interp-let x result body))]
 
     [CApp (fun arges sarg) (interp-capp fun
-                                        arges 
-                                        ; hackhack todo: fix
+                                        arges
                                         (if (none? sarg)
                                           (some (CTuple empty))
-                                            sarg)
-                                        env 
+                                          sarg)
+                                        env
                                         sto)]
 
     [CFunc (args sargs body) 
