@@ -348,9 +348,8 @@
                                               new-s
                                               new-e)
                                        ;; todo: real exceptions
-                                       (error 'interp (string-append "Builtin error for "
-                                                                     (symbol->string
-                                                                       op)))))))))]
+                                       (mk-exception 'TypeError "Bad types in
+                                                     builtin call" env sto)))))))]
     [CRaise (expr) 
             (if (some? expr)
                 (type-case Result (interp-env (some-v expr) env sto)
