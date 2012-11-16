@@ -112,3 +112,16 @@
                      (some true-val)
                      (some false-val))))))
 
+
+(define (dict-get (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (letrec ([self (MetaDict-contents mval1)]
+                        [attr (second args)]
+                        [dne (if (>= (length args) 3)
+                                 (third args)
+                                 (VNone))]
+                        [attr-value (hash-ref self attr)])
+                 (if (some? attr-value)
+                     (some attr-value)
+                     (some dne)))))
+
