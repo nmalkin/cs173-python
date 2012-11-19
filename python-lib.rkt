@@ -199,6 +199,7 @@ that calls the primitive `print`.
         (bind 'bool (CNone))
         (bind 'any (CNone))
         (bind 'all (CNone))
+        (bind 'NameError (CNone))
 
         (bind 'object object-class)
         (bind 'num (num-class 'num))

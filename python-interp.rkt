@@ -64,7 +64,7 @@
                         (if (< 0 (length exn?))
                             (first exn?)
                             (let ([argvs (map v*s*e-v argvs-r)])
-                              (local [(define-values (e s)
+                              (local [(define-values (e s mayb-ex)
                                         (if (some? stararg)
                                           (letrec ([sarg-r (interp-env (some-v
                                                                          stararg) ec sc)]
@@ -88,11 +88,12 @@
                                                        (v*s*e-s sarg-r))) 
                                           (bind-args argxs vararg argvs arges efun
                                                    cenv sc)))] 
-
-                                     (type-case Result (interp-env body e s) 
-                                        [v*s*e (vb sb eb) (v*s*e (VNone) sb env)] 
-                                        [Return (vb sb eb) (v*s*e vb sb env)] 
-                                        [Exception (vb sb eb) (Exception vb sb env)]))))))]
+                                     (if (some? mayb-ex)
+                                       (some-v mayb-ex)
+                                         (type-case Result (interp-env body e s) 
+                                            [v*s*e (vb sb eb) (v*s*e (VNone) sb env)] 
+                                            [Return (vb sb eb) (v*s*e vb sb env)] 
+                                            [Exception (vb sb eb) (Exception vb sb env)])))))))]
       [VObject (b mval d)
                (if (and (some? mval) (MetaClass? (some-v mval)))
                   ; We're calling a class.
@@ -110,7 +111,7 @@
                                         (first exn?)
                                       (let ([argvs (map v*s*e-v argvs-r)])
                                        ; bind the (interpreted) arguments to the constructor
-                                       (local [(define-values (e s) 
+                                       (local [(define-values (e s mayb-ex)
                                                 (bind-args argxs vararg (cons o argvs) 
                                                   (cons (CId 'init) arges) efun cenv sc))]
                                     ; interpret the constructor body
@@ -305,7 +306,8 @@
                 [result (interp-env bind env sto)])
             (interp-let x result body))]
 
-    [CApp (fun arges sarg) (interp-capp fun
+    [CApp (fun arges sarg) 
+          (interp-capp fun
                                         arges
                                         (if (none? sarg)
                                           (some (CTuple empty))
@@ -342,14 +344,16 @@
                                      (first exn?)
                                      (let ([val-list (map v*s*e-v result-list)])
                                        (local [(define mayb-val 
-                                               (builtin-prim op val-list env sto))] 
+                                               (builtin-prim op val-list new-e
+                                                             new-s))] 
                                    (if (some? mayb-val)
                                        (v*s*e (some-v mayb-val)
                                               new-s
                                               new-e)
-                                       ;; todo: real exceptions
+                                       ;; todo: more useful errors
                                        (mk-exception 'TypeError "Bad types in
-                                                     builtin call" env sto)))))))]
+                                                     builtin call" env
+                                                     sto)))))))]
     [CRaise (expr) 
             (if (some? expr)
                 (type-case Result (interp-env (some-v expr) env sto)
@@ -466,7 +470,7 @@
                    [vals : (listof CVal)] 
                    [arges : (listof CExpr)] 
                    [env : Env] [ext : Env]
-                   [sto : Store]) : (Env * Store)
+                   [sto : Store]) : (Env * Store * (optionof Result))
   (cond [(and (empty? args) (empty? vals)) 
               (if (some? sarg)
                   (bind-args (list (some-v sarg))
@@ -476,7 +480,7 @@
                              env 
                              ext
                              sto)
-                  (values ext sto))]
+                  (values ext sto (none)))]
         ;need to bind star args!
         [(and (empty? args) (some? sarg)) 
          (let ([star-tuple (make-builtin-tuple vals)])
@@ -487,7 +491,8 @@
 
 
         [(or (empty? args) (empty? vals))
-         (error 'interp "Arity mismatch")]
+         (values ext sto (some (mk-exception 'TypeError "Arity mismatch" env
+                                             sto)))]
         [(and (cons? args) (cons? vals))
          (let ([val (first vals)]
                [where -1]

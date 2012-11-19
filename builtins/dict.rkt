@@ -34,7 +34,12 @@
                           (CReturn (CBuiltinPrim 'dict-update
                                                      (list (CId 'self)
                                                            (CId 'other))))))
-
+              (def 'get
+                   (CFunc (list 'self 'key) (some 'default)
+                          (CReturn (CBuiltinPrim 'dict-get 
+                                        (list (CId 'self) 
+                                              (CId 'key) 
+                                              (CId 'default))))))
               (def '__in__
                 (CFunc (list 'self 'other) (none)
                        (CReturn (CBuiltinPrim 'dict-in
@@ -81,6 +86,19 @@
                  (if (hash-has-key? contents (second args)) ; FIXME: what if (second args) DNE?
                      (some true-val)
                      (some false-val)))))
+(define (dict-get [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (local [(define d (first args))
+          (define meta-d (MetaDict-contents (some-v (VObject-mval d))))
+          (define key (second args))
+          (define startuple (third args))
+          (define meta-startuple (MetaTuple-v (some-v (VObject-mval
+                                                        startuple))))
+          (define mayb-val (hash-ref meta-d key))]
+         (if (some? mayb-val)
+           mayb-val
+           (if (not (= 0 (length meta-startuple)))
+             (some (first meta-startuple))
+             (some (VNone))))))
 
 (define (dict-update (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict 'dict
