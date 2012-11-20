@@ -1,7 +1,8 @@
 #lang plai-typed
 
 (require "../python-core-syntax.rkt")
-(require "../util.rkt")
+(require "../util.rkt"
+         "none.rkt")
 (require
   (typed-in racket/base (andmap : (('a -> boolean) (listof 'a) -> 'b)))
   (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
@@ -78,7 +79,7 @@
                    ; remove all key-value pairs from hash
                    (map (lambda (key) (hash-remove! contents key))
                         (hash-keys contents))
-                   (some (VNone))))))
+                   (some vnone)))))
 
 (define (dict-in [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict
@@ -98,7 +99,7 @@
            mayb-val
            (if (not (= 0 (length meta-startuple)))
              (some (first meta-startuple))
-             (some (VNone))))))
+             (some vnone)))))
 
 (define (dict-update (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict 'dict
@@ -108,7 +109,7 @@
                    (map (lambda (pair)
                           (hash-set! target (car pair) (cdr pair)))
                         (hash->list extras))
-                   (some (VNone))))))
+                   (some vnone)))))
 
 (define (dict-eq (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict 'dict

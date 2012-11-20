@@ -6,6 +6,7 @@
          "builtins/bool.rkt"
          "builtins/tuple.rkt"
          "builtins/num.rkt"
+         "builtins/none.rkt"
          "util.rkt"
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
          (typed-in racket/base (expt : (number number -> number)))
@@ -80,8 +81,7 @@
                                                        (append argvs l)
                                                        (append arges (map
                                                                        (lambda(x)
-                                                                         (make-builtin-num
-                                                                           0))
+                                                                         (make-builtin-num 0))
                                                                        l))
                                                        efun 
                                                        cenv 
@@ -91,7 +91,7 @@
                                      (if (some? mayb-ex)
                                        (some-v mayb-ex)
                                          (type-case Result (interp-env body e s) 
-                                            [v*s*e (vb sb eb) (v*s*e (VNone) sb env)] 
+                                            [v*s*e (vb sb eb) (v*s*e vnone sb env)] 
                                             [Return (vb sb eb) (v*s*e vb sb env)] 
                                             [Exception (vb sb eb) (Exception vb sb env)])))))))]
       [VObject (b mval d)
@@ -154,7 +154,7 @@
                     (interp-let (some-v as-name) exn (CExcept-body (some-v match?)))
                     (interp-env (some-v match?) env sto))])
         (type-case Result result
-          [v*s*e (vbody sbody ebody) (v*s*e (VNone) sbody ebody)]
+          [v*s*e (vbody sbody ebody) (v*s*e vnone sbody ebody)]
           [Return (vbody sbody ebody) (return-exception ebody sbody)]
           [Exception (vbody sbody ebody)
                      (if (string=? (MetaStr-s
@@ -167,7 +167,7 @@
                                    "No active exception to reraise")
                        (Exception (Exception-v exn) sbody ebody)
                        result)])))
-      (v*s*e (VNone) sto env))))
+      (v*s*e vnone sto env))))
  
 (define (interp-let [name : symbol] [value : Result] [body : CExpr]) : Result
   (let ([loc (new-loc)])
@@ -191,7 +191,7 @@
     [CStr (s) (v*s*e (VObject 'str (some (MetaStr s)) (hash empty)) sto env)]
     [CTrue () (v*s*e true-val sto env)]
     [CFalse () (v*s*e false-val sto env)]
-    [CNone () (v*s*e (VNone) sto env)]
+    [CNone () (v*s*e vnone sto env)]
 
     [CClass (name base body)
                (type-case Result (interp-env body (cons (hash empty) env) sto)
@@ -378,7 +378,7 @@
                       [v*s*e (velse selse eelse)
                              (type-case Result (interp-env finally eelse selse)
                                 [v*s*e (vfin sfin efin)
-                                       (v*s*e (VNone) sfin efin)]
+                                       (v*s*e vnone sfin efin)]
                                 [Return (vfin sfin efin) (return-exception efin sfin)]
                                 [Exception (vfin sfin efin)
                                            (Exception vfin sfin efin)])]
@@ -403,7 +403,7 @@
 (define (assign-to-id id v e s)
   (type-case (optionof Address) (hash-ref (first e) (CId-x id)) 
     [some (w) (begin 
-               (v*s*e (VNone) 
+               (v*s*e vnone
                       (hash-set s w v) 
                       (cons 
                         (hash-set (first e)
@@ -411,7 +411,7 @@
                         (rest e))))] 
     [none () (let ([w (new-loc)]) 
                (begin 
-                (v*s*e (VNone) 
+                (v*s*e vnone
                        (hash-set s w v) 
                        (cons 
                          (hash-set 
@@ -448,14 +448,14 @@
 	[VObject (ante-name mval d)
 	  (let ([w (hash-ref (VObject-dict vo) f)])
 	    (type-case (optionof Address) (hash-ref (VObject-dict vo) f)
-	      [some (w) (v*s*e (VNone) (hash-set so w v) eo)]
+	      [some (w) (v*s*e vnone (hash-set so w v) eo)]
 	      [none () (let ([w (new-loc)])
 			   (let ([nw (hash-ref (first eo) (CId-x o))])
                   (let ([snew (hash-set so (some-v nw) 
 			                        (VObject ante-name
                                        mval
 						                           (hash-set (VObject-dict vo) f w)))])
-      		           	(v*s*e (VNone)
+      		           	(v*s*e vnone
                              (hash-set snew w v)
 			                       eo))))]))]
     	[else (error 'interp "Can't assign to nonobject.")])]
@@ -548,13 +548,12 @@
     [VStr (s) (if (string=? "" s)
               false 
               true)]
-    [VNone () false]
     [VClosure (e a s b) true]
     [VObject (a mval d) (truthy-object? (VObject a mval d))]))
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
-    [v*s*e (vexpr sexpr env) (if (not (VNone? vexpr)) 
+    [v*s*e (vexpr sexpr env) (if (not (MetaNone? (some-v (VObject-mval vexpr))))
                          (begin (display (pretty vexpr)) 
                                 (display "\n"))
                          (display ""))]

@@ -40,7 +40,6 @@ ParselTongue.
 
 (define-type CVal
   [VStr (s : string)]
-  [VNone]
   [VObject (antecedent : symbol) (mval : (optionof MetaVal)) (dict : object-dict)]
   [VClosure (env : Env) (args : (listof symbol)) (vararg : (optionof symbol)) (body : CExpr)])
 
@@ -50,7 +49,8 @@ ParselTongue.
              [MetaList (v : (listof CVal))]
              [MetaTuple (v : (listof CVal))]
              [MetaDict (contents : (hashof CVal CVal))]
-             [MetaClass (c : symbol)])
+             [MetaClass (c : symbol)]
+             [MetaNone])
              
 
 ;; env is a listof hashof's so there are deliniations between closures

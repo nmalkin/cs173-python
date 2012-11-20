@@ -97,6 +97,7 @@
                  [MetaList (v) (if (= (length v) 0) false true)]
                  [MetaTuple (v) (if (= (length v) 0) false true)]
                  [MetaDict (contents) (if (= (length (hash-keys contents)) 0) false true)]
+                 [MetaNone () false]
                  [else true]))
    true))
 
@@ -112,6 +113,3 @@
                                "Object"
                                (symbol->string ante)) ">")))) (make-hash empty)))]
             [else (error 'obj-str "Non object")])))
-
-
-
