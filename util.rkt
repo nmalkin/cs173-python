@@ -126,6 +126,12 @@
     [MetaNone () "None"]
     ))
 
+(define (make-exception [name : symbol] [error : string]) : CExpr
+  (CApp
+    (CId name)
+    (list (CStr error))
+    (none)))
+
 ; generates a new unique variable name that isn't allowed by user code 
 (define new-id
   (let ([n (box 0)])

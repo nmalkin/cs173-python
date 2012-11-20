@@ -223,6 +223,7 @@ that calls the primitive `print`.
         (bind 'AttributeError (make-exception-class 'AttributeError))
         (bind 'RuntimeError (make-exception-class 'RuntimeError))
         (bind 'KeyError (make-exception-class 'KeyError))
+        (bind 'ZeroDivisionError (make-exception-class 'ZeroDivisionError))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)

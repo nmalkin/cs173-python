@@ -521,11 +521,6 @@
                   [s (hash-set sto where (first vals))])
                  (bind-args (rest args) sarg (rest vals) (rest arges) env e s))))]))
 
-(define (make-exception [name : symbol] [error : string]) : CExpr
-  (CApp
-    (CId name)
-    (list (CStr error))
-    (none)))
 
 (define (mk-exception [type : symbol] [arg : string]
                       [env : Env] [sto : Store]) : Result
