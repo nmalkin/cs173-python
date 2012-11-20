@@ -88,18 +88,19 @@
                      (some true-val)
                      (some false-val)))))
 (define (dict-get [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
-  (local [(define d (first args))
-          (define meta-d (MetaDict-contents (some-v (VObject-mval d))))
-          (define key (second args))
-          (define startuple (third args))
-          (define meta-startuple (MetaTuple-v (some-v (VObject-mval
-                                                        startuple))))
-          (define mayb-val (hash-ref meta-d key))]
-         (if (some? mayb-val)
-           mayb-val
-           (if (not (= 0 (length meta-startuple)))
-             (some (first meta-startuple))
-             (some vnone)))))
+  (check-types args env sto 'dict
+      (local [(define d (first args))
+              (define meta-d (MetaDict-contents (some-v (VObject-mval d))))
+              (define key (second args))
+              (define startuple (third args))
+              (define meta-startuple (MetaTuple-v (some-v (VObject-mval
+                                                            startuple))))
+              (define mayb-val (hash-ref meta-d key))]
+             (if (some? mayb-val)
+               mayb-val
+               (if (not (= 0 (length meta-startuple)))
+                 (some (first meta-startuple))
+                 (some vnone))))))
 
 (define (dict-update (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict 'dict
