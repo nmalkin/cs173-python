@@ -126,6 +126,21 @@
               "}")]
     ))
 
+(define (pretty-exception [exn : CVal] [sto : Store]) : string
+  (string-join
+    (list
+      (symbol->string (VObject-antecedent exn))
+      (string-join
+        (map pretty
+             (MetaTuple-v
+               (some-v (VObject-mval
+                         (fetch (some-v
+                                  (hash-ref
+                                    (VObject-dict exn) 'args))
+                                sto)))))
+        " "))
+    ": "))
+
 ; generates a new unique variable name that isn't allowed by user code 
 (define new-id
   (let ([n (box 0)])

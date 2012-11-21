@@ -18,13 +18,17 @@
    'str 
    'object
    (seq-ops (list ;;how do I write this one?
-                  ;(def '__init__
-                  ;  (CFunc (list 'self 'inputstr)
-                  ;         (CAssign
-                  ;           (CId 'self)
-                  ;           (CObject
-                  ;             'str
-                  ;             (some (MetaVal (CId 'inputstr)))))))
+                  (def '__init__
+                    (CFunc (list 'self 'init) (none)
+                           (CAssign
+                             (CId 'self)
+                             (CApp
+                               (CGetField
+                                 (CId 'init)
+                                 '__str__)
+                               (list
+                                 (CId 'init))
+                               (none)))))
                   (def '__add__
                     (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'str+
@@ -46,7 +50,6 @@
                                          (list
                                           (CId 'self)
                                           (CId 'other))))))
-
                   (def '__cmp__
                      (CFunc (list 'self 'other) (none)
                             (CReturn (CBuiltinPrim 'strcmp
@@ -69,7 +72,6 @@
                             (CReturn (CBuiltinPrim 'strmax
                                          (list
                                            (CId 'self))))))
-
                   (def '__len__
                      (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'strlen

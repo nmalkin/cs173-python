@@ -218,12 +218,12 @@
                   (desugar finally))]
     
     [PyExcept (types body)
-              (CExcept types
+              (CExcept (map desugar types)
                        (none)
                        (desugar body))]
 
     [PyExceptAs (types name body)
-                (CExcept types
+                (CExcept (map desugar types)
                          (some name)
                          (desugar body))]
 

@@ -21,7 +21,7 @@ primitives here.
 
 |#
 
-(require (typed-in racket/base [display : (string -> void)]))
+;(require (typed-in racket/base [display : (string -> void)]))
 
 (define (print arg)
   (display (string-append (pretty arg) "\n")))
@@ -121,7 +121,30 @@ primitives here.
     ;object 
     ['obj-str (obj-str args)]
 
+    ;exceptions
+    ['exception-str (let ([arg (first args)])
+                      (some (VObject 'str
+                        (some (MetaStr
+                                (pretty-exception arg sto)))
+                        (hash empty))))]
+                            
+
     ;bool
     ['bool-init (bool-init args env sto)]
+
+    ;isinstance
+    ['isinstance (begin (display env) (display "\n")
+                        (display (fetch 96 sto)) (display "\n\n")
+                   (if (or (none? (VObject-mval (second args)))
+                           (not (MetaClass? (some-v (VObject-mval (second args))))))
+                   (none)
+                   (if (object-is? (first args) 
+                                   (MetaClass-c 
+                                     (some-v 
+                                       (VObject-mval (second args))))
+                                   env
+                                   sto)
+                     (some true-val)
+                     (none))))]
 
 ))

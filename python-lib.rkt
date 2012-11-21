@@ -102,20 +102,8 @@ that calls the primitive `print`.
                (def '__str__
                     (CFunc (list 'self) (none)
                            (CReturn
-                             (CApp
-                               (CGetField
-                                 (CId 'self)
-                                 '__add__)
-                               (list
-                                 (CGetField
-                                   (CId 'self)
-                                   '__class__)
-                                 (CGetField 
-                                   (CGetField
-                                     (CId 'self)
-                                     'args)
-                                   '__str__))
-                               (none)))))))))
+                               (CBuiltinPrim 'exception-str
+                                 (list (CId 'self))))))))))
 
 (define (make-exception-class [name : symbol]) : CExpr
   (CClass
@@ -183,6 +171,13 @@ that calls the primitive `print`.
         (list (CId 'self))
         (none)))))
 
+(define isinstance-lambda
+  (CFunc (list 'self 'type) (none)
+    (CReturn
+      (CBuiltinPrim 'isinstance
+                    (list (CId 'self)
+                          (CId 'type))))))
+
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
 
@@ -199,6 +194,14 @@ that calls the primitive `print`.
         (bind 'bool (CNone))
         (bind 'any (CNone))
         (bind 'all (CNone))
+        (bind 'NameError (CNone))
+        (bind 'TypeError (CNone))
+        (bind 'SyntaxError (CNone))
+        (bind 'AttributeError (CNone))
+        (bind 'RuntimeError (CNone))
+        (bind 'KeyError (CNone))
+        (bind 'UnboundLocalError (CNone))
+        (bind 'IndexError (CNone))
 
         (bind 'object object-class)
         (bind 'num (num-class 'num))
@@ -213,6 +216,7 @@ that calls the primitive `print`.
         (bind 'abs abs-lambda)
         (bind 'int int-lambda)
         (bind 'float float-lambda)
+        (bind 'isinstance isinstance-lambda)
         (bind 'print print-lambda)
 
         (bind 'Exception exception)
@@ -222,6 +226,8 @@ that calls the primitive `print`.
         (bind 'AttributeError (make-exception-class 'AttributeError))
         (bind 'RuntimeError (make-exception-class 'RuntimeError))
         (bind 'KeyError (make-exception-class 'KeyError))
+        (bind 'UnboundLocalError (make-exception-class 'UnboundLocalError))
+        (bind 'IndexError (make-exception-class 'IndexError))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
