@@ -194,7 +194,7 @@
                                 (CExcept-body (some-v match?)))
                     (interp-env (some-v match?) henv hsto))])
             (type-case Result result
-              [v*s*e (vbody sbody ebody) (v*s*e (VNone) sbody ebody)]
+              [v*s*e (vbody sbody ebody) (v*s*e vnone sbody ebody)]
               [Return (vbody sbody ebody) (return-exception ebody sbody)]
               [Exception (vbody sbody ebody)
                          (if (string=? (MetaStr-s
@@ -211,7 +211,7 @@
                                        "No active exception to reraise")
                            (Exception (Exception-v exn) sbody ebody)
                            result)])))
-        (v*s*e (VNone) hsto henv)))))
+        (v*s*e vnone hsto henv)))))
 
 (define (interp-let [name : symbol] [value : Result] [body : CExpr]) : Result
   (let ([loc (new-loc)])
