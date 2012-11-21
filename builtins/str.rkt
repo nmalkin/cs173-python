@@ -17,14 +17,14 @@
   (CClass
    'str 
    'object
-   (seq-ops (list ;;how do I write this one?
-                  ;(def '__init__
-                  ;  (CFunc (list 'self 'inputstr)
-                  ;         (CAssign
-                  ;           (CId 'self)
-                  ;           (CObject
-                  ;             'str
-                  ;             (some (MetaVal (CId 'inputstr)))))))
+   (seq-ops (list 
+                  (def '__init__
+                       (CFunc (list 'self 'other) (none) 
+                              (CAssign
+                                (CId 'self)
+                                (CApp (CGetField (CId 'other) '__str__)
+                                             (list (CId 'other))
+                                             (none)))))
                   (def '__add__
                     (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'str+
