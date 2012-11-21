@@ -9,7 +9,9 @@
          "builtins/object.rkt"
          "builtins/bool.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
-         (typed-in racket/base (number->string : (number -> string))))
+         (typed-in racket/base (number->string : (number -> string)))
+         (typed-in racket/base (quotient : (number number -> number)))
+         (typed-in racket/base (remainder : (number number -> number))))
 
 #|
 
@@ -50,7 +52,17 @@ primitives here.
                                         (make-hash empty))))]
     ['num/ (check-types args env sto 'num 'num 
                         (some (VObject 'num (some (MetaNum 
-                                                    (* (MetaNum-n mval1) 
+                                                    (/ (MetaNum-n mval1) 
+                                                       (MetaNum-n mval2))))
+                                        (make-hash empty))))]
+    ['num// (check-types args env sto 'num 'num 
+                        (some (VObject 'num (some (MetaNum 
+                                                    (quotient (MetaNum-n mval1) 
+                                                       (MetaNum-n mval2))))
+                                        (make-hash empty))))]
+    ['num% (check-types args env sto 'num 'num 
+                        (some (VObject 'num (some (MetaNum 
+                                                    (quotient (MetaNum-n mval1) 
                                                        (MetaNum-n mval2))))
                                         (make-hash empty))))]
     ['num= (check-types args env sto 'num 'num 
