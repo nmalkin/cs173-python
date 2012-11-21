@@ -9,7 +9,9 @@
          "builtins/object.rkt"
          "builtins/bool.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
-         (typed-in racket/base (number->string : (number -> string))))
+         (typed-in racket/base (number->string : (number -> string)))
+         (typed-in racket/base (quotient : (number number -> number)))
+         (typed-in racket/base (remainder : (number number -> number))))
 
 #|
 
@@ -50,7 +52,17 @@ primitives here.
                                         (make-hash empty))))]
     ['num/ (check-types args env sto 'num 'num 
                         (some (VObject 'num (some (MetaNum 
-                                                    (* (MetaNum-n mval1) 
+                                                    (/ (MetaNum-n mval1) 
+                                                       (MetaNum-n mval2))))
+                                        (make-hash empty))))]
+    ['num// (check-types args env sto 'num 'num 
+                        (some (VObject 'num (some (MetaNum 
+                                                    (quotient (MetaNum-n mval1) 
+                                                       (MetaNum-n mval2))))
+                                        (make-hash empty))))]
+    ['num% (check-types args env sto 'num 'num 
+                        (some (VObject 'num (some (MetaNum 
+                                                    (quotient (MetaNum-n mval1) 
                                                        (MetaNum-n mval2))))
                                         (make-hash empty))))]
     ['num= (check-types args env sto 'num 'num 
@@ -94,6 +106,7 @@ primitives here.
     ['strmax (strmax args env sto)]
     ['strin (strin args env sto)]
     ['strattr (strattr args env sto)]
+    ['strlist (strlist args env sto)]
 
     ;list
     ['list+ (list+ args env sto)]
@@ -101,6 +114,7 @@ primitives here.
     ['list-in (list-in args env sto)]
     ['list-attr (list-attr args env sto)]
     ['list-str (list-str args env sto)]
+    ['list-cpy (list-cpy args env sto)]
 
     ;tuple
     ['tuple+ (tuple+ args env sto)]
@@ -109,6 +123,7 @@ primitives here.
     ['tuple-in (tuple-in args env sto)]
     ['tuple-attr (tuple-attr args env sto)]
     ['tuple-str (tuple-str args env sto)]
+    ['tuple-list (tuple-list args env sto)]
 
     ;dict
     ['dict-len (dict-len args env sto)]
@@ -117,6 +132,7 @@ primitives here.
     ['dict-in (dict-in args env sto)]
     ['dict-update (dict-update args env sto)]
     ['dict-eq (dict-eq args env sto)]
+    ['dict-get (dict-get args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]

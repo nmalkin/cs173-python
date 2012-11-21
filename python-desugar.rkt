@@ -77,6 +77,12 @@
                  ['Div (CApp (CGetField left-c '__div__)
                               (list left-c right-c)
                               (none))]
+                 ['FloorDiv (CApp (CGetField left-c '__floordiv__)
+                              (list left-c right-c)
+                              (none))]
+                 ['Mod (CApp (CGetField left-c '__mod__)
+                              (list left-c right-c)
+                              (none))]
                  ['Eq (CApp (CGetField left-c '__eq__)
                             (list left-c right-c)
                             (none))]

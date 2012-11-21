@@ -8,3 +8,9 @@ def ___assertRaises(exc, fun, *args):
     else:
         print("Assert failure!")
 
+def f(a):
+    raise RuntimeError("asdf")
+    #print("lol")
+
+___assertRaises(TypeError, f, 1)
+

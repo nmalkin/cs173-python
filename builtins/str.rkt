@@ -17,18 +17,14 @@
   (CClass
    'str 
    'object
-   (seq-ops (list ;;how do I write this one?
+  (seq-ops (list 
                   (def '__init__
-                    (CFunc (list 'self 'init) (none)
-                           (CAssign
-                             (CId 'self)
-                             (CApp
-                               (CGetField
-                                 (CId 'init)
-                                 '__str__)
-                               (list
-                                 (CId 'init))
-                               (none)))))
+                       (CFunc (list 'self 'other) (none) 
+                              (CAssign
+                                (CId 'self)
+                                (CApp (CGetField (CId 'other) '__str__)
+                                             (list (CId 'other))
+                                             (none)))))
                   (def '__add__
                     (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'str+
@@ -77,6 +73,11 @@
                             (CReturn (CBuiltinPrim 'strlen
                                          (list
                                            (CId 'self))))))
+                  (def '__list__
+                     (CFunc (list 'self) (none)
+                            (CReturn (CBuiltinPrim 'strlist
+                                         (list
+                                           (CId 'self))))))
                   (def '__attr__
                      (CFunc (list 'self 'idx) (none)
                             (CReturn (CBuiltinPrim 'strattr
@@ -88,6 +89,19 @@
   (CObject
    'str
    (some (MetaStr s))))
+(define (strlist [args : (listof CVal)] [env : Env] [sto : Store])
+  : (optionof CVal)
+  (check-types args env sto 'str
+               (some (VObject 'list
+                              (some (MetaList 
+                                      (map
+                                        (lambda(s)
+                                         (VObject 'str 
+                                                  (some (MetaStr (make-string 1 s)))
+                                                  (make-hash empty)))
+                                        (string->list (MetaStr-s mval1)))))
+                              (make-hash empty)))))
+                                      
 
 (define (str+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'str 'str

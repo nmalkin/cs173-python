@@ -202,6 +202,7 @@ that calls the primitive `print`.
         (bind 'KeyError (CNone))
         (bind 'UnboundLocalError (CNone))
         (bind 'IndexError (CNone))
+        (bind 'ZeroDivisionError (CNone))
 
         (bind 'object object-class)
         (bind 'num (num-class 'num))
@@ -228,6 +229,7 @@ that calls the primitive `print`.
         (bind 'KeyError (make-exception-class 'KeyError))
         (bind 'UnboundLocalError (make-exception-class 'UnboundLocalError))
         (bind 'IndexError (make-exception-class 'IndexError))
+        (bind 'ZeroDivisionError (make-exception-class 'ZeroDivisionError))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)

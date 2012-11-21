@@ -29,10 +29,37 @@
                                            (CId 'other))))))
                (def '__div__ 
                     (CFunc (list 'self 'other)  (none)
-                           (CReturn (CBuiltinPrim 'num/
-                                         (list 
-                                           (CId 'self) 
-                                           (CId 'other))))))
+                           (CIf (CApp (CGetField (CId 'other) '__eq__) 
+                                       (list (CId 'other) (make-builtin-num 0))
+                                       (none))
+                                (CRaise (some (make-exception 'ZeroDivisionError
+                                                              "Divided by 0")))
+                                (CReturn (CBuiltinPrim 'num/
+                                              (list 
+                                                (CId 'self) 
+                                                (CId 'other)))))))
+               (def '__floordiv__ 
+                    (CFunc (list 'self 'other)  (none)
+                           (CIf (CApp (CGetField (CId 'other) '__eq__) 
+                                       (list (CId 'other) (make-builtin-num 0))
+                                       (none))
+                                (CRaise (some (make-exception 'ZeroDivisionError
+                                                              "Divided by 0")))
+                                (CReturn (CBuiltinPrim 'num//
+                                              (list 
+                                                (CId 'self) 
+                                                (CId 'other)))))))
+               (def '__mod__ 
+                    (CFunc (list 'self 'other)  (none)
+                           (CIf (CApp (CGetField (CId 'other) '__eq__) 
+                                       (list (CId 'other) (make-builtin-num 0))
+                                       (none))
+                                (CRaise (some (make-exception 'ZeroDivisionError
+                                                              "Divided by 0")))
+                                (CReturn (CBuiltinPrim 'num%
+                                              (list 
+                                                (CId 'self) 
+                                                (CId 'other)))))))
 
                (def '__str__
                    (CFunc (list 'self) (none)

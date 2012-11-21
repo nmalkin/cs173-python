@@ -6,6 +6,7 @@
          "builtins/bool.rkt"
          "builtins/tuple.rkt"
          "builtins/num.rkt"
+         "builtins/none.rkt"
          "util.rkt"
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
          (typed-in racket/base (expt : (number number -> number)))
@@ -58,13 +59,13 @@
  (type-case Result (interp-env fun env sto)
    [v*s*e (vfun sfun efun) 
     (type-case CVal vfun
-      [VClosure (cenv argxs sarg body)
+      [VClosure (cenv argxs vararg body)
                   (local [(define-values (argvs-r sc ec) (interp-cascade arges sfun efun))]
                      (let ([exn? (filter Exception? argvs-r)])
                         (if (< 0 (length exn?))
                             (first exn?)
                             (let ([argvs (map v*s*e-v argvs-r)])
-                              (local [(define-values (e s)
+                              (local [(define-values (e s mayb-ex)
                                         (if (some? stararg)
                                           (letrec ([sarg-r (interp-env (some-v
                                                                          stararg) ec sc)]
@@ -76,23 +77,23 @@
                                                             (v*s*e-v
                                                               sarg-r))))])
                                             (bind-args argxs 
-                                                       sarg 
+                                                       vararg 
                                                        (append argvs l)
                                                        (append arges (map
                                                                        (lambda(x)
-                                                                         (make-builtin-num
-                                                                           0))
+                                                                         (make-builtin-num 0))
                                                                        l))
                                                        efun 
                                                        cenv 
                                                        (v*s*e-s sarg-r))) 
-                                          (bind-args argxs sarg argvs arges efun
+                                          (bind-args argxs vararg argvs arges efun
                                                    cenv sc)))] 
-
-                                     (type-case Result (interp-env body e s) 
-                                        [v*s*e (vb sb eb) (v*s*e (VNone) sb env)] 
-                                        [Return (vb sb eb) (v*s*e vb sb env)] 
-                                        [Exception (vb sb eb) (Exception vb sb env)]))))))]
+                                     (if (some? mayb-ex)
+                                       (some-v mayb-ex)
+                                         (type-case Result (interp-env body e s) 
+                                            [v*s*e (vb sb eb) (v*s*e vnone sb env)] 
+                                            [Return (vb sb eb) (v*s*e vb sb env)] 
+                                            [Exception (vb sb eb) (Exception vb sb env)])))))))]
       [VObject (b mval d)
                (if (and (some? mval) (MetaClass? (some-v mval)))
                   ; We're calling a class.
@@ -101,7 +102,7 @@
                         ; Create an empty object. This will be the instance of that class.
                         [o (new-object (MetaClass-c (some-v mval)) efun sfun)])
                     (type-case CVal f
-                      [VClosure (cenv argxs sarg body)
+                      [VClosure (cenv argxs vararg body)
                                 ; interpret the arguments to the constructor
                          (local [(define-values (argvs-r sc ec)
                                    (interp-cascade arges sfun efun))]
@@ -110,8 +111,8 @@
                                         (first exn?)
                                       (let ([argvs (map v*s*e-v argvs-r)])
                                        ; bind the (interpreted) arguments to the constructor
-                                       (local [(define-values (e s) 
-                                                (bind-args argxs sarg (cons o argvs) 
+                                       (local [(define-values (e s mayb-ex)
+                                                (bind-args argxs vararg (cons o argvs) 
                                                   (cons (CId 'init) arges) efun cenv sc))]
                                     ; interpret the constructor body
                                     (type-case Result (interp-env body e s)
@@ -211,7 +212,7 @@
                            (Exception (Exception-v exn) sbody ebody)
                            result)])))
         (v*s*e (VNone) hsto henv)))))
- 
+
 (define (interp-let [name : symbol] [value : Result] [body : CExpr]) : Result
   (let ([loc (new-loc)])
     (type-case Result value
@@ -234,7 +235,7 @@
     [CStr (s) (v*s*e (VObject 'str (some (MetaStr s)) (hash empty)) sto env)]
     [CTrue () (v*s*e true-val sto env)]
     [CFalse () (v*s*e false-val sto env)]
-    [CNone () (v*s*e (VNone) sto env)]
+    [CNone () (v*s*e vnone sto env)]
 
     [CClass (name base body)
                (type-case Result (interp-env body (cons (hash empty) env) sto)
@@ -348,7 +349,8 @@
                 [result (interp-env bind env sto)])
             (interp-let x result body))]
 
-    [CApp (fun arges sarg) (interp-capp fun
+    [CApp (fun arges sarg) 
+          (interp-capp fun
                                         arges
                                         (if (none? sarg)
                                           (some (CTuple empty))
@@ -390,10 +392,10 @@
                                        (v*s*e (some-v mayb-val)
                                               new-s
                                               new-e)
-                                       ;; todo: real exceptions
-                                       (error 'interp (string-append "Builtin error for "
-                                                                     (symbol->string
-                                                                       op)))))))))]
+                                       ;; todo: more useful errors
+                                       (mk-exception 'TypeError "Bad types in
+                                                     builtin call" env
+                                                     sto)))))))]
     [CRaise (expr) 
             (if (some? expr)
                 (type-case Result (interp-env (some-v expr) env sto)
@@ -418,7 +420,7 @@
                       [v*s*e (velse selse eelse)
                              (type-case Result (interp-env finally eelse selse)
                                 [v*s*e (vfin sfin efin)
-                                       (v*s*e (VNone) sfin efin)]
+                                       (v*s*e vnone sfin efin)]
                                 [Return (vfin sfin efin) (return-exception efin sfin)]
                                 [Exception (vfin sfin efin)
                                            (Exception vfin sfin efin)])]
@@ -448,7 +450,7 @@
 (define (assign-to-id id v e s)
   (type-case (optionof Address) (hash-ref (first e) (CId-x id)) 
     [some (w) (begin 
-               (v*s*e (VNone) 
+               (v*s*e vnone
                       (hash-set s w v) 
                       (cons 
                         (hash-set (first e)
@@ -456,7 +458,7 @@
                         (rest e))))] 
     [none () (let ([w (new-loc)]) 
                (begin 
-                (v*s*e (VNone) 
+                (v*s*e vnone
                        (hash-set s w v) 
                        (cons 
                          (hash-set 
@@ -495,14 +497,14 @@
 	[VObject (ante-name mval d)
 	  (let ([w (hash-ref (VObject-dict vo) f)])
 	    (type-case (optionof Address) (hash-ref (VObject-dict vo) f)
-	      [some (w) (v*s*e (VNone) (hash-set so w v) eo)]
+	      [some (w) (v*s*e vnone (hash-set so w v) eo)]
 	      [none () (let ([w (new-loc)])
 			   (let ([nw (hash-ref (first eo) (CId-x o))])
                   (let ([snew (hash-set so (some-v nw) 
 			                        (VObject ante-name
                                        mval
 						                           (hash-set (VObject-dict vo) f w)))])
-      		           	(v*s*e (VNone)
+      		           	(v*s*e vnone
                              (hash-set snew w v)
 			                       eo))))]))]
     	[else (error 'interp "Can't assign to nonobject.")])]
@@ -517,7 +519,7 @@
                    [vals : (listof CVal)] 
                    [arges : (listof CExpr)] 
                    [env : Env] [ext : Env]
-                   [sto : Store]) : (Env * Store)
+                   [sto : Store]) : (Env * Store * (optionof Result))
   (cond [(and (empty? args) (empty? vals)) 
               (if (some? sarg)
                   (bind-args (list (some-v sarg))
@@ -527,7 +529,7 @@
                              env 
                              ext
                              sto)
-                  (values ext sto))]
+                  (values ext sto (none)))]
         ;need to bind star args!
         [(and (empty? args) (some? sarg)) 
          (let ([star-tuple (make-builtin-tuple vals)])
@@ -538,7 +540,8 @@
 
 
         [(or (empty? args) (empty? vals))
-         (error 'interp "Arity mismatch")]
+         (values ext sto (some (mk-exception 'TypeError "Arity mismatch" env
+                                             sto)))]
         [(and (cons? args) (cons? vals))
          (let ([val (first vals)]
                [where -1]
@@ -567,11 +570,6 @@
                   [s (hash-set sto where (first vals))])
                  (bind-args (rest args) sarg (rest vals) (rest arges) env e s))))]))
 
-(define (make-exception [name : symbol] [error : string]) : CExpr
-  (CApp
-    (CId name)
-    (list (CStr error))
-    (none)))
 
 (define (mk-exception [type : symbol] [arg : string]
                       [env : Env] [sto : Store]) : Result
@@ -594,13 +592,12 @@
     [VStr (s) (if (string=? "" s)
               false 
               true)]
-    [VNone () false]
     [VClosure (e a s b) true]
     [VObject (a mval d) (truthy-object? (VObject a mval d))]))
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
-    [v*s*e (vexpr sexpr env) (if (not (VNone? vexpr)) 
+    [v*s*e (vexpr sexpr env) (if (not (MetaNone? (some-v (VObject-mval vexpr))))
                          (begin (display (pretty vexpr)) 
                                 (display "\n"))
                          (display ""))]

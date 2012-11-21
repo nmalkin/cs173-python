@@ -1,7 +1,8 @@
 #lang plai-typed
 
 (require "../python-core-syntax.rkt")
-(require "../util.rkt")
+(require "../util.rkt"
+         "none.rkt")
 (require
   (typed-in racket/base (andmap : (('a -> boolean) (listof 'a) -> 'b)))
   (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
@@ -34,7 +35,12 @@
                           (CReturn (CBuiltinPrim 'dict-update
                                                      (list (CId 'self)
                                                            (CId 'other))))))
-
+              (def 'get
+                   (CFunc (list 'self 'key) (some 'default)
+                          (CReturn (CBuiltinPrim 'dict-get 
+                                        (list (CId 'self) 
+                                              (CId 'key) 
+                                              (CId 'default))))))
               (def '__in__
                 (CFunc (list 'self 'other) (none)
                        (CReturn (CBuiltinPrim 'dict-in
@@ -73,7 +79,7 @@
                    ; remove all key-value pairs from hash
                    (map (lambda (key) (hash-remove! contents key))
                         (hash-keys contents))
-                   (some (VNone))))))
+                   (some vnone)))))
 
 (define (dict-in [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict
@@ -81,6 +87,20 @@
                  (if (hash-has-key? contents (second args)) ; FIXME: what if (second args) DNE?
                      (some true-val)
                      (some false-val)))))
+(define (dict-get [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+      (local [(define d (first args))
+              (define meta-d (MetaDict-contents (some-v (VObject-mval d))))
+              (define key (second args))
+              (define startuple (third args))
+              (define meta-startuple (MetaTuple-v (some-v (VObject-mval
+                                                            startuple))))
+              (define mayb-val (hash-ref meta-d key))]
+             (if (some? mayb-val)
+               mayb-val
+               (if (not (= 0 (length meta-startuple)))
+                 (some (first meta-startuple))
+                 (some vnone))))))
 
 (define (dict-update (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict 'dict
@@ -90,7 +110,7 @@
                    (map (lambda (pair)
                           (hash-set! target (car pair) (cdr pair)))
                         (hash->list extras))
-                   (some (VNone))))))
+                   (some vnone)))))
 
 (define (dict-eq (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict 'dict

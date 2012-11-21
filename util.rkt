@@ -94,7 +94,6 @@
 (define (pretty arg)
   (type-case CVal arg
     [VStr (s) (string-append "'" (string-append s "'"))]
-    [VNone () "None"]
     [VObject (a mval d) (if (some? mval)
                             (pretty-metaval (some-v mval))
                             "Can't print non-builtin object.")]
@@ -124,6 +123,7 @@
                                     (hash->list contents))
                                ", "))
               "}")]
+    [MetaNone () "None"]
     ))
 
 (define (pretty-exception [exn : CVal] [sto : Store]) : string
@@ -140,6 +140,12 @@
                                 sto)))))
         " "))
     ": "))
+
+(define (make-exception [name : symbol] [error : string]) : CExpr
+  (CApp
+    (CId name)
+    (list (CStr error))
+    (none)))
 
 ; generates a new unique variable name that isn't allowed by user code 
 (define new-id
