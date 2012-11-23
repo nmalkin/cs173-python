@@ -89,6 +89,7 @@
   (CObject
    'str
    (some (MetaStr s))))
+
 (define (strlist [args : (listof CVal)] [env : Env] [sto : Store])
   : (optionof CVal)
   (check-types args env sto 'str
