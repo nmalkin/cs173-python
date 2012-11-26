@@ -587,13 +587,6 @@
 (define (return-exception [env : Env] [sto : Store]) : Result
   (mk-exception 'SyntaxError "'return' outside function" env sto))
 
-(define (truthy? [val : CVal]) : boolean
-  (type-case CVal val
-    [VStr (s) (if (string=? "" s)
-              false 
-              true)]
-    [VClosure (e a s b) true]
-    [VObject (a mval d) (truthy-object? (VObject a mval d))]))
 
 (define (interp expr)
   (type-case Result (interp-env expr (list (hash (list))) (hash (list)))
@@ -604,6 +597,14 @@
     [Return (vexpr sexpr env) (raise-user-error "SyntaxError: 'return' outside function")]
     [Exception (vexpr sexpr env) (raise-user-error
                                    (pretty-exception vexpr sexpr))]))
+
+(define (truthy? [val : CVal]) : boolean
+  (type-case CVal val
+    [VStr (s) (if (string=? "" s)
+              false 
+              true)]
+    [VClosure (e a s b) true]
+    [VObject (a mval d) (truthy-object? (VObject a mval d))]))
 
 (define (interp-cprim2 [prim : symbol] 
                        [arg1 : CExpr]

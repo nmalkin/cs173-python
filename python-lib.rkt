@@ -38,6 +38,12 @@ that calls the primitive `print`.
                        (none)))
       (CNone))))
 
+(define callable-lambda
+  (CFunc (list 'to-check) (none)
+      (CReturn
+        (CPrim1 'callable (CId 'to-check)))))
+
+
 (define assert-true-lambda
   (CFunc (list 'check-true) (none)
     (CIf (CId 'check-true) (CNone) (CError (CStr "Assert failed")))))
@@ -219,6 +225,8 @@ that calls the primitive `print`.
         (bind 'float float-lambda)
         (bind 'isinstance isinstance-lambda)
         (bind 'print print-lambda)
+
+        (bind 'callable callable-lambda)
 
         (bind 'Exception exception)
         (bind 'TypeError (make-exception-class 'TypeError))

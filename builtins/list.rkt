@@ -67,7 +67,9 @@
                (some (VObject 'num
                               (some (MetaNum (length (MetaList-v mval1))))
                               (hash empty)))))
-(define (list-cpy [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof
+(define (list-cpy [args : (listof CVal)]
+                  [env : Env]
+                  [sto : Store]) : (optionof
                                                                         CVal)
   (check-types args env sto 'list
        (some (make-builtin-list (MetaList-v mval1)))))

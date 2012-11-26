@@ -28,9 +28,21 @@ primitives here.
 (define (print arg)
   (display (string-append (pretty arg) "\n")))
 
+(define (callable [arg : CVal]) : CVal 
+  (type-case CVal arg
+    [VClosure (e a v b) true-val]
+    [VObject (a m d) (if (some? m)
+                       (if (MetaClass? (some-v m))
+                         true-val
+                         false-val)
+                       false-val)]
+    [else false-val]))
+
+
 (define (python-prim1 op arg)
   (case op
-    [(print) (begin (print arg) arg)]))
+    [(print) (begin (print arg) arg)]
+    [(callable) (callable arg)]))
 
 (define (builtin-prim [op : symbol] [args : (listof CVal)] 
                       [env : Env] [sto : Store]) : (optionof CVal)
