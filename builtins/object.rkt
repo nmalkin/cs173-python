@@ -5,7 +5,6 @@
          "../util.rkt"
          "num.rkt"
          "str.rkt"
-         "bool.rkt"
          (typed-in racket/base (string-length : (string -> number))))
 
 (define object-class

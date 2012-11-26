@@ -8,8 +8,7 @@
  (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
  (typed-in racket/base (number->string : (number -> string)))
  (typed-in racket/base (car : (('a * 'b)  -> 'a)))
- (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
- )
+ (typed-in racket/base (cdr : (('a * 'b)  -> 'b))))
 
 ; a file for utility functions that aren't specific to python stuff
 
@@ -25,6 +24,7 @@
       (map2 (lambda (k v) (hash-set! h k v))
             l1 l2)
       h)))
+
 
 (test (lists->hash (list "a" "b" "c") (list 1 2 3))
       (let ([h (make-hash empty)])

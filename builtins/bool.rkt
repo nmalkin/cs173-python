@@ -3,7 +3,8 @@
 (require "../python-core-syntax.rkt"
          "../util.rkt"
          "num.rkt"
-         "str.rkt")
+         "str.rkt"
+         "object.rkt")
 
 (define bool-class 
   (CClass 
@@ -15,8 +16,7 @@
                            (CReturn (CBuiltinPrim 'bool-init
                                                   (list
                                                    (CId 'self)
-                                                   (CId 'arg)
-                                                   )))))
+                                                   (CId 'arg))))))
 
                (def '__str__
                     (CFunc (list 'self) (none)
@@ -37,8 +37,8 @@
                            (CReturn (CApp (CGetField (CId 'self) '__add__) 
                                           (list (CId 'self) 
                                                 (make-builtin-num 0.0))
-                                          (none)))))
-                    ))))
+                                          (none)))))))))
+
 (define (make-builtin-bool [b : boolean]) : CExpr
   (CObject 
     'bool
@@ -49,11 +49,11 @@
 
 (define (bool-init [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
   (let ([other (second args)]) ; FIXME: what if (second args) DNE?
-    (type-case MetaVal (some-v (VObject-mval other))
-      ; special-case MetaDict argument: true if non-zero length
-      ; TODO: should probably use truthy? check and handle any generic input
-      [MetaDict (contents)
-                (if (> (length (hash-keys contents)) 0)
-                  (some true-val)
-                  (some false-val))]
-      [else (some false-val)])))
+  (type-case CVal other
+    [VStr (s) (if (string=? "" s)
+              (some false-val)
+              (some true-val))]
+    [VClosure (e a s b) (some true-val)]
+    [VObject (a mval d) (if (truthy-object? (VObject a mval d))
+                          (some true-val)
+                          (some false-val))])))
