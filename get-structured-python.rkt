@@ -222,8 +222,8 @@ structure that you define in python-syntax.rkt
      (let ([types (get-structured-python type)])
        (let ([type-exprs 
                (cond
-                  [(PyTuple? types) (map PyId-x (PyTuple-values types))]
-                  [(PyId? types) (list (PyId-x types))]
+                  [(PyTuple? types) (PyTuple-values types)]
+                  [(PyId? types) (list types)]
                   [else empty])])
          (if (string? name)
            (PyExceptAs type-exprs

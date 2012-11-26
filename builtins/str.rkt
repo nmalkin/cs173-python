@@ -17,7 +17,7 @@
   (CClass
    'str 
    'object
-   (seq-ops (list 
+  (seq-ops (list 
                   (def '__init__
                        (CFunc (list 'self 'other) (none) 
                               (CAssign
@@ -46,7 +46,6 @@
                                          (list
                                           (CId 'self)
                                           (CId 'other))))))
-
                   (def '__cmp__
                      (CFunc (list 'self 'other) (none)
                             (CReturn (CBuiltinPrim 'strcmp
@@ -69,7 +68,6 @@
                             (CReturn (CBuiltinPrim 'strmax
                                          (list
                                            (CId 'self))))))
-
                   (def '__len__
                      (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'strlen

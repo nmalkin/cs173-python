@@ -14,8 +14,8 @@
 
   ;
   [PyRaise (expr : PyExpr)]
-  [PyExcept (types : (listof symbol)) (body : PyExpr)]
-  [PyExceptAs (types : (listof symbol)) (name : symbol) (body : PyExpr)]
+  [PyExcept (types : (listof PyExpr)) (body : PyExpr)]
+  [PyExceptAs (types : (listof PyExpr)) (name : symbol) (body : PyExpr)]
   [PyTryExceptElseFinally (try : PyExpr) (except : (listof PyExpr))
                           (orelse : PyExpr) (finally : PyExpr)]
   [PyPass]

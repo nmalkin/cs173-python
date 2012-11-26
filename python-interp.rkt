@@ -137,38 +137,82 @@
                         [env : Env]
                         [exn : Result]) : Result
   (local [(define exn-type (VObject-antecedent (Exception-v exn)))
-          (define (find-match type exps)
+          (define (find-match type exps fsto fenv)
             (cond
-              [(empty? exps) (none)]
+              [(empty? exps) (values (none)
+                                     fsto
+                                     fenv
+                                     (none))]
               [(cons? exps)
-                 (if (or (member exn-type (CExcept-types (first exps)))
-                         (empty? (CExcept-types (first exps))))
-                     (some (first exps))
-                     (find-match type (rest exps)))]))
-          (define match? (find-match exn-type excepts))]
+               ;; need to interp exprs and then check
+               (local [(define-values (except-types-results tsto tenv)
+                         (interp-cascade (CExcept-types (first exps)) fsto fenv))
+                       (define exn? (filter Exception? except-types-results))]
+                      (if (< 0 (length exn?))
+                        (values (none)
+                                tsto
+                                tenv
+                                (some (first exn?)))
+                        (local [(define except-types
+                                  (map (lambda (t)
+                                         (type-case CVal (v*s*e-v t)
+                                           [VObject (ante mval dict) 
+                                                    (if (and (some? mval) 
+                                                             (MetaClass? (some-v mval)))
+                                                      (some (MetaClass-c (some-v mval)))
+                                                      (none))]
+                                           [else (none)]))
+                                       except-types-results))
+                                (define exn-again? (filter none? except-types))]
+                                (if (< 0 (length exn-again?))
+                                  (values (none)
+                                          tsto
+                                          tenv
+                                          (some (mk-exception
+                                                  'TypeError
+                                                  "can't catch closures. This will go away."
+                                                  tenv
+                                                  tsto)))
+                                  (if (or (member exn-type (map some-v except-types))
+                                          (empty? (CExcept-types (first exps))))
+                                    (values (some (first exps))
+                                            tsto
+                                            tenv
+                                            (none))
+                                    (find-match type (rest exps) tsto tenv))))))]))
+          (define-values (match? hsto henv exn?) (find-match exn-type excepts sto env))]
 
-    (if (some? match?)
-      (let ([as-name (CExcept-name (some-v match?))])
-        (let ([result
-                (if (some? as-name)
-                    (interp-let (some-v as-name) exn (CExcept-body (some-v match?)))
-                    (interp-env (some-v match?) env sto))])
-        (type-case Result result
-          [v*s*e (vbody sbody ebody) (v*s*e vnone sbody ebody)]
-          [Return (vbody sbody ebody) (return-exception ebody sbody)]
-          [Exception (vbody sbody ebody)
-                     (if (string=? (MetaStr-s
-                                     (some-v (VObject-mval (first (MetaTuple-v (some-v
-                                       (VObject-mval 
-                                         (fetch 
-                                           (some-v (hash-ref (VObject-dict vbody)
-                                                     'args))
-                                           sbody))))))))
-                                   "No active exception to reraise")
-                       (Exception (Exception-v exn) sbody ebody)
-                       result)])))
-      (v*s*e vnone sto env))))
- 
+    ;; we might have found a matching except clause
+    (if (some? exn?)
+      (some-v exn?)
+      (if (some? match?)
+        (let ([as-name (CExcept-name (some-v match?))])
+          (let ([result
+                  (if (some? as-name)
+                    (interp-let (some-v as-name)
+                                (Exception (Exception-v exn) hsto henv)
+                                (CExcept-body (some-v match?)))
+                    (interp-env (some-v match?) henv hsto))])
+            (type-case Result result
+              [v*s*e (vbody sbody ebody) (v*s*e vnone sbody ebody)]
+              [Return (vbody sbody ebody) (return-exception ebody sbody)]
+              [Exception (vbody sbody ebody)
+                         (if (string=? (MetaStr-s
+                                         (some-v 
+                                           (VObject-mval 
+                                             (first
+                                               (MetaTuple-v
+                                                 (some-v
+                                                   (VObject-mval 
+                                                     (fetch 
+                                                       (some-v (hash-ref (VObject-dict vbody)
+                                                                         'args))
+                                                       sbody))))))))
+                                       "No active exception to reraise")
+                           (Exception (Exception-v exn) sbody ebody)
+                           result)])))
+        (v*s*e vnone hsto henv)))))
+
 (define (interp-let [name : symbol] [value : Result] [body : CExpr]) : Result
   (let ([loc (new-loc)])
     (type-case Result value
@@ -260,18 +304,17 @@
 
     ;; deal with pythonic scope here
     ;; only for ids!
-    [CAssign (t v) 
-             (type-case Result (interp-env v env sto)
-               [v*s*e (vv sv venv)
-                     (type-case CExpr t
-                                [CId (x) (assign-to-id t vv venv sv)]
-                                [CGetField (o a) (assign-to-field o a vv venv sv)]
-                                [else (mk-exception 'SyntaxError
-                                                    "can't assign to literals"
-                                                    venv
-                                                    sv)])]
-               [Return (vv sv ev) (return-exception ev sv)]
-               [Exception (vv sv ev) (Exception vv sv ev)])]
+    [CAssign (t v) (type-case Result (interp-env v env sto)
+                     [v*s*e (vv sv venv)
+                            (type-case CExpr t
+                              [CId (x) (assign-to-id t vv venv sv)]
+                              [CGetField (o a) (assign-to-field o a vv venv sv)]
+                              [else (mk-exception 'SyntaxError
+                                                  "can't assign to literals"
+                                                  venv
+                                                  sv)])]
+                     [Return (vv sv ev) (return-exception ev sv)]
+                     [Exception (vv sv ev) (Exception vv sv ev)])]
     
     [CError (e) (type-case Result (interp-env e env sto)
                   [v*s*e (ve se ee)
@@ -344,9 +387,8 @@
                                      (first exn?)
                                      (let ([val-list (map v*s*e-v result-list)])
                                        (local [(define mayb-val 
-                                               (builtin-prim op val-list new-e
-                                                             new-s))] 
-                                   (if (some? mayb-val)
+                                               (builtin-prim op val-list new-e new-s))] 
+                                              (if (some? mayb-val)
                                        (v*s*e (some-v mayb-val)
                                               new-s
                                               new-e)
@@ -388,10 +430,15 @@
             [Return (vtry stry etry) (return-exception etry stry)]
             ;; handle excepts here
             [Exception (vtry stry etry)
-               (local [(define result (interp-excepts excepts stry etry
-                                                      (Exception vtry stry etry)))]
+               (local [(define result 
+                         (if (empty? excepts)
+                             (Exception vtry stry etry)
+                             (interp-excepts excepts stry etry
+                                             (Exception vtry stry etry))))]
                  (if (Exception? result)
-                     result
+                     (begin
+                       (interp-env finally (Exception-e result) (Exception-s result))
+                       result)
                      (interp-env finally (v*s*e-e result) (v*s*e-s result))))])]
 
     ;; add names to this
@@ -436,7 +483,9 @@
                                  (get-field n base e s))
                              (mk-exception 'AttributeError
                                            (string-append 
-                                             "object has no attribute '"
+                                             (string-append
+                                               "object"
+                                               " has no attribute '")
                                              (string-append (symbol->string n) "'"))
                                            e s)))]))]
     [else (error 'interp "Not an object with functions.")]))
@@ -554,17 +603,7 @@
                          (display ""))]
     [Return (vexpr sexpr env) (raise-user-error "SyntaxError: 'return' outside function")]
     [Exception (vexpr sexpr env) (raise-user-error
-                                   (string-join
-                                     (list
-                                       (symbol->string (VObject-antecedent vexpr))
-                                         (pretty-metaval
-                                           (some-v 
-                                             (VObject-mval
-                                               (fetch (some-v
-                                                        (hash-ref 
-                                                          (VObject-dict vexpr) 'args))
-                                                      sexpr)))))
-                                     ": "))]))
+                                   (pretty-exception vexpr sexpr))]))
 
 (define (interp-cprim2 [prim : symbol] 
                        [arg1 : CExpr]

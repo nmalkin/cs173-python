@@ -126,6 +126,21 @@
     [MetaNone () "None"]
     ))
 
+(define (pretty-exception [exn : CVal] [sto : Store]) : string
+  (string-join
+    (list
+      (symbol->string (VObject-antecedent exn))
+      (string-join
+        (map pretty
+             (MetaTuple-v
+               (some-v (VObject-mval
+                         (fetch (some-v
+                                  (hash-ref
+                                    (VObject-dict exn) 'args))
+                                sto)))))
+        " "))
+    ": "))
+
 (define (make-exception [name : symbol] [error : string]) : CExpr
   (CApp
     (CId name)
