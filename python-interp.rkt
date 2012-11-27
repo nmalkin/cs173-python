@@ -393,8 +393,7 @@
                                               new-s
                                               new-e)
                                        ;; todo: more useful errors
-                                       (mk-exception 'TypeError "Bad types in
-                                                     builtin call" env
+                                       (mk-exception 'TypeError "Bad types in builtin call" env
                                                      sto)))))))]
     [CRaise (expr) 
             (if (some? expr)

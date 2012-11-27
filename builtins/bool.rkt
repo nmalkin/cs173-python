@@ -12,11 +12,10 @@
     'num
     (seq-ops (list
                (def '__init__
-                    (CFunc (list 'self 'arg) (none)
+                    (CFunc (list 'self) (some 'args)
                            (CReturn (CBuiltinPrim 'bool-init
                                                   (list
-                                                   (CId 'self)
-                                                   (CId 'arg))))))
+                                                   (CId 'args))))))
 
                (def '__str__
                     (CFunc (list 'self) (none)
@@ -48,12 +47,14 @@
         (MetaNum 0)))))
 
 (define (bool-init [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
-  (let ([other (second args)]) ; FIXME: what if (second args) DNE?
-  (type-case CVal other
-    [VStr (s) (if (string=? "" s)
-              (some false-val)
-              (some true-val))]
-    [VClosure (e a s b) (some true-val)]
-    [VObject (a mval d) (if (truthy-object? (VObject a mval d))
-                          (some true-val)
-                          (some false-val))])))
+  (local [(define meta-startuple (MetaTuple-v (some-v (VObject-mval (first args)))))]
+     (if (= (length meta-startuple) 0)
+       (some false-val) 
+       (type-case CVal (first meta-startuple) 
+                  [VStr (s) (if (string=? "" s) 
+                              (some false-val) 
+                              (some true-val))] 
+                  [VClosure (e a s b) (some true-val)] 
+                  [VObject (a mval d) (if (truthy-object? (VObject a mval d)) 
+                                        (some true-val) 
+                                        (some false-val))]))))
