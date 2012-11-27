@@ -261,6 +261,7 @@ that calls the primitive `print`.
                python-path))))
        (list "pylib/any.py"
              "pylib/all.py"
+             "pylib/filter.py"
              "pylib/assertraises.py")))
              
 
