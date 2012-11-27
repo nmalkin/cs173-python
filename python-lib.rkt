@@ -200,6 +200,7 @@ that calls the primitive `print`.
         (bind 'bool (CNone))
         (bind 'any (CNone))
         (bind 'all (CNone))
+        (bind 'list (CNone))
         (bind 'NameError (CNone))
         (bind 'TypeError (CNone))
         (bind 'SyntaxError (CNone))
@@ -258,6 +259,7 @@ that calls the primitive `print`.
                python-path))))
        (list "pylib/any.py"
              "pylib/all.py"
+             "pylib/filter.py"
              "pylib/assertraises.py")))
              
 
