@@ -100,7 +100,20 @@ primitives here.
                         (if (<= (MetaNum-n mval1) (MetaNum-n mval2))
                          (some true-val)
                           (some false-val)))]
-
+    
+    ['numcmp (check-types args env sto 'num 'num
+                        (if (< (MetaNum-n mval1) (MetaNum-n mval2))
+                            (some (VObject 'num
+                                           (some (MetaNum -1))
+                                           (make-hash empty)))
+                            (if (> (MetaNum-n mval1) (MetaNum-n mval2))
+                                (some (VObject 'num
+                                               (some (MetaNum 1))
+                                               (make-hash empty)))
+                                (some (VObject 'num
+                                               (some (MetaNum 0))
+                                               (make-hash empty))))))]
+    
     ['num-str (let ([arg (first args)])
             (some (VObject 'str 
                            (some (MetaStr 

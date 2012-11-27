@@ -64,36 +64,32 @@
                      (let ([exn? (filter Exception? argvs-r)])
                         (if (< 0 (length exn?))
                             (first exn?)
-                            (let ([argvs (map v*s*e-v argvs-r)])
-                              (local [(define-values (e s mayb-ex)
-                                        (if (some? stararg)
-                                          (letrec ([sarg-r (interp-env (some-v
-                                                                         stararg) ec sc)]
-                                                   ;; todo: support other types
-                                                   ;; for star args
-                                                   [l (MetaTuple-v 
-                                                        (some-v 
-                                                          (VObject-mval 
-                                                            (v*s*e-v
-                                                              sarg-r))))])
-                                            (bind-args argxs 
-                                                       vararg 
-                                                       (append argvs l)
-                                                       (append arges (map
-                                                                       (lambda(x)
-                                                                         (make-builtin-num 0))
-                                                                       l))
-                                                       efun 
-                                                       cenv 
-                                                       (v*s*e-s sarg-r))) 
-                                          (bind-args argxs vararg argvs arges efun
-                                                   cenv sc)))] 
-                                     (if (some? mayb-ex)
-                                       (some-v mayb-ex)
-                                         (type-case Result (interp-env body e s) 
-                                            [v*s*e (vb sb eb) (v*s*e vnone sb env)] 
-                                            [Return (vb sb eb) (v*s*e vb sb env)] 
-                                            [Exception (vb sb eb) (Exception vb sb env)])))))))]
+                            (local [(define argvs (map v*s*e-v argvs-r))
+                                    (define result (if (some? stararg)
+                                             (letrec ([sarg-r (interp-env (some-v
+                                                                            stararg) ec sc)]
+                                                      ;; todo: support other types
+                                                      ;; for star args
+                                                      [l (MetaTuple-v 
+                                                           (some-v 
+                                                             (VObject-mval 
+                                                               (v*s*e-v
+                                                                 sarg-r))))])
+                                               (bind-and-execute 
+                                                 body argxs vararg 
+                                                 (append argvs l)
+                                                 (append arges (map
+                                                                 (lambda(x)
+                                                                   (make-builtin-num 0))
+                                                                 l))
+                                                 efun cenv 
+                                                 (v*s*e-s sarg-r))) 
+                                             (bind-and-execute body argxs vararg argvs arges efun
+                                                               cenv sc)))]
+                              (type-case Result result
+                                [v*s*e (vb sb eb) (v*s*e vnone sb env)]
+                                [Return (vb sb eb) (v*s*e vb sb env)]
+                                [Exception (vb sb eb) (Exception vb sb env)])))))]
       [VObject (b mval d)
                (if (and (some? mval) (MetaClass? (some-v mval)))
                   ; We're calling a class.
@@ -109,21 +105,24 @@
                                 (let ([exn? (filter Exception? argvs-r)])
                                     (if (< 0 (length exn?))
                                         (first exn?)
-                                      (let ([argvs (map v*s*e-v argvs-r)])
-                                       ; bind the (interpreted) arguments to the constructor
-                                       (local [(define-values (e s mayb-ex)
-                                                (bind-args argxs vararg (cons o argvs) 
-                                                  (cons (CId 'init) arges) efun cenv sc))]
-                                    ; interpret the constructor body
-                                    (type-case Result (interp-env body e s)
-                                      [v*s*e (vb sb eb) (v*s*e 
-                                         (let ([obj (fetch (some-v 
-                                                             (lookup (first argxs)
-                                                                     eb)) sb)])
-                                           obj)
-                                         sb env)]
-                                      [Return (vb sb eb) (v*s*e vb sb env)]
-                                      [Exception (vb sb eb) (Exception vb sb env)]))))))]
+                                      (local [(define argvs (map v*s*e-v argvs-r))
+                                              ; bind the (interpreted) arguments to the constructor
+                                              (define result 
+                                                (bind-and-execute body argxs vararg
+                                                                  (cons o argvs)
+                                                                  (cons (CId 'init) arges)
+                                                                  efun cenv sc))]
+                                        (type-case Result result
+                                          [v*s*e (vb sb eb) 
+                                                 (v*s*e 
+                                                   (let ([obj (fetch (some-v 
+                                                                       (lookup (first argxs)
+                                                                               eb))
+                                                                     sb)])
+                                                     obj)
+                                                   sb env)]
+                                         [Return (vb sb eb) (v*s*e vb sb env)]
+                                         [Exception (vb sb eb) (Exception vb sb env)])))))]
                       [else (error 'interp 
                                    "__init__ not found. THIS SHOULDN'T HAPPEN.")]))
                                      
@@ -131,6 +130,16 @@
       [else (error 'interp "Not a closure or constructor")])]
    [Return (vfun sfun efun) (return-exception efun sfun)]
    [Exception (vfun sfun efun) (Exception vfun sfun efun)]))
+
+(define (bind-and-execute [body : CExpr] [argxs : (listof symbol)]
+                          [vararg : (optionof symbol)] [argvs : (listof CVal)]
+                          [arges : (listof CExpr)] [env : Env]
+                          [ext : Env] [sto : Store]) : Result
+  (local [(define-values (e s mayb-ex) 
+            (bind-args argxs vararg argvs arges env ext sto))]
+    (if (some? mayb-ex)
+        (some-v mayb-ex)
+        (interp-env body e s))))
 
 (define (interp-excepts [excepts : (listof CExpr)]
                         [sto : Store]
@@ -349,14 +358,14 @@
                 [result (interp-env bind env sto)])
             (interp-let x result body))]
 
-    [CApp (fun arges sarg) 
+    [CApp (fun arges sarg)
           (interp-capp fun
-                                        arges
-                                        (if (none? sarg)
-                                          (some (CTuple empty))
-                                          sarg)
-                                        env
-                                        sto)]
+                       arges
+                       (if (none? sarg)
+                         (some (CTuple empty))
+                         sarg)
+                       env
+                       sto)]
 
     [CFunc (args sargs body) 
            (v*s*e (VClosure (cons (hash empty) env) args sargs body) sto env)]    
@@ -461,9 +470,7 @@
                 (v*s*e vnone
                        (hash-set s w v) 
                        (cons 
-                         (hash-set 
-                           (immutable-hash-copy 
-                             (first e)) (CId-x id) w)
+                         (hash-set (first e) (CId-x id) w)
                          (rest e)))))]))
 
 ;; handles lookup chain for function calls on objects

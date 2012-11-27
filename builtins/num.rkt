@@ -60,7 +60,6 @@
                                               (list 
                                                 (CId 'self) 
                                                 (CId 'other)))))))
-
                (def '__str__
                    (CFunc (list 'self) (none)
                           (CReturn (CBuiltinPrim 'num-str
@@ -98,9 +97,6 @@
                                                    (list (CId 'self) 
                                                          (make-builtin-num
                                                            1))))))))
-
-
-
                (def '__abs__
                     (CFunc (list 'self) (none)
                            (CIf (CBuiltinPrim 'num< 
@@ -116,6 +112,12 @@
                (def '__lte__
                     (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'num<=
+                                                  (list
+                                                    (CId 'self)
+                                                    (CId 'other))))))
+               (def '__cmp__
+                    (CFunc (list 'self 'other) (none)
+                           (CReturn (CBuiltinPrim 'numcmp
                                                   (list
                                                     (CId 'self)
                                                     (CId 'other))))))))))

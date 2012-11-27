@@ -52,16 +52,6 @@
                                             (list (CId '_cmpresult)
                                                   (make-builtin-num 0))
                                             (none))))))
-               (def '__lt__
-                    (CFunc (list 'self 'other) (none)
-                           (CSeq (CAssign (CId '_cmpresult)
-                                    (CApp (CGetField (CId 'self) '__cmp__)
-                                          (list (CId 'self) (CId 'other))
-                                          (none)))
-                                 (CReturn (CApp (CGetField (CId '_cmpresult) '__lt__)
-                                            (list (CId '_cmpresult)
-                                                  (make-builtin-num 0))
-                                            (none))))))
                (def '__lte__
                     (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult)
