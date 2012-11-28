@@ -47,7 +47,7 @@
                 (seq-ops (rest ops)))]))
 
 (define (def (name : symbol) (expr : CExpr)) : CExpr
-  (CAssign (CId name) expr))
+  (CAssign (CId name (LocalId)) expr))
 
 (define-syntax (check-types x)
   (syntax-case x ()
@@ -145,7 +145,7 @@
 
 (define (make-exception [name : symbol] [error : string]) : CExpr
   (CApp
-    (CId name)
+    (CId name (LocalId))
     (list (CStr error))
     (none)))
 

@@ -11,13 +11,17 @@
   [PyNum (n : number)]
   [PyBool (b : boolean)]
   [PyId (x : symbol) (ctx : symbol)]
+  [PyGlobal (ids : (listof symbol))]
+  [PyNonlocal (ids : (listof symbol))]
 
-  ;
+  ; exceptions and exception handling
   [PyRaise (expr : PyExpr)]
   [PyExcept (types : (listof PyExpr)) (body : PyExpr)]
   [PyExceptAs (types : (listof PyExpr)) (name : symbol) (body : PyExpr)]
   [PyTryExceptElseFinally (try : PyExpr) (except : (listof PyExpr))
                           (orelse : PyExpr) (finally : PyExpr)]
+  
+  ; pass
   [PyPass]
 
   ; classes and objects 

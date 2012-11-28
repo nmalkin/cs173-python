@@ -12,42 +12,42 @@
                     (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'tuple+
                                                   (list
-                                                   (CId 'self)
-                                                   (CId 'other))))))
+                                                   (CId 'self (LocalId))
+                                                   (CId 'other (LocalId)))))))
                   (def '__mult__
                     (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'tuple*
                                                   (list
-                                                   (CId 'self)
-                                                   (CId 'other))))))
+                                                   (CId 'self (LocalId))
+                                                   (CId 'other (LocalId)))))))
                   (def '__len__
                     (CFunc (list 'self) (none)
                            (CReturn (CBuiltinPrim 'tuple-len
                                                   (list
-                                                   (CId 'self))))))
+                                                   (CId 'self (LocalId)))))))
                   (def '__in__
                     (CFunc (list 'self 'test) (none)
                            (CReturn (CBuiltinPrim 'tuple-in
                                                   (list
-                                                   (CId 'self)
-                                                   (CId 'test)
+                                                   (CId 'self (LocalId))
+                                                   (CId 'test (LocalId))
                                                    )))))
                   (def '__list__
                      (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'tuple-list
                                          (list
-                                           (CId 'self))))))
+                                           (CId 'self (LocalId)))))))
 
                   (def '__str__
                        (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'tuple-str
-                                                     (list (CId 'self))))))
+                                                     (list (CId 'self (LocalId)))))))
                   (def '__attr__
                     (CFunc (list 'self 'idx) (none)
                            (CReturn (CBuiltinPrim 'tuple-attr
                                                   (list
-                                                   (CId 'self)
-                                                   (CId 'idx))))))
+                                                   (CId 'self (LocalId))
+                                                   (CId 'idx (LocalId)))))))
 ))))
 
 (define (make-builtin-tuple [l : (listof CVal)]) : CVal

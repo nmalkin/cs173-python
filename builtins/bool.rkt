@@ -15,26 +15,26 @@
                     (CFunc (list 'self) (some 'args)
                            (CReturn (CBuiltinPrim 'bool-init
                                                   (list
-                                                   (CId 'args))))))
+                                                   (CId 'args (LocalId)))))))
 
                (def '__str__
                     (CFunc (list 'self) (none)
-                           (CIf (CApp (CGetField (CId 'self) '__eq__)
-                                      (list (CId 'self) (make-builtin-num 1))
+                           (CIf (CApp (CGetField (CId 'self (LocalId)) '__eq__)
+                                      (list (CId 'self (LocalId)) (make-builtin-num 1))
                                       (none))
                                 (CReturn (make-builtin-str "True"))
                                 (CReturn (make-builtin-str "False")))))
                (def '__int__
                     (CFunc (list 'self) (none)
-                           (CReturn (CApp (CGetField (CId 'self) '__add__) 
-                                          (list (CId 'self) 
+                           (CReturn (CApp (CGetField (CId 'self (LocalId)) '__add__) 
+                                          (list (CId 'self (LocalId)) 
                                                 (make-builtin-num 0))
                                           (none)))))
 
                (def '__float__
                     (CFunc (list 'self) (none)
-                           (CReturn (CApp (CGetField (CId 'self) '__add__) 
-                                          (list (CId 'self) 
+                           (CReturn (CApp (CGetField (CId 'self (LocalId)) '__add__) 
+                                          (list (CId 'self (LocalId)) 
                                                 (make-builtin-num 0.0))
                                           (none)))))))))
 

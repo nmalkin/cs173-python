@@ -22,7 +22,7 @@ ParselTongue.
   [CAssign (target : CExpr) (value : CExpr)]
   [CError (e1 : CExpr)]
   [CIf (test : CExpr) (then : CExpr) (else : CExpr)]
-  [CId (x : symbol)]
+  [CId (x : symbol) (type : IdType)]
   [CLet (x : symbol) (bind : CExpr) (body : CExpr)]
   [CApp (fun : CExpr) (args : (listof CExpr)) (stararg : (optionof CExpr))]
   [CFunc (args : (listof symbol)) (varargs : (optionof symbol)) (body : CExpr)]
@@ -38,6 +38,13 @@ ParselTongue.
                          (orelse : CExpr) (finally : CExpr)]
   [CExcept (types : (listof CExpr)) (name : (optionof symbol)) (body : CExpr)]
   [CUndefined])
+
+(define-type IdType
+    [GlobalId]
+    [NonlocalId]
+    [LocalId])
+
+(define-type-alias IdEnv (hashof symbol IdType))
 
 (define-type CVal
   [VStr (s : string)]

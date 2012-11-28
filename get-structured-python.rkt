@@ -118,7 +118,6 @@ structure that you define in python-syntax.rkt
                  ('arg arg))
      (string->symbol arg)]
 
-
     [(hash-table ('nodetype "If")
                  ('body body)
                  ('test test)
@@ -240,6 +239,11 @@ structure that you define in python-syntax.rkt
        (nodetype->symbol op)
        (get-structured-python target)
        (get-structured-python value))]
+
+    [(hash-table ('nodetype "Global")
+                 ('names names))
+     (PyGlobal
+       (map string->symbol names))]
 
     [(list (hash-table (k v) ...) ..2)
      (PySeq (map get-structured-python pyjson))]

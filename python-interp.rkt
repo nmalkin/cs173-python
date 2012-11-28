@@ -110,7 +110,7 @@
                                               (define result 
                                                 (bind-and-execute body argxs vararg
                                                                   (cons o argvs)
-                                                                  (cons (CId 'init) arges)
+                                                                  (cons (CId 'init (LocalId)) arges)
                                                                   efun cenv sc))]
                                         (type-case Result result
                                           [v*s*e (vb sb eb) 
@@ -317,7 +317,7 @@
     [CAssign (t v) (type-case Result (interp-env v env sto)
                      [v*s*e (vv sv venv)
                             (type-case CExpr t
-                              [CId (x) (assign-to-id t vv venv sv)]
+                              [CId (x type) (assign-to-id t vv venv sv)]
                               [CGetField (o a) (assign-to-field o a vv venv sv)]
                               [else (mk-exception 'SyntaxError
                                                   "can't assign to literals"
@@ -339,7 +339,7 @@
                        [Return (vi si envi) (return-exception envi si)]
                        [Exception (vi si envi) (Exception vi si envi)])]
 
-    [CId (x) (let ([w (lookup x env)])
+    [CId (x t) (let ([w (lookup x env)])
                (if (none? w)
                  (mk-exception 'NameError 
                                 (string-append "name '" 
@@ -559,7 +559,7 @@
                [where -1]
                [mutability-check (lambda ()
                     (type-case CExpr (first arges)
-                         [CId (x)
+                         [CId (x t)
                               (if (symbol=? x 'init)
                                   (new-loc)
                                   (some-v (lookup x env)))]

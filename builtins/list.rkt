@@ -13,41 +13,41 @@
                     (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'list+
                                                   (list
-                                                   (CId 'self)
-                                                   (CId 'other))))))
+                                                   (CId 'self (LocalId))
+                                                   (CId 'other (LocalId)))))))
                   (def '__init__
                        (CFunc (list 'self 'other) (none) 
                               (CAssign
-                                (CId 'self)
-                                (CApp (CGetField (CId 'other) '__list__)
-                                             (list (CId 'other))
+                                (CId 'self (LocalId))
+                                (CApp (CGetField (CId 'other (LocalId)) '__list__)
+                                             (list (CId 'other (LocalId)))
                                              (none)))))
                   (def '__len__
                     (CFunc (list 'self) (none)
                            (CReturn (CBuiltinPrim 'list-len
                                                   (list
-                                                   (CId 'self))))))
+                                                   (CId 'self (LocalId)))))))
                   (def '__list__
                        (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'list-cpy
                                                  (list 
-                                                   (CId 'self))))))
+                                                   (CId 'self (LocalId)))))))
                   (def '__in__
                     (CFunc (list 'self 'test) (none)
                            (CReturn (CBuiltinPrim 'list-in
                                                   (list
-                                                   (CId 'self)
-                                                   (CId 'test))))))
+                                                   (CId 'self (LocalId))
+                                                   (CId 'test (LocalId)))))))
                   (def '__str__
                        (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'list-str
-                                                     (list (CId 'self))))))
+                                                     (list (CId 'self (LocalId)))))))
                   (def '__attr__
                     (CFunc (list 'self 'idx) (none)
                            (CReturn (CBuiltinPrim 'list-attr
                                                   (list
-                                                   (CId 'self)
-                                                   (CId 'idx))))))
+                                                   (CId 'self (LocalId))
+                                                   (CId 'idx (LocalId)))))))
                   (def '__cmp__
                     (CFunc (list 'self 'other) (none)
                            (CLet 'listcmp (CNone)
@@ -56,121 +56,68 @@
                                     (CFunc (list 'self 'other 'idx) (none)
                                            (seq-ops (list
                                              (def 'li1
-                                                  (CApp (CGetField (CId 'self)
+                                                  (CApp (CGetField (CId 'self (LocalId))
                                                                    '__attr__)
-                                                        (list (CId 'self)
-                                                              (CId 'idx))
+                                                        (list (CId 'self (LocalId))
+                                                              (CId 'idx (LocalId)))
                                                         (none)))
                                              (def 'li2
-                                                  (CApp (CGetField (CId 'other)
+                                                  (CApp (CGetField (CId 'other (LocalId))
                                                                    '__attr__)
-                                                        (list (CId 'other)
-                                                              (CId 'idx))
+                                                        (list (CId 'other (LocalId))
+                                                              (CId 'idx (LocalId)))
                                                         (none)))
-                                             (CIf (CPrim2 'Is (CId 'li1) (CNone))
-                                                  (CIf (CPrim2 'Is (CId 'li2) (CNone))
+                                             (CIf (CPrim2 'Is (CId 'li1 (LocalId)) (CNone))
+                                                  (CIf (CPrim2 'Is (CId 'li2 (LocalId)) (CNone))
                                                        (CReturn (make-builtin-num 0))
                                                        (CReturn (make-builtin-num -1)))
-                                                  (CIf (CPrim2 'Is (CId 'li2) (CNone))
+                                                  (CIf (CPrim2 'Is (CId 'li2 (LocalId)) (CNone))
                                                        (CReturn (make-builtin-num 1))
                                            (seq-ops (list
                                              (def 'cmpval
-                                                  (CApp (CGetField (CId 'li1)
+                                                  (CApp (CGetField (CId 'li1 (LocalId))
                                                                    '__cmp__)
-                                                        (list (CId 'li1)
-                                                              (CId 'li2))
+                                                        (list (CId 'li1 (LocalId))
+                                                              (CId 'li2 (LocalId)))
                                                         (none)))
-                                             (CIf (CApp (CGetField (CId 'cmpval)
+                                             (CIf (CApp (CGetField (CId 'cmpval (LocalId))
                                                                    '__eq__)
-                                                        (list (CId 'cmpval)
+                                                        (list (CId 'cmpval (LocalId))
                                                               (make-builtin-num 0))
                                                         (none))
                                                   (seq-ops (list 
                                                     (def 'nidx
-                                                         (CApp (CGetField (CId 'idx)
+                                                         (CApp (CGetField (CId 'idx (LocalId))
                                                                           '__add__)
-                                                               (list (CId 'idx)
+                                                               (list (CId 'idx (LocalId))
                                                                      (make-builtin-num 1))
                                                                (none)))
                                                     (CReturn 
-                                                      (CApp (CId 'listcmp)
-                                                          (list (CId 'self)
-                                                                (CId 'other)
-                                                                (CId 'nidx))
+                                                      (CApp (CId 'listcmp (LocalId))
+                                                          (list (CId 'self (LocalId))
+                                                                (CId 'other (LocalId))
+                                                                (CId 'nidx (LocalId)))
                                                           (none)))))
-                                                  (CReturn (CId 'cmpval)))))))))))
+                                                  (CReturn (CId 'cmpval (LocalId))))))))))))
                                (CReturn 
-                                 (CApp (CId 'listcmp)
-                                     (list (CId 'self)
-                                           (CId 'other)
+                                 (CApp (CId 'listcmp (LocalId))
+                                     (list (CId 'self (LocalId))
+                                           (CId 'other (LocalId))
                                            (make-builtin-num 0))
                                      (none))))))))
                   (def '__eq__
                     (CFunc (list 'self 'other) (none)
                            (seq-ops (list
                                       (def '_cmpresult
-                                           (CApp (CGetField (CId 'self) '__cmp__)
-                                                 (list (CId 'self) (CId 'other))
+                                           (CApp (CGetField (CId 'self (LocalId)) '__cmp__)
+                                                 (list (CId 'self (LocalId))
+                                                       (CId 'other (LocalId)))
                                                  (none)))
-                                      (CReturn (CApp (CGetField (CId '_cmpresult) '__eq__)
-                                                     (list (CId '_cmpresult)
+                                      (CReturn (CApp (CGetField (CId '_cmpresult (LocalId))
+                                                                '__eq__)
+                                                     (list (CId '_cmpresult (LocalId))
                                                            (make-builtin-num 0))
                                                      (none)))))))))))
-                           #|(CLet 'listeq (CNone)
-                             (seq-ops (list
-                               (def 'listeq
-                                    (CFunc (list 'self 'other 'idx) (none)
-                                           (seq-ops (list
-                                             (def 'li1
-                                                  (CApp (CGetField (CId 'self)
-                                                                   '__attr__)
-                                                        (list (CId 'self)
-                                                              (CId 'idx))
-                                                        (none)))
-                                             (def 'li2
-                                                  (CApp (CGetField (CId 'other)
-                                                                   '__attr__)
-                                                        (list (CId 'other)
-                                                              (CId 'idx))
-                                                        (none)))
-                                             (CIf (CPrim2 'Is (CId 'li1) (CNone))
-                                                  (CIf (CPrim2 'Is (CId 'li2) (CNone))
-                                                       (CReturn (CTrue))
-                                                       (CReturn (CFalse)))
-                                                  (CIf (CPrim2 'Is (CId 'li2) (CNone))
-                                                       (CReturn (CFalse))
-                                           (seq-ops (list
-                                             (def 'eqval
-                                                  (CApp (CGetField (CId 'li1)
-                                                                   '__eq__)
-                                                        (list (CId 'li1)
-                                                              (CId 'li2))
-                                                        (none)))
-                                             (CIf (CApp (CGetField (CId 'eqval)
-                                                                   '__eq__)
-                                                        (list (CId 'eqval)
-                                                              (CTrue))
-                                                        (none))
-                                                  (seq-ops (list 
-                                                    (def 'nidx
-                                                         (CApp (CGetField (CId 'idx)
-                                                                          '__add__)
-                                                               (list (CId 'idx)
-                                                                     (make-builtin-num 1))
-                                                               (none)))
-                                                    (CReturn 
-                                                      (CApp (CId 'listeq)
-                                                          (list (CId 'self)
-                                                                (CId 'other)
-                                                                (CId 'nidx))
-                                                          (none)))))
-                                                  (CReturn (CId 'eqval)))))))))))
-                               (CReturn 
-                                 (CApp (CId 'listeq)
-                                       (list (CId 'self)
-                                           (CId 'other)
-                                           (make-builtin-num 0))
-                                     (none))))))))))))|#
 
 (define (make-builtin-list [l : (listof CVal)]) : CVal
   (VObject 'list
