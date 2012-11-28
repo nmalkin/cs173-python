@@ -208,7 +208,7 @@
              (CSeq 
                (CAssign
                  (CId name)
-                 (CNone))
+                 (CUndefined))
                (CAssign (CId name)
                         (CClass name
                                 (if (empty? bases) 

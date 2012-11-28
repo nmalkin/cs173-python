@@ -484,9 +484,6 @@
 ;; depth-first, left-to-right if super = #f
 ;; left-to-right, depth-second if super = #t
 (define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : Result
-  (begin
-    (display n) (display " ") (display c) (display "\n")
-    (display e) (display "\n\n")
   (type-case CVal c
     [VObject (antecedent mval d) 
                     (let ([w (hash-ref (VObject-dict c) n)])
@@ -503,7 +500,7 @@
                                                " has no attribute '")
                                              (string-append (symbol->string n) "'"))
                                            e s)))]))]
-    [else (error 'interp "Not an object with functions.")])))
+    [else (error 'interp "Not an object with functions.")]))
 
 
 (define (assign-to-field o f v e s)
