@@ -106,7 +106,7 @@
                                     (if (< 0 (length exn?))
                                         (first exn?)
                                       (local [(define argvs (map v*s*e-v argvs-r))
-                                              ; bind the (interpreted) arguments to the constructor
+                                              ; bind the interpreted arguments to the constructor
                                               (define result 
                                                 (bind-and-execute body argxs vararg
                                                                   (cons o argvs)
@@ -191,7 +191,7 @@
                                     (find-match type (rest exps) tsto tenv))))))]))
           (define-values (match? hsto henv exn?) (find-match exn-type excepts sto env))]
 
-    ;; we might have found a matching except clause
+    ; we might have found a matching except clause
     (if (some? exn?)
       (some-v exn?)
       (if (some? match?)
@@ -478,6 +478,9 @@
 ;; depth-first, left-to-right if super = #f
 ;; left-to-right, depth-second if super = #t
 (define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : Result
+  (begin
+    (display n) (display " ") (display c) (display "\n")
+    (display e) (display "\n\n")
   (type-case CVal c
     [VObject (antecedent mval d) 
                     (let ([w (hash-ref (VObject-dict c) n)])
@@ -494,7 +497,7 @@
                                                " has no attribute '")
                                              (string-append (symbol->string n) "'"))
                                            e s)))]))]
-    [else (error 'interp "Not an object with functions.")]))
+    [else (error 'interp "Not an object with functions.")])))
 
 
 (define (assign-to-field o f v e s)
