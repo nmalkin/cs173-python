@@ -36,12 +36,14 @@ ParselTongue.
   [CRaise (expr : (optionof CExpr))]
   [CTryExceptElseFinally (try : CExpr) (excepts : (listof CExpr))
                          (orelse : CExpr) (finally : CExpr)]
-  [CExcept (types : (listof CExpr)) (name : (optionof symbol)) (body : CExpr)])
+  [CExcept (types : (listof CExpr)) (name : (optionof symbol)) (body : CExpr)]
+  [CUndefined])
 
 (define-type CVal
   [VStr (s : string)]
   [VObject (antecedent : symbol) (mval : (optionof MetaVal)) (dict : object-dict)]
-  [VClosure (env : Env) (args : (listof symbol)) (vararg : (optionof symbol)) (body : CExpr)])
+  [VClosure (env : Env) (args : (listof symbol)) (vararg : (optionof symbol)) (body : CExpr)]
+  [VUndefined])
 
 (define-type MetaVal
              [MetaNum (n : number)]

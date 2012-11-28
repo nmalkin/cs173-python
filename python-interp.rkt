@@ -245,6 +245,7 @@
     [CTrue () (v*s*e true-val sto env)]
     [CFalse () (v*s*e false-val sto env)]
     [CNone () (v*s*e vnone sto env)]
+    [CUndefined () (v*s*e (VUndefined) sto env)]
 
     [CClass (name base body)
                (type-case Result (interp-env body (cons (hash empty) env) sto)
@@ -345,9 +346,14 @@
                                                (string-append (symbol->string x)
                                                               "' is not defined"))
                                 env sto)
-                 (v*s*e (fetch (some-v w) sto)
-                        sto
-                        env)))]
+                 (local [(define val (fetch (some-v w) sto))]
+                        (type-case CVal val
+                            [VUndefined () (mk-exception 'UnboundLocalError 
+                                            (string-append (symbol->string x)
+                                                           " is undefined in
+                                                           this scope")
+                                                           env sto)]
+                            [else (v*s*e (fetch (some-v w) sto) sto env)]))))]
 
     [CObject (c mval) (v*s*e (VObject c mval (make-hash empty))
                              sto
@@ -613,7 +619,8 @@
               false 
               true)]
     [VClosure (e a s b) true]
-    [VObject (a mval d) (truthy-object? (VObject a mval d))]))
+    [VObject (a mval d) (truthy-object? (VObject a mval d))]
+    [VUndefined () false]))
 
 (define (interp-cprim2 [prim : symbol] 
                        [arg1 : CExpr]
