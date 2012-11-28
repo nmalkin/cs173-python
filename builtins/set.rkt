@@ -17,12 +17,12 @@
                            (CReturn (CBuiltinPrim 'set-len
                                                   (list
                                                    (CId 'self))))))
-              #|
-              (def '__str__
+              (def '__init__
                    (CFunc (list 'self) (none)
-                          (CReturn (CBuiltinPrim 'set-str
+                          (CReturn (CBuiltinPrim 'set-init
                                                      (list (CId 'self))))))
 
+              #|
               (def 'clear
                    (CFunc (list 'self) (none)
                           (CReturn (CBuiltinPrim 'set-clear
@@ -51,6 +51,11 @@
                                                )))))
               |#
 ))))
+
+(define (set-init (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+        (some (VObject 'set
+                       (some (MetaSet (make-set empty)))
+                       (hash empty))))
 
 (define (set-len (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'set

@@ -162,6 +162,7 @@ primitives here.
     ['dict-keys (dict-keys args env sto)]
 
     ;set
+    ['set-init (set-init args env sto)]
     ['set-len (set-len args env sto)]
 
     ;object 
