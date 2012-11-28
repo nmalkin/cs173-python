@@ -9,10 +9,7 @@
   (typed-in racket/base (car : (('a * 'b)  -> 'b)))
   (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
   (typed-in racket/base (hash-has-key? : ((hashof 'a 'b) 'a -> boolean)))
-  (typed-in racket/set (set : ( -> set?)))
-  (typed-in racket/set (set-add : (set? 'a -> set?)))
 )
-(require [opaque-type-in racket/set [Set set?]])
 
 (define dict-class : CExpr
   (CClass
@@ -146,9 +143,5 @@
                (let ([contents (MetaDict-contents mval1)])
                     (some
                       (VObject 'set
-                               (some (MetaSet
-                                       (foldl (lambda (elt st)
-                                                (set-add st elt))
-                                              (set)
-                                              (hash-keys contents))))
+                               (some (MetaSet (make-set (hash-keys contents))))
                                (make-hash empty))))))

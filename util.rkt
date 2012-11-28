@@ -12,6 +12,8 @@
  (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
  (typed-in racket/set (set? : ('a -> boolean)))
  (typed-in racket/set (set->list : (set? -> (listof 'a))))
+ (typed-in racket/set (set : ( -> set?)))
+ (typed-in racket/set (set-add : (set? 'a -> set?)))
  )
 
 ; a file for utility functions that aren't specific to python stuff
@@ -191,3 +193,9 @@
                                  (get-optionof-field n base e s))
                                            (none)))]))]
     [else (error 'interp "Not an object with functions.")])))
+
+(define (make-set [vals : (listof CVal)]) : Set
+  (foldl (lambda (elt st)
+                 (set-add st elt))
+         (set)
+         vals))
