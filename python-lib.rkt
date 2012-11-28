@@ -8,6 +8,7 @@
          "builtins/dict.rkt"
          "builtins/object.rkt"
          "builtins/bool.rkt"
+         "builtins/set.rkt"
          "util.rkt"
          (typed-in "get-structured-python.rkt"
                    (get-structured-python : ('a -> 'b)))
@@ -220,6 +221,7 @@ that calls the primitive `print`.
         (bind 'tuple tuple-class)
         (bind 'dict dict-class)
         (bind 'bool bool-class)
+        (bind 'set set-class)
         (bind 'len len-lambda)
         (bind 'min min-lambda)
         (bind 'max max-lambda)

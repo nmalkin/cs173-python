@@ -50,5 +50,6 @@
   [PyDict (keys : (listof PyExpr)) (values : (listof PyExpr))]
   [PyList (values : (listof PyExpr))]
   [PyTuple (values : (listof PyExpr))]
+  [PySet (elts : (listof PyExpr))]
 )
 

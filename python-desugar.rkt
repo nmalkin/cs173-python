@@ -163,6 +163,9 @@
             (CDict (lists->hash (map desugar keys)
                                 (map desugar values)))]
 
+    [PySet (elts)
+            (CSet (map desugar elts))]
+
     [PyList (values)
             (CList (map desugar values))]
 

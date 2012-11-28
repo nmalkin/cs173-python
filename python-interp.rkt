@@ -21,7 +21,11 @@
          (typed-in racket/base (ormap : (('a -> boolean) (listof 'a) -> 'a)))
          (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
          (typed-in racket/base (car : (('a * 'b)  -> 'a)))
-         (typed-in racket/base (cdr : (('a * 'b)  -> 'b))))
+         (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
+         (typed-in racket/set (set : ( -> set?)))
+         (typed-in racket/set (set-add : (set? 'a -> set?)))
+         )
+(require [opaque-type-in racket/set [Set set?]])
 
 
 ;; interp-cascade, interprets a list of expressions with an initial store,
@@ -285,6 +289,22 @@
                                 (some (MetaDict interped-hash))
                                 (make-hash empty))
                       sto env)))]
+
+    [CSet (elts)
+          (local [(define-values (result-list new-s new-e)
+                                     (interp-cascade elts sto env))]
+              (let ([exn? (filter Exception? result-list)])
+                  (if (< 0 (length exn?))
+                      (first exn?) 
+                      (let ([val-list (map v*s*e-v result-list)])
+                           (v*s*e (VObject 'set
+                                           (some (MetaSet
+                                               (foldl (lambda (elt st)
+                                                        (set-add st elt))
+                                                      (set)
+                                                      val-list)))
+                                           (make-hash empty))
+                                  new-s new-e)))))]
 
     [CList (values)
            (local [(define-values (result-list new-s new-e)
