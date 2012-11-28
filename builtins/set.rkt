@@ -6,7 +6,9 @@
 (require
   (typed-in racket/set (set->list : (set? -> (listof 'a))))
   (typed-in racket/set (set? : ('a -> boolean)))
-  (typed-in racket/set (set=? : (set? set? -> boolean))))
+  (typed-in racket/set (set=? : (set? set? -> boolean)))
+  (typed-in racket/set (set-member? : (set? 'a -> boolean)))
+)
 
 (define set-class : CExpr
   (CClass
@@ -34,6 +36,7 @@
                           (CReturn (CBuiltinPrim 'set-update
                                                      (list (CId 'self)
                                                            (CId 'other))))))
+              |#
 
               (def '__in__
                 (CFunc (list 'self 'other) (none)
@@ -42,7 +45,6 @@
                                                (CId 'self)
                                                (CId 'other)
                                                )))))
-              |#
 
               (def '__eq__
                 (CFunc (list 'self 'other) (none)
@@ -72,3 +74,9 @@
                      (some true-val)
                      (some false-val)))))
 
+(define (set-in [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set
+               (let ([contents (MetaSet-elts mval1)])
+                 (if (set-member? contents (second args)) ; FIXME: what if (second args) DNE?
+                     (some true-val)
+                     (some false-val)))))
