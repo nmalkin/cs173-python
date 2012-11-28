@@ -242,6 +242,13 @@
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
   (type-case CExpr expr
+    [CModule (prelude body)
+             (local [(define prelude-r (interp-env prelude env sto))]
+                (type-case Result prelude-r
+                    [v*s*e (v s e) (interp-env body e s)]
+                    [Return (v s e) (return-exception e s)]
+                    [Exception (v s e) (Exception v s e)]))]
+    
     [CStr (s) (v*s*e (VObject 'str (some (MetaStr s)) (hash empty)) sto env)]
     [CTrue () (v*s*e true-val sto env)]
     [CFalse () (v*s*e false-val sto env)]

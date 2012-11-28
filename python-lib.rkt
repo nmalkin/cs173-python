@@ -17,7 +17,7 @@
          (typed-in racket/base (open-input-file : ('a -> 'b)))
          "python-syntax.rkt"
          "python-desugar.rkt"
-         (typed-in racket/base (append : ((listof 'a) (listof 'a) (listof 'a) -> (listof 'a)))))
+         (typed-in racket/base (append : ((listof 'a) (listof 'a) (listof 'a) (listof 'a) (listof 'a) -> (listof 'a)))))
 
 #|
 
@@ -158,6 +158,7 @@ that calls the primitive `print`.
         (list (CId 'self))
         (none)))))
 
+#|
 (define int-lambda
   (CFunc (list 'self) (none)
     (CReturn
@@ -177,6 +178,7 @@ that calls the primitive `print`.
           '__float__)
         (list (CId 'self))
         (none)))))
+|#
 
 (define isinstance-lambda
   (CFunc (list 'self 'type) (none)
@@ -188,35 +190,16 @@ that calls the primitive `print`.
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
 
+
 (define lib-functions
   (list (bind 'True (CTrue))
         (bind 'False (CFalse))
         (bind 'None (CNone))
 
-        ; dummies
-        (bind 'object (CNone))
-        (bind 'num (CNone))
-        (bind 'str (CNone))
-        (bind 'Exception (CNone))
-        (bind 'bool (CNone))
-        (bind 'any (CNone))
-        (bind 'all (CNone))
-        (bind 'list (CNone))
-        (bind 'tuple (CNone))
-        (bind 'dict (CNone))
-        (bind 'set (CNone))
-        (bind 'NameError (CNone))
-        (bind 'TypeError (CNone))
-        (bind 'SyntaxError (CNone))
-        (bind 'AttributeError (CNone))
-        (bind 'RuntimeError (CNone))
-        (bind 'KeyError (CNone))
-        (bind 'UnboundLocalError (CNone))
-        (bind 'IndexError (CNone))
-        (bind 'ZeroDivisionError (CNone))
-
         (bind 'object object-class)
-        (bind 'num (num-class 'num))
+        (bind 'num num-class)
+        (bind 'int int-class)
+        (bind 'float float-class)
         (bind 'str str-class)
         (bind 'list list-class)
         (bind 'tuple tuple-class)
@@ -227,8 +210,6 @@ that calls the primitive `print`.
         (bind 'min min-lambda)
         (bind 'max max-lambda)
         (bind 'abs abs-lambda)
-        (bind 'int int-lambda)
-        (bind 'float float-lambda)
         (bind 'isinstance isinstance-lambda)
         (bind 'print print-lambda)
 
@@ -253,6 +234,14 @@ that calls the primitive `print`.
         (bind '___assertNotIn assert-notin-lambda)
         (bind '___fail fail-lambda)))
 
+(define lib-function-dummies
+  (append
+      (map (lambda(b) (bind (bind-left b) (CNone)))
+           lib-functions)
+      (list (bind  'all (CNone))
+            (bind 'any (CNone))
+            (bind 'filter (CNone)))
+      empty empty empty))
 ;; these are builtin functions that we have written in actual python files which
 ;; are pulled in here and desugared for lib purposes
 (define pylib-programs
@@ -273,6 +262,9 @@ that calls the primitive `print`.
 (define (python-lib [expr : CExpr]) : CExpr
   (seq-ops (append
              (map (lambda(b) (CAssign (CId (bind-left b)) (bind-right b)))
+                      lib-function-dummies)
+             (list (CModule-prelude expr))
+             (map (lambda(b) (CAssign (CId (bind-left b)) (bind-right b)))
                       lib-functions)
-             pylib-programs
-             (list expr))))
+             pylib-programs  
+             (list (CModule-body expr)))))
