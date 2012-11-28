@@ -9,40 +9,57 @@
 
 
 
-(define (desugar-boolop [op : symbol] [values : (listof PyExpr)]) : CExpr
-  (local [(define first-val (desugar (first values)))]
+(define (desugar-boolop [op : symbol] [values : (listof PyExpr)]
+                        [global? : boolean]) : CExpr
+  (local [(define first-val (rec-desugar (first values) global?))]
          (if (> (length values) 1)
           (case op
             ['And (CIf first-val
-                       (desugar-boolop op (rest values))
+                       (desugar-boolop op (rest values) global?)
                        first-val)]
             ['Or (CIf first-val
                       first-val
-                      (desugar-boolop op (rest values)))])
+                      (desugar-boolop op (rest values) global?))])
 
-          (desugar (first values)))))
+          (rec-desugar (first values) global?))))
 
 (define (desugar-compop [l : PyExpr] 
                         [ops : (listof symbol)] 
-                        [comparators : (listof PyExpr)]) : CExpr
-  (local [(define first-right (desugar (first comparators)))
-          (define l-expr (desugar l))
-          (define first-comp (desugar (PyBinOp l (first ops) (first comparators))))]
+                        [comparators : (listof PyExpr)]
+                        [global? : boolean]) : CExpr
+  (local [(define first-right (rec-desugar (first comparators) global?))
+          (define l-expr (rec-desugar l global?))
+          (define first-comp (rec-desugar (PyBinOp l (first ops) (first
+                                                                   comparators))
+                                          global?))]
          (if (> (length comparators) 1) 
            (CIf first-comp
-                (desugar-compop (first comparators) (rest ops) (rest comparators))
+                (desugar-compop (first comparators) (rest ops) (rest
+                                                                 comparators)
+                                global?)
                 first-comp)
            first-comp)))
 
+;; look through a  and find a list of all names from assignments and definitions
+;;(define (get-names [expr : PyExpr]) : (listof symbol)
+;;  (type-case PyExpr expr
+;;   [PySeq (es) (map (
 
 (define (desugar [expr : PyExpr]) : CExpr
+  (rec-desugar expr true))
+
+(define (rec-desugar [expr : PyExpr] [global? : boolean]) : CExpr
   (type-case PyExpr expr
-    [PySeq (es) (foldl (lambda (e1 e2) (CSeq e2 (desugar e1))) (desugar (first es)) (rest es))]
+    [PySeq (es) (foldl (lambda (e1 e2) (CSeq e2 (rec-desugar e1 global?)))
+                       (rec-desugar (first es) global?) (rest es))]
     [PyAssign (targets value) (foldl (lambda (t asgns)
-                                       (CSeq asgns (CAssign (desugar t)
-                                                            (desugar value))))
-                                       (CAssign (desugar (first targets))
-                                                (desugar value))
+                                       (CSeq asgns (CAssign (rec-desugar t
+                                                                         global?)
+                                                            (rec-desugar value
+                                                                         global?))))
+                                       (CAssign (rec-desugar (first targets)
+                                                             global?)
+                                                (rec-desugar value global?))
                                        (rest targets))]
     [PyNum (n) (make-builtin-num n)]
     [PyBool (b) (if b (CTrue) (CFalse))]
@@ -53,17 +70,18 @@
     ; TODO: implement real exceptions
     [PyRaise (expr) (CRaise (if (PyPass? expr)
                                 (none)
-                                (some (desugar expr))))]
+                                (some (rec-desugar expr global?))))]
 
 
     [PyPass () (CApp (CFunc empty (none) (CNone)) empty (none))] ;PyPass is an empty lambda
 
     [PyIf (test body orelse)
-          (CIf (desugar test) (desugar body) (desugar orelse))]
+          (CIf (rec-desugar test global?) (rec-desugar body global?)
+               (rec-desugar orelse global?))]
 
     [PyBinOp (left op right)
-             (let ([left-c (desugar left)]
-                   [right-c (desugar right)]) 
+             (let ([left-c (rec-desugar left global?)]
+                   [right-c (rec-desugar right global?)]) 
                (case op 
                  ['Add (CApp (CGetField left-c '__add__) 
                              (list left-c right-c)
@@ -98,7 +116,8 @@
                  ['GtE (CApp (CGetField left-c '__gte__)
                             (list left-c right-c)
                             (none))]
-                 ['NotEq (desugar (PyUnaryOp 'Not (PyBinOp left 'Eq right)))]
+                 ['NotEq (rec-desugar (PyUnaryOp 'Not (PyBinOp left 'Eq right))
+                                      global?)]
 
                  ['In (CApp (CFunc (list 'self 'test) (none)
                                    (CSeq
@@ -123,86 +142,88 @@
                             (list right-c left-c)
                             (none))]
 
-                 ['NotIn (desugar (PyUnaryOp 'Not (PyBinOp left 'In right)))]
+                 ['NotIn (rec-desugar (PyUnaryOp 'Not (PyBinOp left 'In right))
+                                      global?)]
 
-                 [else (CPrim2 op (desugar left) (desugar right))]))]
+                 [else (CPrim2 op (rec-desugar left global?) (rec-desugar right
+                                                                          global?))]))]
 
     [PyUnaryOp (op operand)
                (case op
-                 ['USub (desugar (PyBinOp (PyNum 0) 'Sub operand))]
-                 ['UAdd (desugar (PyBinOp (PyNum 0) 'Add operand))]
-                 ['Invert (CApp (CGetField (desugar operand) '__invrt__)
-                                (list (desugar operand))
+                 ['USub (rec-desugar (PyBinOp (PyNum 0) 'Sub operand) global?)]
+                 ['UAdd (rec-desugar (PyBinOp (PyNum 0) 'Add operand) global?)]
+                 ['Invert (CApp (CGetField (rec-desugar operand global?) '__invrt__)
+                                (list (rec-desugar operand global?))
                                 (none))]
-                 [else (CPrim1 op (desugar operand))])]
-    [PyBoolOp (op values) (desugar-boolop op values)]
+                 [else (CPrim1 op (rec-desugar operand global?))])]
+    [PyBoolOp (op values) (desugar-boolop op values global?)]
               
-    [PyCompOp (l op rights) (desugar-compop l op rights)]
+    [PyCompOp (l op rights) (desugar-compop l op rights global?)]
 
     [PyLam (args body)
            (CFunc args (none)
                   (CReturn                   
-                   (desugar body)))]
+                   (rec-desugar body global?)))]
     
     [PyFunc (name args body)
             (CLet name (CNone)
                 (CAssign (CId name)
                          (CFunc args (none)
-                                (desugar body))))]
+                                (rec-desugar body false))))]
 
     [PyFuncVarArg (name args sarg body)
             (CLet name (CNone)
                 (CAssign (CId name)
                          (CFunc args (some sarg)
-                                (desugar body))))]
+                                (rec-desugar body global?))))]
     
     [PyReturn (value)
-              (CReturn (desugar value))]
+              (CReturn (rec-desugar value global?))]
 
     [PyDict (keys values)
-            (CDict (lists->hash (map desugar keys)
-                                (map desugar values)))]
+            (CDict (lists->hash (map (lambda(k) (rec-desugar k global?)) keys)
+                                (map (lambda(v) (rec-desugar v global?)) values)))]
 
     [PyList (values)
-            (CList (map desugar values))]
+            (CList (map (lambda(v) (rec-desugar v global?)) values))]
 
     [PySubscript (left ctx slice)
                  (if (symbol=? ctx 'Load)
                    (let ([left-id (new-id)])
                      (CLet left-id 
-                           (desugar left)
+                           (rec-desugar left global?)
                            (CApp (CGetField (CId left-id)
                                             '__attr__)
-                                 (list (CId left-id) (desugar slice))
+                                 (list (CId left-id) (rec-desugar slice global?))
                                  (none))))
                    (CNone))]
 
     [PyTuple (values)
-            (CTuple (map desugar values))]
+            (CTuple (map (lambda(v) (rec-desugar v global?)) values))]
 
     [PyApp (fun args)
-           (let ([f (desugar fun)])
+           (let ([f (rec-desugar fun global?)])
              (if (CGetField? f)
                (let ([o (CGetField-value f)])
                  (CApp f
-                       (cons o (map desugar args))
+                       (cons o (map (lambda(a) (rec-desugar a global?)) args))
                        (none)))
                (CApp
-                 (desugar fun)
-                 (map desugar args)
+                 (rec-desugar fun global?)
+                 (map (lambda (a) (rec-desugar a global?)) args)
                  (none))))]
 
     [PyAppStarArg (fun args sarg)
-           (let ([f (desugar fun)])
+           (let ([f (rec-desugar fun global?)])
              (if (CGetField? f)
                (let ([o (CGetField-value f)])
                  (CApp f
-                       (cons o (map desugar args))
+                       (cons o (map (lambda(a) (rec-desugar a global?)) args))
                        (none)))
                (CApp
-                 (desugar fun)
-                 (map desugar args)
-                 (some (desugar sarg)))))]
+                 (rec-desugar fun global?)
+                 (map (lambda(a) (rec-desugar a global?)) args)
+                 (some (rec-desugar sarg global?)))))]
     
     [PyClass (name bases body)
              (CSeq 
@@ -214,32 +235,32 @@
                                 (if (empty? bases) 
                                   'object
                                   (first bases))  
-                                (desugar body))))]
+                                (rec-desugar body false))))]
     
     [PyDotField (value attr)
-                (CGetField (desugar value)
+                (CGetField (rec-desugar value global?)
                            attr)]
     
     [PyTryExceptElseFinally (try excepts orelse finally)
                 (CTryExceptElseFinally
-                  (desugar try)
-                  (map desugar excepts)
-                  (desugar orelse)
-                  (desugar finally))]
+                  (rec-desugar try global?)
+                  (map (lambda (e) (rec-desugar e global?)) excepts)
+                  (rec-desugar orelse global?)
+                  (rec-desugar finally global?))]
     
     [PyExcept (types body)
-              (CExcept (map desugar types)
+              (CExcept (map (lambda(t) (rec-desugar t global?)) types)
                        (none)
-                       (desugar body))]
+                       (rec-desugar body global?))]
 
     [PyExceptAs (types name body)
-                (CExcept (map desugar types)
+                (CExcept (map (lambda(t) (rec-desugar t global?)) types)
                          (some name)
-                         (desugar body))]
+                         (rec-desugar body global?))]
 
     [PyAugAssign (op target value)
-                 (CAssign (desugar target)
-                          (desugar (PyBinOp target op value)))]
+                 (CAssign (rec-desugar target global?)
+                          (rec-desugar (PyBinOp target op value) global?))]
     ; XXX: target is interpreted twice, independently.
     ; Is there any case where this might cause problems?
 
