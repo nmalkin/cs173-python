@@ -204,6 +204,7 @@ that calls the primitive `print`.
         (bind 'list (CNone))
         (bind 'tuple (CNone))
         (bind 'dict (CNone))
+        (bind 'set (CNone))
         (bind 'NameError (CNone))
         (bind 'TypeError (CNone))
         (bind 'SyntaxError (CNone))
