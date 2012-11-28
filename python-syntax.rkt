@@ -53,5 +53,6 @@
   [PyList (values : (listof PyExpr))]
   [PyTuple (values : (listof PyExpr))]
   [PyUndefined]
+  [PySet (elts : (listof PyExpr))]
 )
 

@@ -8,7 +8,8 @@
   (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
   (typed-in racket/base (car : (('a * 'b)  -> 'b)))
   (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
-  (typed-in racket/base (hash-has-key? : ((hashof 'a 'b) 'a -> boolean))))
+  (typed-in racket/base (hash-has-key? : ((hashof 'a 'b) 'a -> boolean)))
+)
 
 (define dict-class : CExpr
   (CClass
@@ -56,6 +57,11 @@
                                                (CId 'self)
                                                (CId 'other)
                                                )))))
+
+              (def 'keys
+                   (CFunc (list 'self) (none)
+                          (CReturn (CBuiltinPrim 'dict-keys
+                                                     (list (CId 'self))))))
 ))))
 
 
@@ -132,3 +138,10 @@
                      (some true-val)
                      (some false-val))))))
 
+(define (dict-keys (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (let ([contents (MetaDict-contents mval1)])
+                    (some
+                      (VObject 'set
+                               (some (MetaSet (make-set (hash-keys contents))))
+                               (make-hash empty))))))

@@ -231,6 +231,9 @@
             (CDict (lists->hash (map (lambda(k) (rec-desugar k global?)) keys)
                                 (map (lambda(v) (rec-desugar v global?)) values)))]
 
+    [PySet (elts)
+            (CSet (map desugar elts))]
+
     [PyList (values)
             (CList (map (lambda(v) (rec-desugar v global?)) values))]
 

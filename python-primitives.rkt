@@ -6,6 +6,7 @@
          "builtins/list.rkt"
          "builtins/tuple.rkt"
          "builtins/dict.rkt"
+         "builtins/set.rkt"
          "builtins/object.rkt"
          "builtins/bool.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
@@ -158,6 +159,13 @@ primitives here.
     ['dict-update (dict-update args env sto)]
     ['dict-eq (dict-eq args env sto)]
     ['dict-get (dict-get args env sto)]
+    ['dict-keys (dict-keys args env sto)]
+
+    ;set
+    ['set-init (set-init args env sto)]
+    ['set-len (set-len args env sto)]
+    ['set-eq (set-eq args env sto)]
+    ['set-in (set-in args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]

@@ -177,6 +177,10 @@ structure that you define in python-syntax.rkt
      (PyDict (map get-structured-python keys)
              (map get-structured-python values))]
 
+    [(hash-table ('nodetype "Set")
+                 ('elts elts))
+     (PySet (map get-structured-python elts))]
+
     [(hash-table ('nodetype "List")
                  ('elts values)
                  ('ctx ctx))

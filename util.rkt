@@ -2,13 +2,19 @@
 
 (require "python-core-syntax.rkt")
 
+(require [opaque-type-in racket/set [Set set?]])
 (require
  (typed-in racket/string (string-join : ((listof string) string -> string)))
  (typed-in racket/base (hash-for-each : ((hashof 'a 'b) ('c 'd -> 'e) -> void)))
  (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
  (typed-in racket/base (number->string : (number -> string)))
  (typed-in racket/base (car : (('a * 'b)  -> 'a)))
- (typed-in racket/base (cdr : (('a * 'b)  -> 'b))))
+ (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
+ (typed-in racket/set (set? : ('a -> boolean)))
+ (typed-in racket/set (set->list : (set? -> (listof 'a))))
+ (typed-in racket/set (set : ( -> set?)))
+ (typed-in racket/set (set-add : (set? 'a -> set?)))
+ )
 
 ; a file for utility functions that aren't specific to python stuff
 
@@ -101,7 +107,7 @@
     [VClosure (env args sarg body) (error 'pretty "Can't print closures yet")]
     [VUndefined () "Undefined"]))
 
-(define (pretty-metaval mval)
+(define (pretty-metaval (mval : MetaVal)) : string
   (type-case MetaVal mval
     [MetaNum (n) (number->string n)]
     [MetaStr (s) s]
@@ -126,6 +132,11 @@
                                ", "))
               "}")]
     [MetaNone () "None"]
+    [MetaSet (elts)
+              (string-append
+              (string-append "{"
+                             (string-join (map pretty (set->list elts)) ", "))
+              "}")]
     ))
 
 (define (pretty-exception [exn : CVal] [sto : Store]) : string
@@ -182,3 +193,9 @@
                                  (get-optionof-field n base e s))
                                            (none)))]))]
     [else (error 'interp "Not an object with functions.")])))
+
+(define (make-set [vals : (listof CVal)]) : Set
+  (foldl (lambda (elt st)
+                 (set-add st elt))
+         (set)
+         vals))
