@@ -159,6 +159,7 @@ primitives here.
     ['dict-update (dict-update args env sto)]
     ['dict-eq (dict-eq args env sto)]
     ['dict-get (dict-get args env sto)]
+    ['dict-keys (dict-keys args env sto)]
 
     ;set
     ['set-len (set-len args env sto)]
