@@ -1,11 +1,44 @@
 #lang plai-typed
 
 (require "../python-core-syntax.rkt")
-(require "../util.rkt")
+(require "../util.rkt"
+         (typed-in racket/base (integer? : (number -> boolean))))
 
-(define (num-class [name : symbol]) : CExpr
+(define (make-builtin-num [n : number]) : CExpr
+  (CObject
+    (if (integer? n)
+      'int
+      'float)
+    (some (MetaNum n))))
+
+(define int-class
   (CClass
-    name
+    'int
+    'num
+
+    (seq-ops (list
+               (def '__init__
+                    (CFunc (list 'self 'other) (none)
+                        (CAssign (CId 'self)
+                            (CApp (CGetField (CId 'other) '__int__)
+                                  (list (CId 'other))
+                                  (none)))))))))
+
+(define float-class
+  (CClass
+    'int
+    'num
+    (seq-ops (list
+               (def '__init__
+                    (CFunc (list 'self 'other) (none)
+                        (CAssign (CId 'self)
+                            (CApp (CGetField (CId 'other) '__float__)
+                                  (list (CId 'other))
+                                  (none)))))))))
+
+(define num-class 
+  (CClass
+    'num
     'object
     (seq-ops (list 
                (def '__add__ 
@@ -122,9 +155,5 @@
                                                     (CId 'self)
                                                     (CId 'other))))))))))
 
-(define (make-builtin-num [n : number]) : CExpr
-  (CObject
-    'num
-    (some (MetaNum n))))
 
 

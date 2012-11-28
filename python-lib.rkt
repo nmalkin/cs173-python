@@ -158,6 +158,7 @@ that calls the primitive `print`.
         (list (CId 'self))
         (none)))))
 
+#|
 (define int-lambda
   (CFunc (list 'self) (none)
     (CReturn
@@ -177,6 +178,7 @@ that calls the primitive `print`.
           '__float__)
         (list (CId 'self))
         (none)))))
+|#
 
 (define isinstance-lambda
   (CFunc (list 'self 'type) (none)
@@ -195,7 +197,9 @@ that calls the primitive `print`.
         (bind 'None (CNone))
 
         (bind 'object object-class)
-        (bind 'num (num-class 'num))
+        (bind 'num num-class)
+        (bind 'int int-class)
+        (bind 'float float-class)
         (bind 'str str-class)
         (bind 'list list-class)
         (bind 'tuple tuple-class)
@@ -206,8 +210,6 @@ that calls the primitive `print`.
         (bind 'min min-lambda)
         (bind 'max max-lambda)
         (bind 'abs abs-lambda)
-        (bind 'int int-lambda)
-        (bind 'float float-lambda)
         (bind 'isinstance isinstance-lambda)
         (bind 'print print-lambda)
 
