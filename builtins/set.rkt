@@ -5,7 +5,8 @@
 (require [opaque-type-in racket/set [Set set?]])
 (require
   (typed-in racket/set (set->list : (set? -> (listof 'a))))
-  (typed-in racket/set (set? : ('a -> boolean))))
+  (typed-in racket/set (set? : ('a -> boolean)))
+  (typed-in racket/set (set=? : (set? set? -> boolean))))
 
 (define set-class : CExpr
   (CClass
@@ -41,6 +42,7 @@
                                                (CId 'self)
                                                (CId 'other)
                                                )))))
+              |#
 
               (def '__eq__
                 (CFunc (list 'self 'other) (none)
@@ -49,7 +51,6 @@
                                                (CId 'self)
                                                (CId 'other)
                                                )))))
-              |#
 ))))
 
 (define (set-init (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
@@ -62,3 +63,12 @@
                (some (VObject 'num
                               (some (MetaNum (length (set->list (MetaSet-elts mval1)))))
                               (hash empty)))))
+
+(define (set-eq (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set 'set
+               (let ([self (MetaSet-elts mval1)]
+                     [other (MetaSet-elts mval2)])
+                 (if (set=? self other)
+                     (some true-val)
+                     (some false-val)))))
+
