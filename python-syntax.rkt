@@ -4,6 +4,8 @@
   ; control structures
   [PyIf (test : PyExpr) (body : PyExpr) (orelse : PyExpr)]
   [PySeq (es : (listof PyExpr))]
+  ; the top level seq
+  [PyModule (es : (listof PyExpr))]
   [PyAssign (targets : (listof PyExpr)) (value : PyExpr)]
   [PyAugAssign (op : symbol) (target : PyExpr) (value : PyExpr)]
 
@@ -50,5 +52,6 @@
   [PyDict (keys : (listof PyExpr)) (values : (listof PyExpr))]
   [PyList (values : (listof PyExpr))]
   [PyTuple (values : (listof PyExpr))]
+  [PyUndefined]
 )
 

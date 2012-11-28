@@ -5,7 +5,8 @@
          "util.rkt"
          "builtins/num.rkt" 
          "builtins/str.rkt")
-(require (typed-in racket/base (number->string : (number -> string))))
+(require (typed-in racket/base (number->string : (number -> string)))
+         (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a)))))
 
 
 
@@ -40,18 +41,63 @@
                 first-comp)
            first-comp)))
 
-;; look through a  and find a list of all names from assignments and definitions
-;;(define (get-names [expr : PyExpr]) : (listof symbol)
-;;  (type-case PyExpr expr
-;;   [PySeq (es) (map (
+;; look through a  and find a list of all names from assignments and definition
+;; if global scope, it only gets definitions, for local scope it gets
+;; definitions and assignments
+(define (get-names [expr : PyExpr] [global? : boolean]) : (listof symbol)
+  (type-case PyExpr expr
+   [PyIf (t b e) (get-names e global?)]
+   [PySeq (es) (foldl (lambda(e so-far) (append (get-names e global?) so-far))
+                      empty
+                      es)]
+   [PyAssign (targets v) (if global?  
+                           (foldl (lambda(t so-far) (append (get-names t global?)
+                                                          so-far))
+                                empty
+                                targets)
+                           empty)]
+   [PyAugAssign (o t v) (if global?
+                          (get-names t global?)
+                          empty)]
+   [PyExcept (t body) (get-names body global?)]
+   [PyTryExceptElseFinally (t e o f)
+                           (append (get-names t global?)
+                              (append (foldl (lambda(e so-far) (append
+                                                                 (get-names e
+                                                                            global?)
+                                                                 so-far))
+                                             empty 
+                                             e)
+                                (append (get-names o global?)
+                                  (get-names f global?))))]
+   [PyClass (name bases body) (list name)]
+   [PyBinOp (l o r) (append (get-names l global?)
+                      (get-names r global?))]
+   [PyUnaryOp (o operand) (get-names operand global?)]
+   [PyFunc (name args body) (list name)]
+   [PyFuncVarArg (name args sarg body) (list name)]
+   [else empty]))
 
 (define (desugar [expr : PyExpr]) : CExpr
   (rec-desugar expr true))
 
-(define (rec-desugar [expr : PyExpr] [global? : boolean]) : CExpr
+(define (desugar-pymodule [es : (listof PyExpr)] 
+                          [global? : boolean])
+  (CModule
+    (local [(define names  (get-names (PySeq es) global?))]
+        (if (not (empty? names))
+            (rec-desugar (PySeq (map (lambda (n) (PyAssign (list (PyId n 'Load))
+                                                      (PyUndefined)))
+                                     names))
+                         global?)
+            (desugar (PyPass))))
+    (rec-desugar (PySeq es) global?)))
+
+    (define (rec-desugar [expr : PyExpr] [global? : boolean]) : CExpr
   (type-case PyExpr expr
     [PySeq (es) (foldl (lambda (e1 e2) (CSeq e2 (rec-desugar e1 global?)))
                        (rec-desugar (first es) global?) (rest es))]
+    [PyModule (es) (desugar-pymodule es global?)]
     [PyAssign (targets value) (foldl (lambda (t asgns)
                                        (CSeq asgns (CAssign (rec-desugar t
                                                                          global?)
@@ -65,6 +111,7 @@
     [PyBool (b) (if b (CTrue) (CFalse))]
     [PyStr (s) (make-builtin-str s)]
     [PyId (x ctx) (CId x)]
+    [PyUndefined () (CUndefined)]
 
     ; for now just desugar raise as error
     ; TODO: implement real exceptions
@@ -175,7 +222,7 @@
             (CLet name (CNone)
                 (CAssign (CId name)
                          (CFunc args (some sarg)
-                                (rec-desugar body global?))))]
+                                (rec-desugar body false))))]
     
     [PyReturn (value)
               (CReturn (rec-desugar value global?))]

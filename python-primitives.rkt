@@ -174,18 +174,17 @@ primitives here.
     ['bool-init (bool-init args env sto)]
 
     ;isinstance
-    ['isinstance (begin (display env) (display "\n")
-                        (display (fetch 96 sto)) (display "\n\n")
-                   (if (or (none? (VObject-mval (second args)))
-                           (not (MetaClass? (some-v (VObject-mval (second args))))))
-                   (none)
-                   (if (object-is? (first args) 
-                                   (MetaClass-c 
-                                     (some-v 
-                                       (VObject-mval (second args))))
-                                   env
-                                   sto)
-                     (some true-val)
-                     (none))))]
+    ['isinstance 
+               (if (or (none? (VObject-mval (second args)))
+                       (not (MetaClass? (some-v (VObject-mval (second args))))))
+               (none)
+               (if (object-is? (first args) 
+                               (MetaClass-c 
+                                 (some-v 
+                                   (VObject-mval (second args))))
+                               env
+                               sto)
+                 (some true-val)
+                 (some false-val)))]
 
 ))

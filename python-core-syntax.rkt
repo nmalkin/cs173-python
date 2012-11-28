@@ -37,7 +37,8 @@ ParselTongue.
   [CTryExceptElseFinally (try : CExpr) (excepts : (listof CExpr))
                          (orelse : CExpr) (finally : CExpr)]
   [CExcept (types : (listof CExpr)) (name : (optionof symbol)) (body : CExpr)]
-  [CUndefined])
+  [CUndefined]
+  [CModule (prelude : CExpr) (body : CExpr)])
 
 (define-type CVal
   [VStr (s : string)]

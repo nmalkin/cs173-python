@@ -22,7 +22,7 @@ structure that you define in python-syntax.rkt
   (begin
   (match pyjson
     [(hash-table ('nodetype "Module") ('body expr-list))
-     (PySeq (map get-structured-python expr-list))]
+     (PyModule (map get-structured-python expr-list))]
 
 
     [(hash-table ('nodetype "Expr") ('value expr))
@@ -257,46 +257,3 @@ structure that you define in python-syntax.rkt
 ;; tests!
 (print-only-errors true)
 
-(define test-python-path "/usr/local/bin/python3.2")
-(test (get-structured-python (parse-python/string "x = 5" test-python-path))
-      (PySeq
-        (list (PyAssign (list (PyId 'x 'Store))
-                (PyNum 5)))))
-
-(test (get-structured-python (parse-python/string "pass" test-python-path))
-      (PySeq
-        (list (PyPass))))
-
-(test (get-structured-python (parse-python/string "\"string\"" test-python-path))
-      (PySeq
-        (list (PyStr "string"))))
-
-(test (get-structured-python (parse-python/string "raise 5" test-python-path))
-      (PySeq
-        (list (PyRaise (PyNum 5)))))
-
-(test (get-structured-python (parse-python/string "f(x)" test-python-path))
-      (PySeq 
-        (list (PyApp (PyId 'f 'Load) (list (PyId 'x 'Load))))))
-(test (get-structured-python (parse-python/string "2 + 1" test-python-path))
-      (PySeq
-        (list (PyBinOp (PyNum 2) 'Add (PyNum 1)))))
-
-(test (get-structured-python (parse-python/string "1 > 2" test-python-path))
-      (PySeq
-        (list (PyCompOp (PyNum 1)
-                        (list 'Gt)
-                        (list (PyNum 2))))))
-
-(test (get-structured-python (parse-python/string "if True: 5"
-                                                  test-python-path))
-      (PySeq
-        (list (PyIf (PyId 'True 'Load)
-                    (PySeq (list (PyNum 5)))
-                    (PyPass)))))
-
-(test (get-structured-python (parse-python/string "class A(str, list): pass" test-python-path))
-      (PySeq
-        (list (PyClass 'A
-                       (list 'str 'list)
-                       (PyPass)))))
