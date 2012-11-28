@@ -97,7 +97,8 @@
     [VObject (a mval d) (if (some? mval)
                             (pretty-metaval (some-v mval))
                             "Can't print non-builtin object.")]
-    [VClosure (env args sarg body) (error 'pretty "Can't print closures yet")]))
+    [VClosure (env args sarg body) (error 'pretty "Can't print closures yet")]
+    [VUndefined () "Undefined"]))
 
 (define (pretty-metaval mval)
   (type-case MetaVal mval

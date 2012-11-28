@@ -57,4 +57,5 @@
                   [VClosure (e a s b) (some true-val)] 
                   [VObject (a mval d) (if (truthy-object? (VObject a mval d)) 
                                         (some true-val) 
-                                        (some false-val))]))))
+                                        (some false-val))]
+                  [VUndefined () (some false-val)]))))
