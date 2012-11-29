@@ -58,11 +58,15 @@ primitives here.
                                                     (- (MetaNum-n mval1) 
                                                        (MetaNum-n mval2))))
                                         (make-hash empty))))]
-    ['num* (check-types args env sto 'num 'num 
+    ['num* 
+        (if (and (some? (VObject-mval (second args)))
+              (MetaStr? (some-v (VObject-mval (second args)))))
+          (builtin-prim 'str* (reverse args) env sto)
+          (check-types args env sto 'num 'num 
                         (some (VObject 'num (some (MetaNum 
                                                     (* (MetaNum-n mval1) 
                                                        (MetaNum-n mval2))))
-                                        (make-hash empty))))]
+                                       (make-hash empty)))))]
     ['num/ (check-types args env sto 'num 'num 
                         (some (VObject 'num (some (MetaNum 
                                                     (/ (MetaNum-n mval1) 
