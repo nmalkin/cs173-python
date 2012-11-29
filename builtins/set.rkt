@@ -8,6 +8,7 @@
   (typed-in racket/set (set? : ('a -> boolean)))
   (typed-in racket/set (set=? : (set? set? -> boolean)))
   (typed-in racket/set (set-member? : (set? 'a -> boolean)))
+  (typed-in racket/set (set-subtract : (set? set? -> set?)))
 )
 
 (define set-class : CExpr
@@ -78,6 +79,11 @@
                                                (CId 'self)
                                                (CId 'other)
                                                )))))
+
+              (def '__sub__
+                (CFunc (list 'self 'other) (none)
+                       (CReturn (CBuiltinPrim 'set-sub
+                                              (list (CId 'self) (CId 'other))))))
 ))))
 
 ; returns a copy of this set
@@ -108,3 +114,11 @@
                  (if (set-member? contents (second args)) ; FIXME: what if (second args) DNE?
                      (some true-val)
                      (some false-val)))))
+
+(define (set-sub (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set 'set
+               (let ([self (MetaSet-elts mval1)]
+                     [other (MetaSet-elts mval2)])
+                    (some (VObject 'set
+                                   (some (MetaSet (set-subtract self other)))
+                                   (hash empty))))))

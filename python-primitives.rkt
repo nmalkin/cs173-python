@@ -166,6 +166,7 @@ primitives here.
     ['set-len (set-len args env sto)]
     ['set-eq (set-eq args env sto)]
     ['set-in (set-in args env sto)]
+    ['set-sub (set-sub args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]
