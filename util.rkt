@@ -96,7 +96,9 @@
 
 (define (is? [v1 : CVal]
              [v2 : CVal]) : boolean
-  (eq? v1 v2))
+  (begin
+    ;(display v1) (display " ") (display v2) (display " ") (display (eq? v1 v2)) (display "\n")
+    (eq? v1 v2)))
 
 (define (pretty arg)
   (type-case CVal arg

@@ -122,12 +122,14 @@
                               (hash empty)))))
 
 (define (set-eq (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
-  (check-types args env sto 'set 'set
+  (begin
+    ;(display args) (display "\n\n")
+   (check-types args env sto 'set 'set
                (let ([self (MetaSet-elts mval1)]
                      [other (MetaSet-elts mval2)])
                  (if (set=? self other)
                      (some true-val)
-                     (some false-val)))))
+                     (some false-val))))))
 
 (define (set-in [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'set

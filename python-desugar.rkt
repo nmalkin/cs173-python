@@ -39,11 +39,11 @@
   (begin ;(display "compop: ") (display comparators) (display "\n")
          ;(display ops) (display "\n")
          ;(display l) (display "\n")
-         (local [(define first-right (rec-desugar (first comparators) global? env))
-                 (define l-expr (rec-desugar l global? (DResult-env first-right)))
+         (local [;(define first-right (rec-desugar (first comparators) global? env))
+                 ;(define l-expr (rec-desugar l global? (DResult-env first-right)))
                  (define first-comp (rec-desugar (PyBinOp l (first ops) (first
                                                                           comparators))
-                                                 global? (DResult-env l-expr)))]
+                                                 global? env))]
                 (if (> (length comparators) 1) 
                   (local [(define rest-comp (desugar-compop (first comparators)
                                                             (rest ops)
@@ -202,7 +202,7 @@
              (local [(define left-r (rec-desugar left global? env))
                      (define left-c (DResult-expr left-r))
                      (define right-r (rec-desugar right global? (DResult-env left-r)))
-                     (define right-c (DResult-expr left-r))] 
+                     (define right-c (DResult-expr right-r))] 
                (case op 
                  ['Add (DResult (CApp (CGetField left-c '__add__) 
                                       (list left-c right-c)
@@ -297,7 +297,10 @@
 
     [PyBoolOp (op values) (desugar-boolop op values global? env)]
               
-    [PyCompOp (l op rights) (desugar-compop l op rights global? env)]
+    [PyCompOp (l op rights) (local [(define c (desugar-compop l op rights global? env))]
+                              (begin ;(display c) (display "\n")
+                                     c))]
+
 
     [PyLam (args body)
            (local [(define rbody (rec-desugar body global? env))]
@@ -350,7 +353,7 @@
     [PyTuple (values) (local [(define-values (results last-env)
                                 (map-desugar values global? env))]
                         (DResult
-                          (CList results)
+                          (CTuple results)
                           last-env))]
 
     [PySubscript (left ctx slice)
@@ -374,12 +377,15 @@
            (local [(define f (rec-desugar fun global? env))
                    (define-values (results last-env)
                      (map-desugar args global? (DResult-env f)))]
-             (DResult
+             (begin
+               ;(display args) (display "\n")
+               ;(display results) (display "\n\n")
+               (DResult
                (if (CGetField? (DResult-expr f))
                  (local [(define o (CGetField-value (DResult-expr f)))]
                    (CApp (DResult-expr f) (cons o results) (none)))
                  (CApp (DResult-expr f) results (none)))
-               last-env))]
+               last-env)))]
 
     [PyAppStarArg (fun args sarg)
            (local [(define f (rec-desugar fun global? env))
