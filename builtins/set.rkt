@@ -9,6 +9,9 @@
   (typed-in racket/set (set=? : (set? set? -> boolean)))
   (typed-in racket/set (set-member? : (set? 'a -> boolean)))
   (typed-in racket/set (set-subtract : (set? set? -> set?)))
+  (typed-in racket/set (set-intersect : (set? set? -> set?)))
+  (typed-in racket/set (set-union : (set? set? -> set?)))
+  (typed-in racket/set (set-symmetric-difference : (set? set? -> set?)))
 )
 
 (define set-class : CExpr
@@ -84,6 +87,20 @@
                 (CFunc (list 'self 'other) (none)
                        (CReturn (CBuiltinPrim 'set-sub
                                               (list (CId 'self) (CId 'other))))))
+              (def '__and__
+                (CFunc (list 'self 'other) (none)
+                       (CReturn (CBuiltinPrim 'set-and
+                                              (list (CId 'self) (CId 'other))))))
+
+              (def '__or__
+                (CFunc (list 'self 'other) (none)
+                       (CReturn (CBuiltinPrim 'set-or
+                                              (list (CId 'self) (CId 'other))))))
+
+              (def '__xor__
+                (CFunc (list 'self 'other) (none)
+                       (CReturn (CBuiltinPrim 'set-xor
+                                              (list (CId 'self) (CId 'other))))))
 ))))
 
 ; returns a copy of this set
@@ -121,4 +138,28 @@
                      [other (MetaSet-elts mval2)])
                     (some (VObject 'set
                                    (some (MetaSet (set-subtract self other)))
+                                   (hash empty))))))
+
+(define (set-and (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set 'set
+               (let ([self (MetaSet-elts mval1)]
+                     [other (MetaSet-elts mval2)])
+                    (some (VObject 'set
+                                   (some (MetaSet (set-intersect self other)))
+                                   (hash empty))))))
+
+(define (set-or (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set 'set
+               (let ([self (MetaSet-elts mval1)]
+                     [other (MetaSet-elts mval2)])
+                    (some (VObject 'set
+                                   (some (MetaSet (set-union self other)))
+                                   (hash empty))))))
+
+(define (set-xor (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set 'set
+               (let ([self (MetaSet-elts mval1)]
+                     [other (MetaSet-elts mval2)])
+                    (some (VObject 'set
+                                   (some (MetaSet (set-symmetric-difference self other)))
                                    (hash empty))))))

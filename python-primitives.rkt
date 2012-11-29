@@ -170,6 +170,9 @@ primitives here.
     ['set-eq (set-eq args env sto)]
     ['set-in (set-in args env sto)]
     ['set-sub (set-sub args env sto)]
+    ['set-and (set-and args env sto)]
+    ['set-or (set-or args env sto)]
+    ['set-xor (set-xor args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]

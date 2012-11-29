@@ -165,6 +165,15 @@
                  ['Mod (CApp (CGetField left-c '__mod__)
                               (list left-c right-c)
                               (none))]
+                 ['BitAnd (CApp (CGetField left-c '__and__)
+                              (list left-c right-c)
+                              (none))]
+                 ['BitOr (CApp (CGetField left-c '__or__)
+                              (list left-c right-c)
+                              (none))]
+                 ['BitXor (CApp (CGetField left-c '__xor__)
+                              (list left-c right-c)
+                              (none))]
                  ['Eq (CApp (CGetField left-c '__eq__)
                             (list left-c right-c)
                             (none))]
