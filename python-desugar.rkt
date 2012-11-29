@@ -132,7 +132,7 @@
 
 ;; for the body of some local scope level like a class or function, hoist
 ;; all the assignments and defs to the top as undefineds
-(define (desugar-local-body [expr : PyExpr] [args : (listof symbol)]) : CExpr
+(define (desugar-local-body [expr : PyExpr] [args : (listof symbol)] [env : IdEnv]) : DesugarResult
   (local [(define names (get-names expr false))]
     (rec-desugar
       (PySeq (append 
@@ -143,7 +143,8 @@
                           names)) 
                  (list (PyPass))) 
                (list expr)))
-      false)))
+      false
+      (extract-globals env))))
 
 (define (rec-desugar [expr : PyExpr] [global? : boolean] [env : IdEnv]) : DesugarResult 
   (begin ;(display expr) (display "\n\n")
@@ -203,7 +204,6 @@
                      (define right-r (rec-desugar right global? (DResult-env left-r)))
                      (define right-c (DResult-expr left-r))] 
                (case op 
-<<<<<<< HEAD
                  ['Add (DResult (CApp (CGetField left-c '__add__) 
                                       (list left-c right-c)
                                       (none))
@@ -308,7 +308,7 @@
                     (DResult-env rbody)))]
     
     [PyFunc (name args body)
-            (local [(define body-r (rec-desugar body false env))]
+            (local [(define body-r (desugar-local-body body args env))]
              (DResult
                (CLet name (CNone)
                      (CAssign (CId name (LocalId))
@@ -316,7 +316,7 @@
              (merge-globals env (DResult-env body-r))))]
 
     [PyFuncVarArg (name args sarg body)
-                  (local [(define body-r (rec-desugar body false env))]
+                  (local [(define body-r (desugar-local-body body (append args (list sarg)) env))]
                     (DResult
                       (CLet name (CNone)
                             (CAssign (CId name (LocalId))
@@ -394,7 +394,7 @@
                (DResult-env s)))]
     
     [PyClass (name bases body)
-             (local [(define body-r (rec-desugar body false (remember-globals env)))]
+             (local [(define body-r (rec-desugar body false (extract-globals env)))]
                (DResult
                  (CAssign (CId name (LocalId))
                           (CClass name
@@ -464,7 +464,7 @@
 (define-type DesugarResult
    [DResult (expr : CExpr) (env : IdEnv)])
 
-(define (remember-globals [env : IdEnv]) env)
+(define (extract-globals [env : IdEnv]) env)
 
 (define (merge-globals [complete-env : IdEnv] [only-globals : IdEnv]) complete-env)
 

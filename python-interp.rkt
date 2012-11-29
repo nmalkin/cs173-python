@@ -358,7 +358,7 @@
                        [Return (vi si envi) (return-exception envi si)]
                        [Exception (vi si envi) (Exception vi si envi)])]
 
-    [CId (x) 
+    [CId (x t) 
          (let ([local-w (lookup-local x env)])
                 (if (some? local-w)
                   (type-case CVal (fetch (some-v local-w) sto)
@@ -507,7 +507,8 @@
 ;; depth-first, left-to-right if super = #f
 ;; left-to-right, depth-second if super = #t
 (define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : Result
-  (begin (display n) (display " ") (display c) (display "\n") (display (fetch 3 s)) (display "\n\n")
+  (begin ;(display n) (display " ") (display c) (display "\n")
+         ;(display (fetch 3 s)) (display "\n\n")
   (type-case CVal c
     [VObject (antecedent mval d) 
                     (let ([w (hash-ref (VObject-dict c) n)])

@@ -28,27 +28,27 @@
                     (CFunc (list 'self) (none)
                            (CReturn (CBuiltinPrim 'set-set
                                                   (list
-                                                   (CId 'self))))))
+                                                   (CId 'self (LocalId)))))))
               (def '__init__
                    (CFunc (list 'self) (some 'args)
                           (CReturn
                           (CIf ; Did we get any args?
                             (CBuiltinPrim 'num=
                                           (list
-                                            (CApp (CGetField (CId 'args) '__len__)
-                                                  (list (CId 'args))
+                                            (CApp (CGetField (CId 'args (LocalId)) '__len__)
+                                                  (list (CId 'args (LocalId)))
                                                   (none))
                                             (CObject 'num (some (MetaNum 0)))))
                             ; No. Return an empty set
                             (CSet empty)
                             ; Yes. Call __set__ on the first argument.
                             (CLet 'first-arg
-                                  (CApp (CGetField (CId 'args) '__attr__)
-                                        (list (CId 'args)
+                                  (CApp (CGetField (CId 'args (LocalId)) '__attr__)
+                                        (list (CId 'args (LocalId))
                                               (CObject 'num (some (MetaNum 0))))
                                         (none))
-                                  (CApp (CGetField (CId 'first-arg) '__set__)
-                                        (list (CId 'first-arg))
+                                  (CApp (CGetField (CId 'first-arg (LocalId)) '__set__)
+                                        (list (CId 'first-arg (LocalId)))
                                         (none))))))
                           )
 
@@ -86,21 +86,25 @@
               (def '__sub__
                 (CFunc (list 'self 'other) (none)
                        (CReturn (CBuiltinPrim 'set-sub
-                                              (list (CId 'self) (CId 'other))))))
+                                              (list (CId 'self (LocalId)) 
+                                                    (CId 'other (LocalId)))))))
               (def '__and__
                 (CFunc (list 'self 'other) (none)
                        (CReturn (CBuiltinPrim 'set-and
-                                              (list (CId 'self) (CId 'other))))))
+                                              (list (CId 'self (LocalId)) 
+                                                    (CId 'other (LocalId)))))))
 
               (def '__or__
                 (CFunc (list 'self 'other) (none)
                        (CReturn (CBuiltinPrim 'set-or
-                                              (list (CId 'self) (CId 'other))))))
+                                              (list (CId 'self (LocalId))
+                                                    (CId 'other (LocalId)))))))
 
               (def '__xor__
                 (CFunc (list 'self 'other) (none)
                        (CReturn (CBuiltinPrim 'set-xor
-                                              (list (CId 'self) (CId 'other))))))
+                                              (list (CId 'self (LocalId))
+                                                    (CId 'other (LocalId)))))))
 ))))
 
 ; returns a copy of this set
