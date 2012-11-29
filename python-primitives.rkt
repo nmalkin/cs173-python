@@ -141,6 +141,7 @@ primitives here.
     ['list-attr (list-attr args env sto)]
     ['list-str (list-str args env sto)]
     ['list-cpy (list-cpy args env sto)]
+    ['list-set (list-set args env sto)]
 
     ;tuple
     ['tuple+ (tuple+ args env sto)]
