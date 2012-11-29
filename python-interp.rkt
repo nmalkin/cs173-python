@@ -21,7 +21,8 @@
          (typed-in racket/base (ormap : (('a -> boolean) (listof 'a) -> 'a)))
          (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
          (typed-in racket/base (car : (('a * 'b)  -> 'a)))
-         (typed-in racket/base (cdr : (('a * 'b)  -> 'b))))
+         (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
+         )
 
 
 ;; interp-cascade, interprets a list of expressions with an initial store,
@@ -241,6 +242,13 @@
 ;; interp-env : CExpr * Env * Store -> Result
 (define (interp-env [expr : CExpr] [env : Env] [sto : Store]) : Result
   (type-case CExpr expr
+    [CModule (prelude body)
+             (local [(define prelude-r (interp-env prelude env sto))]
+                (type-case Result prelude-r
+                    [v*s*e (v s e) (interp-env body e s)]
+                    [Return (v s e) (return-exception e s)]
+                    [Exception (v s e) (Exception v s e)]))]
+    
     [CStr (s) (v*s*e (VObject 'str (some (MetaStr s)) (hash empty)) sto env)]
     [CTrue () (v*s*e true-val sto env)]
     [CFalse () (v*s*e false-val sto env)]
@@ -285,6 +293,18 @@
                                 (some (MetaDict interped-hash))
                                 (make-hash empty))
                       sto env)))]
+
+    [CSet (elts)
+          (local [(define-values (result-list new-s new-e)
+                                     (interp-cascade elts sto env))]
+              (let ([exn? (filter Exception? result-list)])
+                  (if (< 0 (length exn?))
+                      (first exn?) 
+                      (let ([val-list (map v*s*e-v result-list)])
+                           (v*s*e (VObject 'set
+                                           (some (MetaSet (make-set val-list)))
+                                           (make-hash empty))
+                                  new-s new-e)))))]
 
     [CList (values)
            (local [(define-values (result-list new-s new-e)
@@ -484,6 +504,7 @@
 ;; depth-first, left-to-right if super = #f
 ;; left-to-right, depth-second if super = #t
 (define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : Result
+  (begin (display n) (display " ") (display c) (display "\n") (display (fetch 3 s)) (display "\n\n")
   (type-case CVal c
     [VObject (antecedent mval d) 
                     (let ([w (hash-ref (VObject-dict c) n)])
@@ -500,7 +521,7 @@
                                                " has no attribute '")
                                              (string-append (symbol->string n) "'"))
                                            e s)))]))]
-    [else (error 'interp "Not an object with functions.")]))
+    [else (error 'interp "Not an object with functions.")])))
 
 
 (define (assign-to-field o f v e s)

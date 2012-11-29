@@ -8,7 +8,7 @@ ParselTongue.
 |#
 
 (require (typed-in racket/base (number->string : (number -> string))))
-
+(require [opaque-type-in racket/set [Set set?]])
 
 (define-type CExpr
   [CStr (s : string)]
@@ -33,11 +33,13 @@ ParselTongue.
   [CList (values : (listof CExpr))]
   [CTuple (values : (listof CExpr))]
   [CDict (contents : (hashof CExpr CExpr))]
+  [CSet (values : (listof CExpr))]
   [CRaise (expr : (optionof CExpr))]
   [CTryExceptElseFinally (try : CExpr) (excepts : (listof CExpr))
                          (orelse : CExpr) (finally : CExpr)]
   [CExcept (types : (listof CExpr)) (name : (optionof symbol)) (body : CExpr)]
-  [CUndefined])
+  [CUndefined]
+  [CModule (prelude : CExpr) (body : CExpr)])
 
 (define-type IdType
     [GlobalId]
@@ -59,8 +61,8 @@ ParselTongue.
              [MetaTuple (v : (listof CVal))]
              [MetaDict (contents : (hashof CVal CVal))]
              [MetaClass (c : symbol)]
+             [MetaSet (elts : Set)]
              [MetaNone])
-             
 
 ;; env is a listof hashof's so there are deliniations between closures
 (define-type-alias Env (listof (hashof symbol Address)))

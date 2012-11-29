@@ -6,6 +6,7 @@
          "builtins/list.rkt"
          "builtins/tuple.rkt"
          "builtins/dict.rkt"
+         "builtins/set.rkt"
          "builtins/object.rkt"
          "builtins/bool.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
@@ -158,6 +159,13 @@ primitives here.
     ['dict-update (dict-update args env sto)]
     ['dict-eq (dict-eq args env sto)]
     ['dict-get (dict-get args env sto)]
+    ['dict-keys (dict-keys args env sto)]
+
+    ;set
+    ['set-init (set-init args env sto)]
+    ['set-len (set-len args env sto)]
+    ['set-eq (set-eq args env sto)]
+    ['set-in (set-in args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]
@@ -174,18 +182,17 @@ primitives here.
     ['bool-init (bool-init args env sto)]
 
     ;isinstance
-    ['isinstance (begin (display env) (display "\n")
-                        (display (fetch 96 sto)) (display "\n\n")
-                   (if (or (none? (VObject-mval (second args)))
-                           (not (MetaClass? (some-v (VObject-mval (second args))))))
-                   (none)
-                   (if (object-is? (first args) 
-                                   (MetaClass-c 
-                                     (some-v 
-                                       (VObject-mval (second args))))
-                                   env
-                                   sto)
-                     (some true-val)
-                     (none))))]
+    ['isinstance 
+               (if (or (none? (VObject-mval (second args)))
+                       (not (MetaClass? (some-v (VObject-mval (second args))))))
+               (none)
+               (if (object-is? (first args) 
+                               (MetaClass-c 
+                                 (some-v 
+                                   (VObject-mval (second args))))
+                               env
+                               sto)
+                 (some true-val)
+                 (some false-val)))]
 
 ))

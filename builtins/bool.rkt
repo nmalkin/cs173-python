@@ -9,7 +9,7 @@
 (define bool-class 
   (CClass 
     'bool
-    'num
+    'int
     (seq-ops (list
                (def '__init__
                     (CFunc (list 'self) (some 'args)
