@@ -172,6 +172,6 @@
                                                      (make-hash empty)))
                                     (hash->list contents))])
                     (some
-                      (VObject 'list
-                               (some (MetaList items))
+                      (VObject 'set
+                               (some (MetaSet (make-set items)))
                                (make-hash empty))))))
