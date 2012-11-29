@@ -228,6 +228,18 @@
                                       (list left-c right-c)
                                       (none))
                                 (DResult-env right-r))]
+                 ['BitAnd (DResult (CApp (CGetField left-c '__and__)
+                                (list left-c right-c)
+                                (none))
+                                (DResult-env right-r))]
+                 ['BitOr (DResult (CApp (CGetField left-c '__or__)
+                               (list left-c right-c)
+                               (none))
+                               (DResult-env right-r))]
+                 ['BitXor (DResult (CApp (CGetField left-c '__xor__)
+                                (list left-c right-c)
+                                (none))
+                                (DResult-env right-r))]
                  ['Eq (DResult (CApp (CGetField left-c '__eq__)
                                      (list left-c right-c)
                                      (none))
