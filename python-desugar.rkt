@@ -66,13 +66,14 @@
    [PySeq (es) (foldl (lambda(e so-far) (append (get-names e global?) so-far))
                       empty
                       es)]
-   [PyAssign (targets v) (if global?  
+   [PyId (id ctx) (list id)]
+   [PyAssign (targets v) (if (not global?)
                            (foldl (lambda(t so-far) (append (get-names t global?)
                                                           so-far))
                                 empty
                                 targets)
                            empty)]
-   [PyAugAssign (o t v) (if global?
+   [PyAugAssign (o t v) (if (not global?)
                           (get-names t global?)
                           empty)]
    [PyExcept (t body) (get-names body global?)]
@@ -129,9 +130,24 @@
                    last-env))])))]
     (rec-map-desugar exprs global? env)))
 
+;; for the body of some local scope level like a class or function, hoist
+;; all the assignments and defs to the top as undefineds
+(define (desugar-local-body [expr : PyExpr] [args : (listof symbol)]) : CExpr
+  (local [(define names (get-names expr false))]
+    (rec-desugar
+      (PySeq (append 
+               (if (not (empty? names))
+                 (map (lambda(n) (PyAssign (list (PyId n 'Load))
+                                               (PyUndefined)))
+                      (filter (lambda(n) (not (member n args)))
+                          names)) 
+                 (list (PyPass))) 
+               (list expr)))
+      false)))
+
 (define (rec-desugar [expr : PyExpr] [global? : boolean] [env : IdEnv]) : DesugarResult 
   (begin ;(display expr) (display "\n\n")
-  (type-case PyExpr expr
+    (type-case PyExpr expr
     [PySeq (es) (local [(define-values (exprs-r last-env)
                           (map-desugar es global? env))]
                   (DResult
@@ -187,6 +203,7 @@
                      (define right-r (rec-desugar right global? (DResult-env left-r)))
                      (define right-c (DResult-expr left-r))] 
                (case op 
+<<<<<<< HEAD
                  ['Add (DResult (CApp (CGetField left-c '__add__) 
                                       (list left-c right-c)
                                       (none))
@@ -257,7 +274,6 @@
                               (list right-c left-c)
                               (none))
                         (DResult-env right-r))]
-
                  ['NotIn (rec-desugar (PyUnaryOp 'Not (PyBinOp left 'In right))
                                       global? env)]
                  [else (DResult

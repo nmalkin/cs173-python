@@ -9,6 +9,7 @@
   (typed-in racket/base (car : (('a * 'b)  -> 'b)))
   (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
   (typed-in racket/base (hash-has-key? : ((hashof 'a 'b) 'a -> boolean)))
+  (typed-in racket/base (hash-values : ((hashof 'a 'b) -> (listof 'b))))
 )
 
 (define dict-class : CExpr
@@ -62,7 +63,22 @@
                    (CFunc (list 'self) (none)
                           (CReturn (CBuiltinPrim 'dict-keys
                                                      (list (CId 'self (LocalId)))))))
-))))
+
+              (def 'values
+                   (CFunc (list 'self) (none)
+                          (CReturn (CBuiltinPrim 'dict-values
+                                                     (list (CId 'self (LocalId)))))))
+              
+              (def 'items
+                   (CFunc (list 'self) (none)
+                          (CReturn (CBuiltinPrim 'dict-items
+                                                     (list (CId 'self (LocalId)))))))
+
+              (def '__attr__
+                   (CFunc (list 'self 'other) (none)
+                          (CReturn (CBuiltinPrim 'dict-attr
+                                                     (list (CId 'self (LocalId))
+                                                           (CId 'other (LocalId)))))))))))
 
 
 (define (dict-len (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
@@ -145,3 +161,35 @@
                       (VObject 'set
                                (some (MetaSet (make-set (hash-keys contents))))
                                (make-hash empty))))))
+
+(define (dict-values (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (let ([contents (MetaDict-contents mval1)])
+                    (some
+                      (VObject 'set
+                               (some (MetaSet (make-set (hash-values contents))))
+                               (make-hash empty))))))
+
+(define (dict-items (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (letrec ([contents (MetaDict-contents mval1)]
+                        [items (map (lambda (pair) ; create a tuple for each (key, value)
+                                            (VObject 'tuple
+                                                     (some (MetaTuple (list (car pair) (cdr pair))))
+                                                     (make-hash empty)))
+                                    (hash->list contents))])
+                    (some
+                      (VObject 'set
+                               (some (MetaSet (make-set items)))
+                               (make-hash empty))))))
+
+
+(define (dict-attr [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (letrec ([contents (MetaDict-contents mval1)]
+                        [target (second args)]
+                        [mayb-val (hash-ref contents target)])
+                 (if (some? mayb-val)
+                   mayb-val
+                   (some vnone)))))
+

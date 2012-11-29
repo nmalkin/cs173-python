@@ -32,6 +32,11 @@
                               (CReturn (CBuiltinPrim 'list-cpy
                                                  (list 
                                                    (CId 'self (LocalId)))))))
+                  (def '__set__
+                       (CFunc (list 'self) (none)
+                              (CReturn (CBuiltinPrim 'list-set
+                                                 (list
+                                                   (CId 'self (LocalId)))))))
                   (def '__in__
                     (CFunc (list 'self 'test) (none)
                            (CReturn (CBuiltinPrim 'list-in
@@ -170,3 +175,10 @@
                         (some (MetaStr
                                 (pretty-metaval mval1)))
                         (make-hash empty)))))
+
+(define (list-set (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'list
+               (let ([values (MetaList-v mval1)])
+                    (some (VObject 'set
+                                   (some (MetaSet (make-set values)))
+                                   (hash empty))))))

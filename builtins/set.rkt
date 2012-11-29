@@ -8,6 +8,10 @@
   (typed-in racket/set (set? : ('a -> boolean)))
   (typed-in racket/set (set=? : (set? set? -> boolean)))
   (typed-in racket/set (set-member? : (set? 'a -> boolean)))
+  (typed-in racket/set (set-subtract : (set? set? -> set?)))
+  (typed-in racket/set (set-intersect : (set? set? -> set?)))
+  (typed-in racket/set (set-union : (set? set? -> set?)))
+  (typed-in racket/set (set-symmetric-difference : (set? set? -> set?)))
 )
 
 (define set-class : CExpr
@@ -20,11 +24,36 @@
                            (CReturn (CBuiltinPrim 'set-len
                                                   (list
                                                    (CId 'self (LocalId)))))))
+              (def '__set__
+                    (CFunc (list 'self) (none)
+                           (CReturn (CBuiltinPrim 'set-set
+                                                  (list
+                                                   (CId 'self))))))
               (def '__init__
-                   (CFunc (list 'self) (none)
-                          (CReturn (CBuiltinPrim 'set-init
-                                                     (list (CId 'self (LocalId)))))))
+                   (CFunc (list 'self) (some 'args)
+                          (CReturn
+                          (CIf ; Did we get any args?
+                            (CBuiltinPrim 'num=
+                                          (list
+                                            (CApp (CGetField (CId 'args) '__len__)
+                                                  (list (CId 'args))
+                                                  (none))
+                                            (CObject 'num (some (MetaNum 0)))))
+                            ; No. Return an empty set
+                            (CSet empty)
+                            ; Yes. Call __set__ on the first argument.
+                            (CLet 'first-arg
+                                  (CApp (CGetField (CId 'args) '__attr__)
+                                        (list (CId 'args)
+                                              (CObject 'num (some (MetaNum 0))))
+                                        (none))
+                                  (CApp (CGetField (CId 'first-arg) '__set__)
+                                        (list (CId 'first-arg))
+                                        (none))))))
+                          )
 
+                          ;(CReturn (CBuiltinPrim 'set-init
+                           ;                          (list (CId 'self))))))
               #|
               (def 'clear
                    (CFunc (list 'self) (none)
@@ -53,12 +82,34 @@
                                                (CId 'self (LocalId))
                                                (CId 'other (LocalId))
                                                )))))
+
+              (def '__sub__
+                (CFunc (list 'self 'other) (none)
+                       (CReturn (CBuiltinPrim 'set-sub
+                                              (list (CId 'self) (CId 'other))))))
+              (def '__and__
+                (CFunc (list 'self 'other) (none)
+                       (CReturn (CBuiltinPrim 'set-and
+                                              (list (CId 'self) (CId 'other))))))
+
+              (def '__or__
+                (CFunc (list 'self 'other) (none)
+                       (CReturn (CBuiltinPrim 'set-or
+                                              (list (CId 'self) (CId 'other))))))
+
+              (def '__xor__
+                (CFunc (list 'self 'other) (none)
+                       (CReturn (CBuiltinPrim 'set-xor
+                                              (list (CId 'self) (CId 'other))))))
 ))))
 
-(define (set-init (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
-        (some (VObject 'set
-                       (some (MetaSet (make-set empty)))
-                       (hash empty))))
+; returns a copy of this set
+(define (set-set (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set
+               (let ([elts (MetaSet-elts mval1)])
+                    (some (VObject 'set
+                                   (some (MetaSet elts))
+                                   (hash empty))))))
 
 (define (set-len (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'set
@@ -80,3 +131,35 @@
                  (if (set-member? contents (second args)) ; FIXME: what if (second args) DNE?
                      (some true-val)
                      (some false-val)))))
+
+(define (set-sub (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set 'set
+               (let ([self (MetaSet-elts mval1)]
+                     [other (MetaSet-elts mval2)])
+                    (some (VObject 'set
+                                   (some (MetaSet (set-subtract self other)))
+                                   (hash empty))))))
+
+(define (set-and (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set 'set
+               (let ([self (MetaSet-elts mval1)]
+                     [other (MetaSet-elts mval2)])
+                    (some (VObject 'set
+                                   (some (MetaSet (set-intersect self other)))
+                                   (hash empty))))))
+
+(define (set-or (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set 'set
+               (let ([self (MetaSet-elts mval1)]
+                     [other (MetaSet-elts mval2)])
+                    (some (VObject 'set
+                                   (some (MetaSet (set-union self other)))
+                                   (hash empty))))))
+
+(define (set-xor (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set 'set
+               (let ([self (MetaSet-elts mval1)]
+                     [other (MetaSet-elts mval2)])
+                    (some (VObject 'set
+                                   (some (MetaSet (set-symmetric-difference self other)))
+                                   (hash empty))))))

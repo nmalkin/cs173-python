@@ -141,6 +141,7 @@ primitives here.
     ['list-attr (list-attr args env sto)]
     ['list-str (list-str args env sto)]
     ['list-cpy (list-cpy args env sto)]
+    ['list-set (list-set args env sto)]
 
     ;tuple
     ['tuple+ (tuple+ args env sto)]
@@ -160,12 +161,19 @@ primitives here.
     ['dict-eq (dict-eq args env sto)]
     ['dict-get (dict-get args env sto)]
     ['dict-keys (dict-keys args env sto)]
+    ['dict-values (dict-values args env sto)]
+    ['dict-items (dict-items args env sto)]
+    ['dict-attr (dict-attr args env sto)]
 
     ;set
-    ['set-init (set-init args env sto)]
+    ['set-set (set-set args env sto)]
     ['set-len (set-len args env sto)]
     ['set-eq (set-eq args env sto)]
     ['set-in (set-in args env sto)]
+    ['set-sub (set-sub args env sto)]
+    ['set-and (set-and args env sto)]
+    ['set-or (set-or args env sto)]
+    ['set-xor (set-xor args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]

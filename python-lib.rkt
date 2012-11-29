@@ -217,9 +217,9 @@ that calls the primitive `print`.
         (bind 'callable callable-lambda)
 
         (bind 'Exception exception)
+        (bind 'NameError (make-exception-class 'NameError))
         (bind 'TypeError (make-exception-class 'TypeError))
         (bind 'SyntaxError (make-exception-class 'SyntaxError))
-        (bind 'NameError (make-exception-class 'NameError))
         (bind 'AttributeError (make-exception-class 'AttributeError))
         (bind 'RuntimeError (make-exception-class 'RuntimeError))
         (bind 'KeyError (make-exception-class 'KeyError))
