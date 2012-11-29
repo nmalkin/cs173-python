@@ -50,13 +50,14 @@
    [PySeq (es) (foldl (lambda(e so-far) (append (get-names e global?) so-far))
                       empty
                       es)]
-   [PyAssign (targets v) (if global?  
+   [PyId (id ctx) (list id)]
+   [PyAssign (targets v) (if (not global?)
                            (foldl (lambda(t so-far) (append (get-names t global?)
                                                           so-far))
                                 empty
                                 targets)
                            empty)]
-   [PyAugAssign (o t v) (if global?
+   [PyAugAssign (o t v) (if (not global?)
                           (get-names t global?)
                           empty)]
    [PyExcept (t body) (get-names body global?)]
@@ -93,7 +94,23 @@
             (desugar (PyPass))))
     (rec-desugar (PySeq es) global?)))
 
-    (define (rec-desugar [expr : PyExpr] [global? : boolean]) : CExpr
+;; for the body of some local scope level like a class or function, hoist
+;; all the assignments and defs to the top as undefineds
+
+(define (desugar-local-body [expr : PyExpr] [args : (listof symbol)]) : CExpr
+  (local [(define names (get-names expr false))]
+    (rec-desugar
+      (PySeq (append 
+               (if (not (empty? names))
+                 (map (lambda(n) (PyAssign (list (PyId n 'Load))
+                                               (PyUndefined)))
+                      (filter (lambda(n) (not (member n args)))
+                          names)) 
+                 (list (PyPass))) 
+               (list expr)))
+      false)))
+
+(define (rec-desugar [expr : PyExpr] [global? : boolean]) : CExpr
   (type-case PyExpr expr
     [PySeq (es) (foldl (lambda (e1 e2) (CSeq e2 (rec-desugar e1 global?)))
                        (rec-desugar (first es) global?) (rest es))]
@@ -216,13 +233,13 @@
             (CLet name (CNone)
                 (CAssign (CId name)
                          (CFunc args (none)
-                                (rec-desugar body false))))]
+                                (desugar-local-body body args))))]
 
     [PyFuncVarArg (name args sarg body)
             (CLet name (CNone)
                 (CAssign (CId name)
                          (CFunc args (some sarg)
-                                (rec-desugar body false))))]
+                                (desugar-local-body body (cons sarg args)))))]
     
     [PyReturn (value)
               (CReturn (rec-desugar value global?))]

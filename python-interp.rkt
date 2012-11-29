@@ -21,8 +21,7 @@
          (typed-in racket/base (ormap : (('a -> boolean) (listof 'a) -> 'a)))
          (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
          (typed-in racket/base (car : (('a * 'b)  -> 'a)))
-         (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
-         )
+         (typed-in racket/base (cdr : (('a * 'b)  -> 'b))))
 
 
 ;; interp-cascade, interprets a list of expressions with an initial store,
@@ -359,21 +358,25 @@
                        [Return (vi si envi) (return-exception envi si)]
                        [Exception (vi si envi) (Exception vi si envi)])]
 
-    [CId (x) (let ([w (lookup x env)])
-               (if (none? w)
-                 (mk-exception 'NameError 
-                                (string-append "name '" 
-                                               (string-append (symbol->string x)
-                                                              "' is not defined"))
-                                env sto)
-                 (local [(define val (fetch (some-v w) sto))]
-                        (type-case CVal val
-                            [VUndefined () (mk-exception 'UnboundLocalError 
+    [CId (x) 
+         (let ([local-w (lookup-local x env)])
+                (if (some? local-w)
+                  (type-case CVal (fetch (some-v local-w) sto)
+                      [VUndefined () (mk-exception 'UnboundLocalError 
                                             (string-append (symbol->string x)
-                                                           " is undefined in
-                                                           this scope")
+                                                           " is undefined in this scope")
                                                            env sto)]
-                            [else (v*s*e (fetch (some-v w) sto) sto env)]))))]
+                      [else (v*s*e (fetch (some-v local-w) sto) sto env)])
+                  (let ([full-w (lookup x env)]
+                        [name-error-str (string-append "name '" 
+                                                 (string-append (symbol->string x)
+                                                                "' is not defined"))])
+                    (if (some? full-w)
+                      (type-case CVal (fetch (some-v full-w) sto)
+                        [VUndefined () (mk-exception 'NameError name-error-str
+                                                     env sto)]
+                        [else (v*s*e (fetch (some-v full-w) sto) sto env)])
+                      (mk-exception 'NameError name-error-str env sto)))))]
 
     [CObject (c mval) (v*s*e (VObject c mval (make-hash empty))
                              sto
@@ -657,8 +660,7 @@
                     ['IsNot (if (not (is? varg1 varg2))
                            (v*s*e true-val sarg2 envarg2)
                            (v*s*e false-val sarg2 envarg2))]
-                    [else (error 'interp (string-append "Haven't implemented a
-                                                        case yet: "
+                    [else (error 'interp (string-append "Haven't implemented a case yet: "
                                                         (symbol->string
                                                           prim)))])]
              [Return (varg2 sarg2 envarg2) (return-exception envarg2 sarg2)]

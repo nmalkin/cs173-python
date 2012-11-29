@@ -84,6 +84,10 @@ ParselTongue.
             [some (v) (some v)]
             [none () (lookup x (rest env))])]))
 
+;; lookup in just the local environment
+(define (lookup-local [x : symbol] [env : Env]) : (optionof Address)
+  (hash-ref (first env) x))
+
 (define (fetch [w : Address] [sto : Store]) : CVal
   (type-case (optionof CVal) (hash-ref sto w)
     [some (v) v]
