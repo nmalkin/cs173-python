@@ -71,6 +71,11 @@
                    (CFunc (list 'self) (none)
                           (CReturn (CBuiltinPrim 'dict-items
                                                      (list (CId 'self))))))
+
+              (def '__attr__
+                   (CFunc (list 'self 'other) (none)
+                          (CReturn (CBuiltinPrim 'dict-attr
+                                                     (list (CId 'self) (CId 'other))))))
 ))))
 
 
@@ -175,3 +180,14 @@
                       (VObject 'set
                                (some (MetaSet (make-set items)))
                                (make-hash empty))))))
+
+
+(define (dict-attr [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (letrec ([contents (MetaDict-contents mval1)]
+                        [target (second args)]
+                        [mayb-val (hash-ref contents target)])
+                 (if (some? mayb-val)
+                   mayb-val
+                   (some vnone)))))
+
