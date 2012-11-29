@@ -161,6 +161,7 @@ primitives here.
     ['dict-eq (dict-eq args env sto)]
     ['dict-get (dict-get args env sto)]
     ['dict-keys (dict-keys args env sto)]
+    ['dict-values (dict-values args env sto)]
     ['dict-items (dict-items args env sto)]
 
     ;set
