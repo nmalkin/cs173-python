@@ -185,6 +185,14 @@ structure that you define in python-syntax.rkt
      (PyDict (map get-structured-python keys)
              (map get-structured-python values))]
 
+    [(hash-table ('nodetype "While")
+                 ('test test)
+                 ('body body)
+                 ('orelse else))
+     (PyWhile (get-structured-python test)
+              (get-structured-python body)
+              (get-structured-python else))]
+
     [(hash-table ('nodetype "Set")
                  ('elts elts))
      (PySet (map get-structured-python elts))]

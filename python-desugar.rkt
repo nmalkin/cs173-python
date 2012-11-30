@@ -466,6 +466,16 @@
                            (none)
                            (DResult-expr body-r))
                   (DResult-env body-r)))]
+    
+    [PyWhile (test body orelse)
+             (local [(define test-r (rec-desugar test global? env))
+                     (define body-r (rec-desugar body global? (DResult-env test-r)))
+                     (define orelse-r (rec-desugar orelse global? (DResult-env body-r)))]
+             (DResult 
+                 (CWhile (DResult-expr test-r)
+                         (DResult-expr body-r)
+                         (DResult-expr orelse-r))
+                 (DResult-env orelse-r)))]
 
     [PyExceptAs (types name body)
                 (local [(define-values (types-r mid-env)

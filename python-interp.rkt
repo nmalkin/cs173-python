@@ -131,6 +131,25 @@
    [Return (vfun sfun efun) (return-exception efun sfun)]
    [Exception (vfun sfun efun) (Exception vfun sfun efun)]))
 
+(define (interp-while [test : CExpr] [body : CExpr] 
+                      [env : Env] [sto : Store])
+  (local [(define test-r (interp-env test env sto))]
+    (if (or (Exception? test-r) (Return? test-r))
+      test-r
+      (if (truthy? (v*s*e-v test-r))
+        (local [(define body-r (interp-env body (v*s*e-e test-r)
+                                                (v*s*e-s test-r)))]
+               (interp-while test body
+                             (v*s*e-e body-r)
+                             (v*s*e-s body-r)))
+        (v*s*e
+          vnone
+          (v*s*e-s test-r)
+          (v*s*e-e test-r))))))
+
+
+
+
 (define (bind-and-execute [body : CExpr] [argxs : (listof symbol)]
                           [vararg : (optionof symbol)] [argvs : (listof CVal)]
                           [arges : (listof CExpr)] [env : Env]
@@ -414,6 +433,8 @@
                      [else (v*s*e (python-prim1 prim varg) sarg envarg)])]
               [Return (varg sarg earg) (return-exception earg sarg)]
               [Exception (varg sarg earg) (Exception varg sarg earg)])]
+
+    [CWhile (body test orelse) (interp-while body test env sto)]
     
     ;; implement this
     [CPrim2 (prim arg1 arg2) (interp-cprim2 prim arg1 arg2 sto env)]

@@ -26,6 +26,7 @@ ParselTongue.
   [CLet (x : symbol) (bind : CExpr) (body : CExpr)]
   [CApp (fun : CExpr) (args : (listof CExpr)) (stararg : (optionof CExpr))]
   [CFunc (args : (listof symbol)) (varargs : (optionof symbol)) (body : CExpr)]
+  [CWhile (test : CExpr) (body : CExpr) (orelse : CExpr)]
   [CReturn (value : CExpr)]
   [CPrim1 (prim : symbol) (arg : CExpr)]
   [CPrim2 (prim : symbol) (arg1 : CExpr) (arg2 : CExpr)]
