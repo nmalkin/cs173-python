@@ -130,6 +130,7 @@
                    last-env))])))]
     (rec-map-desugar exprs global? env)))
 
+
 ;; for the body of some local scope level like a class or function, hoist
 ;; all the assignments and defs to the top as undefineds
 (define (desugar-local-body [expr : PyExpr] [args : (listof symbol)] [env : IdEnv]) : DesugarResult
@@ -168,7 +169,9 @@
                   (DResult-env value-r)))]
 
     [PyNum (n) (DResult (make-builtin-num n) env)]
+    [PySlice (lower upper step) (error 'desugar "Shouldn't desugar slice directly")]
     [PyBool (b) (DResult (if b (CTrue) (CFalse)) env)]
+    [PyNone () (DResult (CNone) env)]
     [PyStr (s) (DResult (make-builtin-str s) env)]
     [PyId (x ctx) (DResult (CId x (LocalId)) env)]
     [PyGlobal (ids) (DResult (CNone) (add-ids ids (GlobalId) env))]
@@ -371,19 +374,34 @@
     [PySubscript (left ctx slice)
                  (if (symbol=? ctx 'Load)
                    (local [(define left-id (new-id))
-                           (define left-r (rec-desugar left global? env))
-                           (define slice-r (rec-desugar slice global? (DResult-env left-r)))]
-                     (DResult
-                       (CLet left-id 
-                             (DResult-expr left-r)
-                             (CApp (CGetField (CId left-id (LocalId))
-                                              '__attr__)
-                                   (list (CId left-id (LocalId)) (DResult-expr slice-r))
-                                   (none)))
-                       (DResult-env slice-r)))
-                   (DResult
-                     (CNone)
-                     env))]
+                           (define left-r (rec-desugar left global? env))]
+                    (if (PySlice? slice)
+                       (local [(define slice-low (rec-desugar (PySlice-lower slice) global? env))
+                               (define slice-up (rec-desugar (PySlice-upper slice) global? env))
+                               (define slice-step (rec-desugar (PySlice-step slice) global? env))]
+                              (DResult
+                                (CLet left-id
+                                      (DResult-expr left-r)
+                                      (CApp (CGetField (CId left-id (LocalId))
+                                                       '__slice__)
+                                            (list 
+                                                  (CId left-id (LocalId))
+                                                  (DResult-expr slice-low)
+                                                  (DResult-expr slice-up)
+                                                  (DResult-expr slice-step))
+                                            (none)))
+                                (DResult-env slice-step)))
+                       (local [(define slice-r (rec-desugar slice global? (DResult-env left-r)))] 
+                              (DResult 
+                                (CLet left-id 
+                                      (DResult-expr left-r)
+                                      (CApp (CGetField (CId left-id (LocalId))
+                                                       '__attr__)
+                                            (list (CId left-id (LocalId)) (DResult-expr slice-r))
+                                            (none)))
+                                (DResult-env slice-r)))))
+                       (DResult
+                         (CNone) env))]
 
     [PyApp (fun args)
            (local [(define f (rec-desugar fun global? env))

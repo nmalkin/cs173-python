@@ -55,8 +55,11 @@
   [PyStr (s : string)]
   [PyDict (keys : (listof PyExpr)) (values : (listof PyExpr))]
   [PyList (values : (listof PyExpr))]
+  [PySlice (lower : PyExpr) (upper : PyExpr) (step : PyExpr)]
   [PyTuple (values : (listof PyExpr))]
   [PyUndefined]
   [PySet (elts : (listof PyExpr))]
+  [PyNone]
+
 )
 

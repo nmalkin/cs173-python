@@ -169,6 +169,15 @@ structure that you define in python-syntax.rkt
                  ('ctx ctx))
      (PyDotField (get-structured-python value)
                  (string->symbol attr))]
+
+    [(hash-table ('nodetype "Slice")
+                 ('upper upper)
+                 ('lower lower)
+                 ('step step))
+     (PySlice (get-structured-python lower)
+              (get-structured-python upper)
+              (get-structured-python step))]
+
     
     [(hash-table ('nodetype "Dict")
                  ('values values)
@@ -257,7 +266,7 @@ structure that you define in python-syntax.rkt
 
     [(list) (PyPass)] 
     
-    [empty (PyPass)]
+    [empty (PyNone)]
 
     [_ (error 'parse "Haven't handled a case yet: ")])))
 

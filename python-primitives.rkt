@@ -137,6 +137,7 @@ primitives here.
     ['strin (strin args env sto)]
     ['strattr (strattr args env sto)]
     ['strlist (strlist args env sto)]
+    ['strslice (strslice args env sto)]
 
     ;list
     ['list+ (list+ args env sto)]
