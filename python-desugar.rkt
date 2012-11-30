@@ -73,9 +73,6 @@
                                 empty
                                 targets)
                            empty)]
-   [PyAugAssign (o t v) (if (not global?)
-                          (get-names t global?)
-                          empty)]
    [PyExcept (t body) (get-names body global?)]
    [PyTryExceptElseFinally (t e o f)
                            (append (get-names t global?)
