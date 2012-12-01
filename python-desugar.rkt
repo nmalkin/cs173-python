@@ -399,6 +399,7 @@
                                 (DResult-env slice-r)))))
                        (DResult
                          (CNone) env))]
+    [PyBreak () (DResult (CBreak) env)]
 
     [PyApp (fun args)
            (local [(define f (rec-desugar fun global? env))

@@ -63,6 +63,7 @@
   [PyUndefined]
   [PySet (elts : (listof PyExpr))]
   [PyNone]
+  [PyBreak]
 
 )
 
