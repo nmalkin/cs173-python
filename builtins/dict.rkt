@@ -33,7 +33,7 @@
                                                      (list (CId 'self (LocalId)))))))
 
               (def 'update
-                   (CFunc (list 'self 'other) (none)
+                   (CFunc (list 'self) (some 'other)
                           (CReturn (CBuiltinPrim 'dict-update
                                                      (list (CId 'self (LocalId))
                                                            (CId 'other (LocalId)))))))
@@ -140,14 +140,17 @@
                  (some vnone))))))
 
 (define (dict-update (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
-  (check-types args env sto 'dict 'dict
+  (let ([extras (MetaTuple-v (some-v (VObject-mval (second args))))])
+    (if (= 1 (length extras))
+        (check-types args env sto 'dict
                (let ([target (MetaDict-contents mval1)]
-                     [extras (MetaDict-contents mval2)])
+                     [extras (MetaDict-contents (some-v (VObject-mval (first extras))))])
                  (begin
                    (map (lambda (pair)
                           (hash-set! target (car pair) (cdr pair)))
                         (hash->list extras))
-                   (some vnone)))))
+                   (some vnone))))
+        (some vnone))))
 
 (define (dict-eq (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict 'dict
