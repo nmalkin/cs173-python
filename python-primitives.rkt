@@ -170,6 +170,7 @@ primitives here.
     ['dict-items (dict-items args env sto)]
     ['dict-attr (dict-attr args env sto)]
     ['dict-setattr (dict-setattr args env sto)]
+    ['dict-delitem (dict-delitem args env sto)]
 
     ;set
     ['set-set (set-set args env sto)]

@@ -521,6 +521,22 @@
     ; XXX: target is interpreted twice, independently.
     ; Is there any case where this might cause problems?
 
+    [PyDelete (targets)
+              (let ([target (first targets)]) ; TODO: handle deletion of more than one target
+                (type-case PyExpr target
+                           [PySubscript (left ctx slice)
+                                        (letrec ([desugared-target (rec-desugar left global? env)]
+                                                 [desugared-slice (rec-desugar slice global? (DResult-env desugared-target))]
+                                                 [target-id (new-id)])
+                                          (DResult
+                                              (CLet target-id (DResult-expr desugared-target)
+                                                (CApp (CGetField (CId target-id (LocalId)) '__delitem__)
+                                                      (list (CId target-id (LocalId))
+                                                            (DResult-expr desugared-slice))
+                                                      (none)))
+                                              (DResult-env desugared-slice)))]
+                           [else (error 'desugar "We don't know how to delete identifiers yet.")]))]
+
 )))
 
 (define (desugar [expr : PyExpr]) : CExpr

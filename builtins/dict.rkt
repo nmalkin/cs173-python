@@ -86,6 +86,13 @@
                                                      (list (CId 'self (LocalId))
                                                            (CId 'target (LocalId))
                                                            (CId 'value (LocalId)))))))
+
+              (def '__delitem__
+                   (CFunc (list 'self 'slice) (none)
+                          (CReturn (CBuiltinPrim 'dict-delitem
+                                                     (list (CId 'self (LocalId))
+                                                           (CId 'slice (LocalId)))))))
+
 ))))
 
 
@@ -208,4 +215,12 @@
                         [value (third args)])
                  (begin
                    (hash-set! contents target value)
+                   (some vnone)))))
+
+(define (dict-delitem [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (letrec ([contents (MetaDict-contents mval1)]
+                        [target (second args)])
+                 (begin
+                   (hash-remove! contents target)
                    (some vnone)))))

@@ -51,6 +51,8 @@
   [PyApp (fun : PyExpr) (args : (listof PyExpr))]
   [PyAppStarArg (fun : PyExpr) (args : (listof PyExpr)) (stararg : PyExpr)]
 
+  [PyDelete (targets : (listof PyExpr))]
+
   ;
   [PySubscript (left : PyExpr) (context : symbol) (slice : PyExpr)]
 
