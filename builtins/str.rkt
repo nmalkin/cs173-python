@@ -75,9 +75,15 @@
                             (CReturn (CBuiltinPrim 'strlen
                                          (list
                                            (CId 'self (LocalId)))))))
+
                   (def '__list__
                      (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'strlist
+                                         (list
+                                           (CId 'self (LocalId)))))))
+                  (def '__tuple__
+                     (CFunc (list 'self) (none)
+                            (CReturn (CBuiltinPrim 'str-tuple
                                          (list
                                            (CId 'self (LocalId)))))))
                   (def '__attr__
@@ -100,19 +106,25 @@
    'str
    (some (MetaStr s))))
 
+(define (string->charlist [str : string]) : (listof CVal)
+  (map (lambda (s)
+               (VObject 'str
+                        (some (MetaStr (make-string 1 s)))
+                        (make-hash empty)))
+       (string->list str)))
+
 (define (strlist [args : (listof CVal)] [env : Env] [sto : Store])
   : (optionof CVal)
   (check-types args env sto 'str
                (some (VObject 'list
-                              (some (MetaList 
-                                      (map
-                                        (lambda(s)
-                                         (VObject 'str 
-                                                  (some (MetaStr (make-string 1 s)))
-                                                  (make-hash empty)))
-                                        (string->list (MetaStr-s mval1)))))
+                              (some (MetaList (string->charlist (MetaStr-s mval1))))
                               (make-hash empty)))))
-                                      
+
+(define (str-tuple [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'str
+               (some (VObject 'tuple
+                              (some (MetaTuple (string->charlist (MetaStr-s mval1))))
+                              (make-hash empty)))))
 
 (define (str+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'str 'str

@@ -137,6 +137,7 @@ primitives here.
     ['strin (strin args env sto)]
     ['strattr (strattr args env sto)]
     ['strlist (strlist args env sto)]
+    ['str-tuple (str-tuple args env sto)]
     ['strslice (strslice args env sto)]
 
     ;list
@@ -147,6 +148,7 @@ primitives here.
     ['list-str (list-str args env sto)]
     ['list-cpy (list-cpy args env sto)]
     ['list-set (list-set args env sto)]
+    ['list-tuple (list-tuple args env sto)]
 
     ;tuple
     ['tuple+ (tuple+ args env sto)]
@@ -156,6 +158,7 @@ primitives here.
     ['tuple-attr (tuple-attr args env sto)]
     ['tuple-str (tuple-str args env sto)]
     ['tuple-list (tuple-list args env sto)]
+    ['tuple-tuple (tuple-tuple args env sto)]
 
     ;dict
     ['dict-len (dict-len args env sto)]

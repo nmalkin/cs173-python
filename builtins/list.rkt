@@ -32,6 +32,12 @@
                               (CReturn (CBuiltinPrim 'list-cpy
                                                  (list 
                                                    (CId 'self (LocalId)))))))
+
+                  (def '__tuple__
+                       (CFunc (list 'self) (none)
+                              (CReturn (CBuiltinPrim 'list-tuple
+                                                     (list (CId 'self (LocalId)))))))
+
                   (def '__set__
                        (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'list-set
@@ -147,6 +153,10 @@
                   [sto : Store]) : (optionof CVal)
   (check-types args env sto 'list
          (some (make-builtin-list (MetaList-v mval1)))))
+
+(define (list-tuple [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'list
+         (some (VObject 'tuple (some (MetaTuple (MetaList-v mval1))) (make-hash empty)))))
 
 (define (list-in [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
  (letrec ([self-list (MetaList-v (some-v (VObject-mval (first args))))]

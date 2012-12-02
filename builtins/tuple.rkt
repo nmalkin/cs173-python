@@ -14,6 +14,29 @@
                                                   (list
                                                    (CId 'self (LocalId))
                                                    (CId 'other (LocalId)))))))
+
+                   (def '__init__
+                        (CFunc (list 'self) (some 'args)
+                          (CReturn
+                          (CIf ; Did we get any args?
+                            (CBuiltinPrim 'num=
+                                          (list
+                                            (CApp (CGetField (CId 'args (LocalId)) '__len__)
+                                                  (list (CId 'args (LocalId)))
+                                                  (none))
+                                            (CObject 'num (some (MetaNum 0)))))
+                            ; No. Return an empty tuple.
+                            (CTuple empty)
+                            ; Yes. Call __tuple__ on the first argument.
+                            (CLet 'first-arg
+                                  (CApp (CGetField (CId 'args (LocalId)) '__attr__)
+                                        (list (CId 'args (LocalId))
+                                              (CObject 'num (some (MetaNum 0))))
+                                        (none))
+                                  (CApp (CGetField (CId 'first-arg (LocalId)) '__tuple__)
+                                        (list (CId 'first-arg (LocalId)))
+                                        (none)))))))
+
                   (def '__mult__
                     (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'tuple*
@@ -35,6 +58,12 @@
                   (def '__list__
                      (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'tuple-list
+                                         (list
+                                           (CId 'self (LocalId)))))))
+
+                  (def '__tuple__
+                     (CFunc (list 'self) (none)
+                            (CReturn (CBuiltinPrim 'tuple-tuple
                                          (list
                                            (CId 'self (LocalId)))))))
 
@@ -61,6 +90,12 @@
   (check-types args env sto 'tuple
               (some 
                 (make-builtin-list (MetaTuple-v mval1)))))
+
+; returns the tuple itself
+; that way, tuple.__tuple__() "is" itself
+(define (tuple-tuple (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'tuple
+               (some (first args))))
 
 (define (tuple+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'tuple 'tuple
