@@ -235,6 +235,7 @@ structure that you define in python-syntax.rkt
            [orelse (get-structured-python else-expr)])
        (PyTryExceptElseFinally try excepts orelse (PyPass)))]
 
+    [(hash-table ('nodetype "Break")) (PyBreak)]
     [(hash-table ('nodetype "ExceptHandler")
                  ('type type)
                  ('name name)

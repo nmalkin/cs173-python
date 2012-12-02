@@ -421,6 +421,7 @@
                    (error 'desugar "bad syntax: PySubscript has context 'Store' outside a PyAssign")]
                   [else (error 'desugar "unrecognized context in PySubscript")])]
 
+    [PyBreak () (DResult (CBreak) env)]
 
     [PyApp (fun args)
            (local [(define f (rec-desugar fun global? env))
