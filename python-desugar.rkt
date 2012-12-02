@@ -156,14 +156,33 @@
                     last-env))]
     [PyModule (es) (desugar-pymodule es global? env)]
     [PyAssign (targets value) 
-              (local [(define-values (targets-r mid-env)
-                        (map-desugar targets global? env))
-                     (define value-r (rec-desugar value global? mid-env))]
-                (DResult
-                  (foldl (lambda (t so-far) (CSeq so-far (CAssign t (DResult-expr value-r))))
-                         (CAssign (first targets-r) (DResult-expr value-r))
-                         (rest targets-r))
-                  (DResult-env value-r)))]
+              (type-case PyExpr (first targets) ; TODO: deal with multiple targets (ignoring all but the first one for now)
+                         ; We handle two kinds of assignments.
+                         ; An assignment to a subscript is desugared as a __setattr__ call.
+                         [PySubscript (left ctx slice)
+                                      (letrec ([desugared-target (rec-desugar left global? env)]
+                                               [desugared-slice (rec-desugar slice global? (DResult-env desugared-target))]
+                                               [desugared-value (rec-desugar value global? (DResult-env desugared-slice))]
+                                               [target-id (new-id)])
+                                        (DResult
+                                            (CLet target-id (DResult-expr desugared-target)
+                                              (CApp (CGetField (CId target-id (LocalId)) '__setattr__)
+                                                    (list (CId target-id (LocalId))
+                                                          (DResult-expr desugared-slice)
+                                                          (DResult-expr desugared-value))
+                                                    (none)))
+                                            (DResult-env desugared-value)))]
+                         ; The others become a CAssign.
+                         [else
+                              (local [(define-values (targets-r mid-env)
+                                        (map-desugar targets global? env))
+                                     (define value-r (rec-desugar value global? mid-env))]
+                                (DResult
+                                  (foldl (lambda (t so-far) (CSeq so-far (CAssign t (DResult-expr value-r))))
+                                         (CAssign (first targets-r) (DResult-expr value-r))
+                                         (rest targets-r))
+                                  (DResult-env value-r)))
+                           ])]
 
     [PyNum (n) (DResult (make-builtin-num n) env)]
     [PySlice (lower upper step) (error 'desugar "Shouldn't desugar slice directly")]
@@ -369,7 +388,8 @@
                           last-env))]
 
     [PySubscript (left ctx slice)
-                 (if (symbol=? ctx 'Load)
+                 (cond
+                  [(symbol=? ctx 'Load)
                    (local [(define left-id (new-id))
                            (define left-r (rec-desugar left global? env))]
                     (if (PySlice? slice)
@@ -396,9 +416,11 @@
                                                        '__attr__)
                                             (list (CId left-id (LocalId)) (DResult-expr slice-r))
                                             (none)))
-                                (DResult-env slice-r)))))
-                       (DResult
-                         (CNone) env))]
+                                (DResult-env slice-r)))))]
+                  [(symbol=? ctx 'Store)
+                   (error 'desugar "bad syntax: PySubscript has context 'Store' outside a PyAssign")]
+                  [else (error 'desugar "unrecognized context in PySubscript")])]
+
 
     [PyApp (fun args)
            (local [(define f (rec-desugar fun global? env))

@@ -78,7 +78,15 @@
                    (CFunc (list 'self 'other) (none)
                           (CReturn (CBuiltinPrim 'dict-attr
                                                      (list (CId 'self (LocalId))
-                                                           (CId 'other (LocalId)))))))))))
+                                                           (CId 'other (LocalId)))))))
+
+              (def '__setattr__
+                   (CFunc (list 'self 'target 'value) (none)
+                          (CReturn (CBuiltinPrim 'dict-setattr
+                                                     (list (CId 'self (LocalId))
+                                                           (CId 'target (LocalId))
+                                                           (CId 'value (LocalId)))))))
+))))
 
 
 (define (dict-len (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
@@ -193,3 +201,11 @@
                    mayb-val
                    (some vnone)))))
 
+(define (dict-setattr [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (letrec ([contents (MetaDict-contents mval1)]
+                        [target (second args)]
+                        [value (third args)])
+                 (begin
+                   (hash-set! contents target value)
+                   (some vnone)))))
