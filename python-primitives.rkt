@@ -7,6 +7,7 @@
          "builtins/tuple.rkt"
          "builtins/dict.rkt"
          "builtins/set.rkt"
+         "builtins/num.rkt"
          "builtins/object.rkt"
          "builtins/bool.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
@@ -49,16 +50,12 @@ primitives here.
                       [env : Env] [sto : Store]) : (optionof CVal)
   (case op
     ['num+ (check-types args env sto 'num 'num 
-                        (some (VObject 'num (some (MetaNum 
-                                                    (+ (MetaNum-n mval1) 
-                                                       (MetaNum-n mval2))))
-                                        (make-hash empty))))]
+                        (some (make-builtin-numv (+ (MetaNum-n mval1) 
+                                                   (MetaNum-n mval2)))))]
     ['num- (check-types args env sto 'num 'num 
-                        (some (VObject 'num (some (MetaNum 
-                                                    (- (MetaNum-n mval1) 
-                                                       (MetaNum-n mval2))))
-                                        (make-hash empty))))]
-    ['num* 
+                        (some (make-builtin-numv (- (MetaNum-n mval1) 
+                                                   (MetaNum-n mval2)))))]
+    ['num*
         (if (and (some? (VObject-mval (second args)))
               (MetaStr? (some-v (VObject-mval (second args)))))
           (builtin-prim 'str* (reverse args) env sto)
@@ -145,6 +142,7 @@ primitives here.
     ['list-len (list-len args env sto)]
     ['list-in (list-in args env sto)]
     ['list-attr (list-attr args env sto)]
+    ['list-setitem (list-setitem args env sto)]
     ['list-str (list-str args env sto)]
     ['list-cpy (list-cpy args env sto)]
     ['list-set (list-set args env sto)]

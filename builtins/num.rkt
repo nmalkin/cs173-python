@@ -2,14 +2,22 @@
 
 (require "../python-core-syntax.rkt")
 (require "../util.rkt"
-         (typed-in racket/base (integer? : (number -> boolean))))
+         (typed-in racket/base (exact? : (number -> boolean))))
 
 (define (make-builtin-num [n : number]) : CExpr
   (CObject
-    (if (integer? n)
+    (if (exact? n)
       'int
       'float)
     (some (MetaNum n))))
+
+(define (make-builtin-numv [n : number]) : CVal
+  (VObject
+    (if (exact? n)
+      'int
+      'float)
+    (some (MetaNum n))
+    (make-hash empty)))
 
 (define int-class
   (CClass

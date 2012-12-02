@@ -59,6 +59,13 @@
                                                   (list
                                                    (CId 'self (LocalId))
                                                    (CId 'idx (LocalId)))))))
+                  (def '__setattr__
+                    (CFunc (list 'self 'idx 'val) (none)
+                           (CReturn (CBuiltinPrim 'list-setitem
+                                                  (list
+                                                   (CId 'self (LocalId))
+                                                   (CId 'idx (LocalId))
+                                                   (CId 'val (LocalId)))))))
                   (def '__cmp__
                     (CFunc (list 'self 'other) (none)
                            (CLet 'listcmp (CNone)
@@ -192,3 +199,9 @@
                     (some (VObject 'set
                                    (some (MetaSet (make-set values)))
                                    (hash empty))))))
+(define (list-setitem [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal) 
+  (check-types args env sto 'list 'num 'num
+               (some (make-builtin-list
+                       (list-replace (MetaNum-n mval2) 
+                                     (third args)
+                                     (MetaList-v mval1))))))
