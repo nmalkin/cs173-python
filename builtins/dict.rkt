@@ -140,17 +140,17 @@
                  (some vnone))))))
 
 (define (dict-update (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
-  (let ([extras (MetaTuple-v (some-v (VObject-mval (second args))))])
-    (if (= 1 (length extras))
-        (check-types args env sto 'dict
-               (let ([target (MetaDict-contents mval1)]
-                     [extras (MetaDict-contents (some-v (VObject-mval (first extras))))])
+  (check-types args env sto 'dict
+     (let ([starargs (MetaTuple-v (some-v (VObject-mval (second args))))])
+        (if (= 1 (length starargs))
+            (let ([target (MetaDict-contents mval1)]
+                  [extras (MetaDict-contents (some-v (VObject-mval (first starargs))))])
                  (begin
                    (map (lambda (pair)
                           (hash-set! target (car pair) (cdr pair)))
                         (hash->list extras))
-                   (some vnone))))
-        (some vnone))))
+                   (some vnone)))
+            (some vnone)))))
 
 (define (dict-eq (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict 'dict
