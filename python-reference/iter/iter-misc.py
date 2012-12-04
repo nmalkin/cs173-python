@@ -13,6 +13,7 @@ def check_iterator(it, seq):
 def check_for_loop(expr, seq):
     res = []
     for val in expr:
+        print(val)
         res.append(val)
     ___assertEqual(res, seq)
 

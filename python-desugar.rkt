@@ -221,7 +221,11 @@
 
     ; for now just desugar raise as error
     ; TODO: implement real exceptions
-    [PyRaise (expr) (local [(define expr-r (rec-desugar expr global? env))]
+    [PyRaise (expr) (local [(define expr-r (if (PyId? expr)
+                                             ;;handle the implicit construction case
+                                             (rec-desugar (PyApp expr empty)
+                                                          global? env) 
+                                             (rec-desugar expr global? env)))]
                             (DResult
                               (CRaise 
                                 (if (PyPass? expr)

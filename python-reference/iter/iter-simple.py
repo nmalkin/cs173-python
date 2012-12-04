@@ -7,6 +7,7 @@ def check_iterator(it, seq):
         except StopIteration:
             break
         res.append(val)
+
     ___assertEqual(res, seq)
 
 # Helper to check that a for loop generates a given sequence

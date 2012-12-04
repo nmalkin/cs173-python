@@ -423,7 +423,7 @@
                         [else (v*s*e (fetch (some-v full-w) sto) sto env)])
                       (mk-exception 'NameError name-error-str env sto)))))]
 
-    [CObject (c mval) (v*s*e (VObject c mval (make-hash empty))
+    [CObject (c mval) (v*s*e (VObject c mval (hash empty))
                              sto
                              env)]
 
@@ -433,6 +433,7 @@
             (interp-let x result body))]
 
     [CApp (fun arges sarg)
+          ;(begin (display fun) (display "\n")
           (interp-capp fun
                        arges
                        (if (none? sarg)

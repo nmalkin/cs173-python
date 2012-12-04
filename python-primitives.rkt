@@ -147,6 +147,7 @@ primitives here.
     ['list-cpy (list-cpy args env sto)]
     ['list-set (list-set args env sto)]
     ['list-tuple (list-tuple args env sto)]
+    ['list-append (list-append args env sto)]
 
     ;tuple
     ['tuple+ (tuple+ args env sto)]

@@ -32,6 +32,12 @@
                               (CReturn (CBuiltinPrim 'list-cpy
                                                  (list 
                                                    (CId 'self (LocalId)))))))
+                  (def '__iter__
+                       (CFunc (list 'self) (none)
+                           (CReturn (CApp (CGetField (CId 'SeqIter (LocalId)) '__init__)
+                                          (list (CObject 'SeqIter (none)) 
+                                                (CId 'self (LocalId)))
+                                          (none)))))
 
                   (def '__tuple__
                        (CFunc (list 'self) (none)
@@ -123,6 +129,12 @@
                                            (CId 'other (LocalId))
                                            (make-builtin-num 0))
                                      (none))))))))
+                  (def 'append
+                       (CFunc (list 'self 'other) (none)
+                            (CAssign (CId 'self (LocalId))
+                                     (CBuiltinPrim 'list-append 
+                                        (list (CId 'self (LocalId)) 
+                                              (CId 'other (LocalId)))))))
                   (def '__eq__
                     (CFunc (list 'self 'other) (none)
                            (seq-ops (list
@@ -160,6 +172,13 @@
                   [sto : Store]) : (optionof CVal)
   (check-types args env sto 'list
          (some (make-builtin-list (MetaList-v mval1)))))
+
+(define (list-append [args : (listof CVal)]
+                  [env : Env]
+                  [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'list
+         (some (make-builtin-list (append (MetaList-v mval1)
+                                          (list (second args)))))))
 
 (define (list-tuple [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'list
