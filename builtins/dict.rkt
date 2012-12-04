@@ -74,15 +74,15 @@
                           (CReturn (CBuiltinPrim 'dict-items
                                                      (list (CId 'self (LocalId)))))))
 
-              (def '__attr__
+              (def '__getitem__
                    (CFunc (list 'self 'other) (none)
-                          (CReturn (CBuiltinPrim 'dict-attr
+                          (CReturn (CBuiltinPrim 'dict-getitem
                                                      (list (CId 'self (LocalId))
                                                            (CId 'other (LocalId)))))))
 
-              (def '__setattr__
+              (def '__setitem__
                    (CFunc (list 'self 'target 'value) (none)
-                          (CReturn (CBuiltinPrim 'dict-setattr
+                          (CReturn (CBuiltinPrim 'dict-setitem
                                                      (list (CId 'self (LocalId))
                                                            (CId 'target (LocalId))
                                                            (CId 'value (LocalId)))))))
@@ -140,17 +140,17 @@
                  (some vnone))))))
 
 (define (dict-update (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
-  (let ([extras (MetaTuple-v (some-v (VObject-mval (second args))))])
-    (if (= 1 (length extras))
-        (check-types args env sto 'dict
-               (let ([target (MetaDict-contents mval1)]
-                     [extras (MetaDict-contents (some-v (VObject-mval (first extras))))])
+  (check-types args env sto 'dict
+     (let ([starargs (MetaTuple-v (some-v (VObject-mval (second args))))])
+        (if (= 1 (length starargs))
+            (let ([target (MetaDict-contents mval1)]
+                  [extras (MetaDict-contents (some-v (VObject-mval (first starargs))))])
                  (begin
                    (map (lambda (pair)
                           (hash-set! target (car pair) (cdr pair)))
                         (hash->list extras))
-                   (some vnone))))
-        (some vnone))))
+                   (some vnone)))
+            (some vnone)))))
 
 (define (dict-eq (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict 'dict
@@ -202,7 +202,7 @@
                                (make-hash empty))))))
 
 
-(define (dict-attr [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+(define (dict-getitem [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict
                (letrec ([contents (MetaDict-contents mval1)]
                         [target (second args)]
@@ -211,7 +211,7 @@
                    mayb-val
                    (some vnone)))))
 
-(define (dict-setattr [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+(define (dict-setitem [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict
                (letrec ([contents (MetaDict-contents mval1)]
                         [target (second args)]

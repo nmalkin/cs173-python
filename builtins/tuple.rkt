@@ -31,7 +31,7 @@
                             (CTuple empty)
                             ; Yes. Call __tuple__ on the first argument.
                             (CLet 'first-arg
-                                  (CApp (CGetField (CId 'args (LocalId)) '__attr__)
+                                  (CApp (CGetField (CId 'args (LocalId)) '__getitem__)
                                         (list (CId 'args (LocalId))
                                               (CObject 'num (some (MetaNum 0))))
                                         (none))
@@ -73,9 +73,9 @@
                        (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'tuple-str
                                                      (list (CId 'self (LocalId)))))))
-                  (def '__attr__
+                  (def '__getitem__
                     (CFunc (list 'self 'idx) (none)
-                           (CReturn (CBuiltinPrim 'tuple-attr
+                           (CReturn (CBuiltinPrim 'tuple-getitem
                                                   (list
                                                    (CId 'self (LocalId))
                                                    (CId 'idx (LocalId)))))))
@@ -90,13 +90,13 @@
                                            (seq-ops (list
                                              (def 'li1
                                                   (CApp (CGetField (CId 'self (LocalId))
-                                                                   '__attr__)
+                                                                   '__getitem__)
                                                         (list (CId 'self (LocalId))
                                                               (CId 'idx (LocalId)))
                                                         (none)))
                                              (def 'li2
                                                   (CApp (CGetField (CId 'other (LocalId))
-                                                                   '__attr__)
+                                                                   '__getitem__)
                                                         (list (CId 'other (LocalId))
                                                               (CId 'idx (LocalId)))
                                                         (none)))
@@ -213,7 +213,7 @@
                          (contains (rest lst) val))]))])
    (some (contains self-list test))))
 
-(define (tuple-attr (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+(define (tuple-getitem (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   ; TODO: slicing
   (check-types args env sto 'tuple 'num
                (some

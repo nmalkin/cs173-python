@@ -200,9 +200,10 @@
                              tsto
                              tenv
                              (some (first exn?)))
-                     (begin (display (map v*s*e-v except-types-results)) (display "\n\n\n")
+                     (begin ;(display (map v*s*e-v except-types-results)) (display "\n\n\n")
                      (local [(define actual-except-types
-                               (if (and (VObject? (v*s*e-v (first except-types-results)))
+                               (if (and (> (length except-types-results) 0)
+                                        (VObject? (v*s*e-v (first except-types-results)))
                                         (MetaTuple?
                                           (some-v (VObject-mval
                                                     (v*s*e-v (first except-types-results))))))
@@ -392,8 +393,8 @@
 
     ;; deal with pythonic scope here
     ;; only for ids!
-    [CAssign (t v) (begin (display "assign: ") (display t) (display " ")
-                          (display v) (display "\n")
+    [CAssign (t v) (begin ;(display "assign: ") (display t) (display " ")
+                          ;(display v) (display "\n")
              (type-case Result (interp-env v env sto)
                      [v*s*e (vv sv venv)
                             (type-case CExpr t

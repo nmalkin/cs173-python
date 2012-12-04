@@ -266,7 +266,7 @@
                                       [target-id (new-id)])
                                (DResult
                                  (CLet target-id (DResult-expr desugared-target)
-                                       (CApp (CGetField (CId target-id (LocalId)) '__setattr__)
+                                       (CApp (CGetField (CId target-id (LocalId)) '__setitem__)
                                              (list (CId target-id (LocalId))
                                                    (DResult-expr desugared-slice)
                                                    (DResult-expr desugared-value))
@@ -282,8 +282,7 @@
                                     (CSeq so-far (CAssign t (DResult-expr value-r))))
                                   (CAssign (first targets-r) (DResult-expr value-r))
                                   (rest targets-r))
-                           (DResult-env value-r)))
-                  ])]
+                           (DResult-env value-r)))])]
 
     [PyNum (n) (DResult (make-builtin-num n) env)]
     [PySlice (lower upper step) (error 'desugar "Shouldn't desugar slice directly")]
@@ -516,7 +515,7 @@
                     (CLet left-id 
                           (DResult-expr left-r)
                           (CApp (CGetField (CId left-id (LocalId))
-                                           '__attr__)
+                                           '__getitem__)
                                 (list (CId left-id (LocalId)) (DResult-expr slice-r))
                                 (none)))
                     (DResult-env slice-r)))))]

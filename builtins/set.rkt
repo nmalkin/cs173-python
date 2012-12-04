@@ -43,7 +43,7 @@
                             (CSet empty)
                             ; Yes. Call __set__ on the first argument.
                             (CLet 'first-arg
-                                  (CApp (CGetField (CId 'args (LocalId)) '__attr__)
+                                  (CApp (CGetField (CId 'args (LocalId)) '__getitem__)
                                         (list (CId 'args (LocalId))
                                               (CObject 'num (some (MetaNum 0))))
                                         (none))
