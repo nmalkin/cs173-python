@@ -229,6 +229,7 @@ that calls the primitive `print`.
         (bind 'UnboundLocalError (make-exception-class 'UnboundLocalError))
         (bind 'IndexError (make-exception-class 'IndexError))
         (bind 'ZeroDivisionError (make-exception-class 'ZeroDivisionError))
+        (bind 'StopIteration (make-exception-class 'StopIteration))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)

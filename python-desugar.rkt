@@ -144,6 +144,31 @@
       false
       (extract-globals env))))
 
+(define (desugar-for [target : PyExpr] [iter : PyExpr] [body : PyExpr]
+                     [global? : boolean] [env : IdEnv]) : DesugarResult
+  (local [(define iter-pyid (PyId (new-id) 'Load))]
+     (rec-desugar
+       (PySeq
+         (list (PyAssign (list iter-pyid) (PyApp (PyDotField iter '__iter__) empty))
+           (PyWhile (PyBool true)
+                  (PySeq 
+                    (list 
+                       (PyAssign (list target) (PyNone))
+                       (PyTryExceptElseFinally
+
+                           (PyAssign (list target) 
+                                     (PyApp (PyDotField iter-pyid '__next__) empty))
+
+                           (list (PyExcept (list (PyId 'StopIteration 'Load))
+                                           (PyBreak)))
+                           (PyPass)
+                           (PyPass))
+                       body))
+                       (PyPass))))
+       global?
+       env)))
+
+
 (define (rec-desugar [expr : PyExpr] [global? : boolean] [env : IdEnv]) : DesugarResult 
   (begin ;(display expr) (display "\n\n")
     (type-case PyExpr expr
@@ -499,6 +524,7 @@
                          (DResult-expr body-r)
                          (DResult-expr orelse-r))
                  (DResult-env orelse-r)))]
+    [PyFor (target iter body) (desugar-for target iter body global? env)]
 
     [PyExceptAs (types name body)
                 (local [(define-values (types-r mid-env)

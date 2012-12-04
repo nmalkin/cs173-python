@@ -193,6 +193,16 @@ structure that you define in python-syntax.rkt
               (get-structured-python body)
               (get-structured-python else))]
 
+    [(hash-table ('nodetype "For")
+                 ('target target)
+                 ('iter iter)
+                 ('body body)
+                 ('orelse else))
+     (PyFor (get-structured-python target)
+            (get-structured-python iter)
+            (get-structured-python body))]
+
+
     [(hash-table ('nodetype "Set")
                  ('elts elts))
      (PySet (map get-structured-python elts))]
