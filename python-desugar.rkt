@@ -6,7 +6,11 @@
          "builtins/num.rkt" 
          "builtins/str.rkt")
 (require (typed-in racket/base (number->string : (number -> string)))
-         (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a)))))
+         (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a))))
+         (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
+         (typed-in racket/base (car : (('a * 'b)  -> 'a)))
+         (typed-in racket/list (last : ((listof 'a) -> 'a)))
+         (typed-in racket/list (count : (('a -> boolean) (listof 'a) -> number))))
 
 
 
@@ -60,52 +64,117 @@
 ;; look through a  and find a list of all names from assignments and definition
 ;; if global scope, it only gets definitions, for local scope it gets
 ;; definitions and assignments
-(define (get-names [expr : PyExpr] [global? : boolean]) : (listof symbol)
+(define (get-names [expr : PyExpr] [global? : boolean] [env : IdEnv]) : (listof symbol)
   (type-case PyExpr expr
-   [PyIf (t b e) (get-names e global?)]
-   [PySeq (es) (foldl (lambda(e so-far) (append (get-names e global?) so-far))
+   [PyIf (t b e) (get-names e global? env)]
+   [PySeq (es) (foldl (lambda(e so-far) (append (get-names e global? env) so-far))
                       empty
                       es)]
    [PyId (id ctx) (list id)]
    [PyAssign (targets v) (if (not global?)
-                           (foldl (lambda(t so-far) (append (get-names t global?)
+                           (foldl (lambda(t so-far) (append (get-names t global? env)
                                                           so-far))
                                 empty
                                 targets)
                            empty)]
    [PyAugAssign (o t v) (if (not global?)
-                          (get-names t global?)
+                          (get-names t global? env)
                           empty)]
-   [PyExcept (t body) (get-names body global?)]
+   [PyExcept (t body) (get-names body global? env)]
    [PyTryExceptElseFinally (t e o f)
-                           (append (get-names t global?)
+                           (append (get-names t global? env)
                               (append (foldl (lambda(e so-far) (append
                                                                  (get-names e
-                                                                            global?)
+                                                                            global?
+                                                                            env)
                                                                  so-far))
                                              empty 
                                              e)
-                                (append (get-names o global?)
-                                  (get-names f global?))))]
+                                (append (get-names o global? env)
+                                  (get-names f global? env))))]
    [PyClass (name bases body) (list name)]
-   [PyBinOp (l o r) (append (get-names l global?)
-                      (get-names r global?))]
-   [PyUnaryOp (o operand) (get-names operand global?)]
+   [PyBinOp (l o r) (append (get-names l global? env)
+                      (get-names r global? env))]
+   [PyUnaryOp (o operand) (get-names operand global? env)]
    [PyFunc (name args body) (list name)]
    [PyFuncVarArg (name args sarg body) (list name)]
    [else empty]))
 
+(define (get-globals/nonlocals [expr : PyExpr] [global? : boolean]
+                               [env : IdEnv]) : IdEnv
+  (local [(define (rec-get-g/ns [exprs : (listof PyExpr)]
+                                [global? : boolean]
+                                [env : IdEnv]) : IdEnv
+            (cond
+              [(empty? exprs) env]
+              [else (rec-get-g/ns (rest exprs) global?
+                      (get-globals/nonlocals (first exprs) global? env))]))]
+    (type-case PyExpr expr
+      [PyIf (t b e) (get-globals/nonlocals e global? env)]
+      [PySeq (es) (rec-get-g/ns es global? env)]
+      [PyId (id ctx) (begin ;(display id) (display "\n")
+                            ;(display env) (display "\n")
+                     (local [(define type (lookup-idtype id env))]
+                            (begin
+                             ;(display "type: ") (display type) (display "\n\n")
+                       (if (some? type)
+                           env 
+                           (add-id id (if global?
+                                          (GlobalId)
+                                          (LocalId))
+                                   env)))))]
+      [PyGlobal (ids) (begin ;(display "global: ") (display ids) (display "\n")
+                      (add-ids ids (GlobalId) env))]
+      [PyNonlocal (ids) (begin ;(display "nonlocal: ") (display ids) (display "\n")
+                               ;(display env) (display "\n\n")
+                        (add-ids ids (NonlocalId) env))]
+      [PyAssign (targets v) (rec-get-g/ns targets global? env)]
+      [PyAugAssign (o t v) (get-globals/nonlocals v global? 
+                             (get-globals/nonlocals t global? env))]
+      [PyExcept (t body) (get-globals/nonlocals body global? env)]
+      [PyTryExceptElseFinally (t e o f)
+                (get-globals/nonlocals f global?
+                  (get-globals/nonlocals o global? 
+                    (rec-get-g/ns e global? 
+                      (get-globals/nonlocals t global? env))))]
+      [PyClass (name bases body)
+               (local [(define type (lookup-idtype name env))]
+                      (if (some? type)
+                          env
+                          (add-id name (LocalId) env)))]
+      [PyBinOp (l o r) (get-globals/nonlocals r global?
+                         (get-globals/nonlocals l global? env))]
+      [PyUnaryOp (o operand) (get-globals/nonlocals operand global? env)]
+      [PyFunc (name args body) (local [(define type (lookup-idtype name env))]
+                                 (if (some? type)
+                                     env 
+                                     (add-id name (if global?
+                                                      (GlobalId)
+                                                      (LocalId))
+                                             env)))]
+      [PyFuncVarArg (name args sarg body)
+                    (local [(define type (lookup-idtype name env))]
+                      (if (some? type)
+                          env
+                          (add-id name (if global?
+                                           (GlobalId)
+                                           (LocalId))
+                                  env)))]
+      [else env])))
+
+
 (define (desugar-pymodule [es : (listof PyExpr)] 
                           [global? : boolean]
                           [env : IdEnv]) : DesugarResult
-  (local [(define names  (get-names (PySeq es) global?))
+  (local [(define g/ns-env (get-globals/nonlocals (PySeq es) global? env))
+          (define names  (get-names (PySeq es) global? g/ns-env))
           (define prelude 
             (if (not (empty? names))
               (rec-desugar (PySeq (map (lambda (n) (PyAssign (list (PyId n 'Load))
                                                              (PyUndefined)))
                                        names))
-                           global? env)
-              (rec-desugar (PyPass) global? env)))
+                           global? g/ns-env)
+              (rec-desugar (PyPass) global? g/ns-env)))
           (define body (rec-desugar (PySeq es) global? (DResult-env prelude)))]
     (DResult
       (CModule
@@ -117,7 +186,6 @@
                      [global? : boolean]
                      [env : IdEnv]): ((listof CExpr) * IdEnv)
   (local [(define (rec-map-desugar exps g e)
-            (begin ;(display exps) (display "\n\n\n")
             (cond
               [(empty? exps) (values empty e)]
               [(cons? exps)
@@ -127,13 +195,15 @@
                  (values
                    (cons (DResult-expr first-r)
                          results)
-                   last-env))])))]
+                   last-env))]))]
     (rec-map-desugar exprs global? env)))
 
 ;; for the body of some local scope level like a class or function, hoist
 ;; all the assignments and defs to the top as undefineds
-(define (desugar-local-body [expr : PyExpr] [args : (listof symbol)] [env : IdEnv]) : DesugarResult
-  (local [(define names (get-names expr false))]
+(define (desugar-local-body [expr : PyExpr] [args : (listof symbol)]
+                            [env : IdEnv]) : DesugarResult
+  (local [(define g/ns-env (get-globals/nonlocals expr false empty))
+          (define names (get-names expr false g/ns-env))]
     (rec-desugar
       (PySeq (append 
                (if (not (empty? names))
@@ -144,7 +214,7 @@
                  (list (PyPass))) 
                (list expr)))
       false
-      (extract-globals env))))
+      g/ns-env)))
 
 (define (rec-desugar [expr : PyExpr] [global? : boolean] [env : IdEnv]) : DesugarResult 
   (begin ;(display expr) (display "\n\n")
@@ -160,7 +230,7 @@
     [PyAssign (targets value) 
               (local [(define-values (targets-r mid-env)
                         (map-desugar targets global? env))
-                     (define value-r (rec-desugar value global? mid-env))]
+                      (define value-r (rec-desugar value global? mid-env))]
                 (DResult
                   (foldl (lambda (t so-far) (CSeq so-far (CAssign t (DResult-expr value-r))))
                          (CAssign (first targets-r) (DResult-expr value-r))
@@ -170,9 +240,19 @@
     [PyNum (n) (DResult (make-builtin-num n) env)]
     [PyBool (b) (DResult (if b (CTrue) (CFalse)) env)]
     [PyStr (s) (DResult (make-builtin-str s) env)]
-    [PyId (x ctx) (DResult (CId x (LocalId)) env)]
-    [PyGlobal (ids) (DResult (CNone) (add-ids ids (GlobalId) env))]
-    [PyNonlocal (ids) (DResult (CNone) (add-ids ids (NonlocalId) env))]
+    [PyId (x ctx) (local [(define type (lookup-idtype x env))]
+                    (begin
+                      ;(display "desugar: ") (display x) (display ", ")
+                      ;(display type) (display "\n")
+                      ;(display env) (display "\n\n")
+                    (if (some? type)
+                        (DResult (CId x (some-v type)) env)
+                        (local [(define ty (if global?
+                                               (GlobalId)
+                                               (LocalId)))]
+                          (DResult (CId x ty) (add-id x ty env))))))]
+    [PyGlobal (ids) (DResult (CNone) env)]
+    [PyNonlocal (ids) (DResult (CNone) env)]
     [PyUndefined () (DResult (CUndefined) env)]  
 
     ; for now just desugar raise as error
@@ -331,7 +411,8 @@
              (merge-globals env (DResult-env body-r))))]
 
     [PyFuncVarArg (name args sarg body)
-                  (local [(define body-r (desugar-local-body body (append args (list sarg)) env))]
+                  (local [(define body-r 
+                            (desugar-local-body body (append args (list sarg)) env))]
                     (DResult
                       (CLet name (CNone)
                             (CAssign (CId name (LocalId))
@@ -342,31 +423,22 @@
               (local [(define value-r (rec-desugar value global? env))]
                      (DResult (CReturn (DResult-expr value-r)) (DResult-env value-r)))]
 
-    [PyDict (keys values) (local [(define-values (keys-r mid-env)
-                                    (map-desugar keys global? env))
-                                  (define-values (values-r last-env)
-                                    (map-desugar values global? mid-env))]
-                            (DResult
-                              (CDict (lists->hash keys-r values-r))
-                              last-env))]
+    [PyDict (keys values) 
+            (local [(define-values (keys-r mid-env) (map-desugar keys global? env))
+                    (define-values (values-r last-env) (map-desugar values global? mid-env))]
+              (DResult (CDict (lists->hash keys-r values-r)) last-env))]
 
     [PySet (elts) (local [(define-values (results last-env)
                             (map-desugar elts global? env))]
-                    (DResult
-                      (CSet results)
-                      last-env))]
+                    (DResult (CSet results) last-env))]
 
     [PyList (values) (local [(define-values (results last-env)
                                (map-desugar values global? env))]
-                       (DResult
-                         (CList results)
-                         last-env))]
+                       (DResult (CList results) last-env))]
 
     [PyTuple (values) (local [(define-values (results last-env)
                                 (map-desugar values global? env))]
-                        (DResult
-                          (CTuple results)
-                          last-env))]
+                        (DResult (CTuple results) last-env))]
 
     [PySubscript (left ctx slice)
                  (if (symbol=? ctx 'Load)
@@ -381,9 +453,7 @@
                                    (list (CId left-id (LocalId)) (DResult-expr slice-r))
                                    (none)))
                        (DResult-env slice-r)))
-                   (DResult
-                     (CNone)
-                     env))]
+                   (DResult (CNone) env))]
 
     [PyApp (fun args)
            (local [(define f (rec-desugar fun global? env))
@@ -476,14 +546,34 @@
 )))
 
 (define (desugar [expr : PyExpr]) : CExpr
-  (type-case DesugarResult (rec-desugar expr true (hash empty))
+  (type-case DesugarResult (rec-desugar expr true empty)
     [DResult (expr env) expr]))
 
 (define-type DesugarResult
    [DResult (expr : CExpr) (env : IdEnv)])
 
-(define (extract-globals [env : IdEnv]) env)
+(define (lookup-idtype [id : symbol] [env : IdEnv]) : (optionof IdType)
+  (local [(define matches (filter (lambda (p) (symbol=? (idpair-id p) id)) env))]
+    (cond
+      [(empty? matches) (none)]
+      [(= 1 (count (lambda (p) (GlobalId? (idpair-type p))) matches)) (some (GlobalId))]
+      [(= 1 (count (lambda (p) (NonlocalId? (idpair-type p))) matches)) (some (NonlocalId))]
+      [else (some (LocalId))])))
 
-(define (merge-globals [complete-env : IdEnv] [only-globals : IdEnv]) complete-env)
+(define (extract-globals [env : IdEnv]) : IdEnv
+  (filter (lambda (p) (GlobalId? (idpair-type p))) env))
 
-(define (add-ids [ids : (listof symbol)] [type : IdType] [env : IdEnv]) : IdEnv env)
+(define (merge-globals [complete-env : IdEnv] [only-globals : IdEnv])
+  (local [(define globals (extract-globals only-globals))
+          (define envs (map (lambda (g) (cons g complete-env)) globals))]
+    (if (cons? envs)
+        (last envs)
+        complete-env)))
+
+(define (add-ids [ids : (listof symbol)] [type : IdType] [env : IdEnv]) : IdEnv 
+  (local [(define envs (map (lambda (id) (add-id id type env)) ids))]
+    (last envs)))
+
+(define (add-id [id : symbol] [type : IdType] [env : IdEnv]) : IdEnv
+  (local [(define new-env (cons (idpair id type) env))]
+    new-env))

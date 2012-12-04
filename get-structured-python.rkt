@@ -249,6 +249,11 @@ structure that you define in python-syntax.rkt
      (PyGlobal
        (map string->symbol names))]
 
+    [(hash-table ('nodetype "Nonlocal")
+                 ('names names))
+     (PyNonlocal
+       (map string->symbol names))]
+
     [(list (hash-table (k v) ...) ..2)
      (PySeq (map get-structured-python pyjson))]
     

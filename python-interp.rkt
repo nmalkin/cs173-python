@@ -84,7 +84,9 @@
                                                                  l))
                                                  efun cenv 
                                                  (v*s*e-s sarg-r))) 
-                                             (bind-and-execute body argxs vararg argvs arges efun
+                                             (bind-and-execute body argxs
+                                                               vararg argvs
+                                                               arges efun
                                                                cenv sc)))]
                               (type-case Result result
                                 [v*s*e (vb sb eb) (v*s*e vnone sb env)]
@@ -106,11 +108,12 @@
                                     (if (< 0 (length exn?))
                                         (first exn?)
                                       (local [(define argvs (map v*s*e-v argvs-r))
-                                              ; bind the interpreted arguments to the constructor
+                                             ; bind the interpreted arguments to the constructor
                                               (define result 
                                                 (bind-and-execute body argxs vararg
                                                                   (cons o argvs)
-                                                                  (cons (CId 'init (LocalId)) arges)
+                                                                  (cons (CId 'init (LocalId)) 
+                                                                        arges)
                                                                   efun cenv sc))]
                                         (type-case Result result
                                           [v*s*e (vb sb eb) 
@@ -358,25 +361,63 @@
                        [Return (vi si envi) (return-exception envi si)]
                        [Exception (vi si envi) (Exception vi si envi)])]
 
-    [CId (x t) 
-         (let ([local-w (lookup-local x env)])
-                (if (some? local-w)
-                  (type-case CVal (fetch (some-v local-w) sto)
-                      [VUndefined () (mk-exception 'UnboundLocalError 
-                                            (string-append (symbol->string x)
-                                                           " is undefined in this scope")
-                                                           env sto)]
-                      [else (v*s*e (fetch (some-v local-w) sto) sto env)])
-                  (let ([full-w (lookup x env)]
-                        [name-error-str (string-append "name '" 
-                                                 (string-append (symbol->string x)
-                                                                "' is not defined"))])
-                    (if (some? full-w)
-                      (type-case CVal (fetch (some-v full-w) sto)
-                        [VUndefined () (mk-exception 'NameError name-error-str
-                                                     env sto)]
-                        [else (v*s*e (fetch (some-v full-w) sto) sto env)])
-                      (mk-exception 'NameError name-error-str env sto)))))]
+    [CId (x t)
+         (let ([result 
+         (type-case IdType t
+           [LocalId () 
+             (let ([local-w (lookup-local x env)])
+               (if (some? local-w)
+                 (type-case CVal (fetch (some-v local-w) sto)
+                   [VUndefined () (mk-exception 'UnboundLocalError 
+                                                (string-append (symbol->string x)
+                                                               " is undefined in this scope")
+                                                env sto)]
+                   [else (v*s*e (fetch (some-v local-w) sto) sto env)])
+                 (let ([full-w (lookup x env)]
+                       [name-error-str (string-append "name '" 
+                                                     (string-append (symbol->string x)
+                                                                    "' is not defined"))])
+                   (if (some? full-w)
+                     (type-case CVal (fetch (some-v full-w) sto)
+                       [VUndefined () (mk-exception 'NameError name-error-str env sto)]
+                       [else (v*s*e (fetch (some-v full-w) sto) sto env)])
+                     (mk-exception 'NameError name-error-str env sto)))))]
+           [NonlocalId ()
+             (local [(define nonlocal-w (lookup-nonlocal x env))
+                     (define name-error-str
+                       (string-append "free variable '"
+                                      (string-append (symbol->string x)
+                                                     (string-append 
+                                                       "' referenced before assignment "
+                                                       "in enclosing scope"))))]
+               (if (some? nonlocal-w)
+                 (local [(define nonlocal-val (fetch (some-v nonlocal-w) sto))]
+                   (type-case CVal nonlocal-val
+                     [VUndefined () (mk-exception 'NameError name-error-str env sto)]
+                     [else (v*s*e nonlocal-val sto env)]))
+                 (local [(define syntax-error-str
+                           (string-append "no binding for nonlocal '"
+                                          (string-append (symbol->string x)
+                                                         "' found")))]
+                   (mk-exception 'SyntaxError syntax-error-str env sto))))]
+           [GlobalId ()
+             (local [(define full-w (lookup x env))
+                     (define name-error-str
+                       (string-append "name '"
+                                      (string-append (symbol->string x)
+                                                     "' is not defined")))]
+               (if (some? full-w)
+                 (local [(define full-val (fetch (some-v full-w) sto))]
+                   (type-case CVal full-val
+                     [VUndefined () (mk-exception 'NameError name-error-str env sto)]
+                     [else (v*s*e full-val sto env)]))
+                 (mk-exception 'NameError name-error-str env sto)))])])
+             (if (symbol=? x 'x)
+                 (begin
+                   (display "id: ") (display x)
+                   (display ", val: ") (display (v*s*e-v result)) (display "\n")
+                   result)
+                 result))]
 
     [CObject (c mval) (v*s*e (VObject c mval (make-hash empty))
                              sto
