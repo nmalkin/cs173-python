@@ -86,9 +86,9 @@
                             (CReturn (CBuiltinPrim 'str-tuple
                                          (list
                                            (CId 'self (LocalId)))))))
-                  (def '__attr__
+                  (def '__getitem__
                      (CFunc (list 'self 'idx) (none)
-                            (CReturn (CBuiltinPrim 'strattr
+                            (CReturn (CBuiltinPrim 'str-getitem
                                          (list
                                            (CId 'self (LocalId))
                                            (CId 'idx (LocalId)))))))
@@ -232,7 +232,7 @@
                                           (string->list (MetaStr-s mval1))))))))
                     (hash empty)))))
 
-(define (strattr [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+(define (str-getitem [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
   ; handle slicing here?  
   (check-types args env sto 'str 'num
      (some (VObject 'str

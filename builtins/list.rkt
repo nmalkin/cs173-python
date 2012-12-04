@@ -53,13 +53,13 @@
                        (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'list-str
                                                      (list (CId 'self (LocalId)))))))
-                  (def '__attr__
+                  (def '__getitem__
                     (CFunc (list 'self 'idx) (none)
-                           (CReturn (CBuiltinPrim 'list-attr
+                           (CReturn (CBuiltinPrim 'list-getitem
                                                   (list
                                                    (CId 'self (LocalId))
                                                    (CId 'idx (LocalId)))))))
-                  (def '__setattr__
+                  (def '__setitem__
                     (CFunc (list 'self 'idx 'val) (none)
                            (CReturn (CBuiltinPrim 'list-setitem
                                                   (list
@@ -75,13 +75,13 @@
                                            (seq-ops (list
                                              (def 'li1
                                                   (CApp (CGetField (CId 'self (LocalId))
-                                                                   '__attr__)
+                                                                   '__getitem__)
                                                         (list (CId 'self (LocalId))
                                                               (CId 'idx (LocalId)))
                                                         (none)))
                                              (def 'li2
                                                   (CApp (CGetField (CId 'other (LocalId))
-                                                                   '__attr__)
+                                                                   '__getitem__)
                                                         (list (CId 'other (LocalId))
                                                               (CId 'idx (LocalId)))
                                                         (none)))
@@ -177,7 +177,7 @@
                          (contains (rest lst) val))]))])
    (some (contains self-list test))))
 
-(define (list-attr (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+(define (list-getitem (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   ; here we'll eventually need to support slicin' and dicin' bro
   (check-types args env sto 'list 'num
                (some 

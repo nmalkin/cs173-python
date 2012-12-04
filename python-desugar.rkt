@@ -183,7 +183,7 @@
     [PyAssign (targets value) 
               (type-case PyExpr (first targets) ; TODO: deal with multiple targets (ignoring all but the first one for now)
                          ; We handle two kinds of assignments.
-                         ; An assignment to a subscript is desugared as a __setattr__ call.
+                         ; An assignment to a subscript is desugared as a __setitem__ call.
                          [PySubscript (left ctx slice)
                                       (letrec ([desugared-target (rec-desugar left global? env)]
                                                [desugared-slice (rec-desugar slice global? (DResult-env desugared-target))]
@@ -191,7 +191,7 @@
                                                [target-id (new-id)])
                                         (DResult
                                             (CLet target-id (DResult-expr desugared-target)
-                                              (CApp (CGetField (CId target-id (LocalId)) '__setattr__)
+                                              (CApp (CGetField (CId target-id (LocalId)) '__setitem__)
                                                     (list (CId target-id (LocalId))
                                                           (DResult-expr desugared-slice)
                                                           (DResult-expr desugared-value))
@@ -438,7 +438,7 @@
                                 (CLet left-id 
                                       (DResult-expr left-r)
                                       (CApp (CGetField (CId left-id (LocalId))
-                                                       '__attr__)
+                                                       '__getitem__)
                                             (list (CId left-id (LocalId)) (DResult-expr slice-r))
                                             (none)))
                                 (DResult-env slice-r)))))]
