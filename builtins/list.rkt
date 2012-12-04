@@ -32,6 +32,12 @@
                               (CReturn (CBuiltinPrim 'list-cpy
                                                  (list 
                                                    (CId 'self (LocalId)))))))
+
+                  (def '__tuple__
+                       (CFunc (list 'self) (none)
+                              (CReturn (CBuiltinPrim 'list-tuple
+                                                     (list (CId 'self (LocalId)))))))
+
                   (def '__set__
                        (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'list-set
@@ -53,6 +59,13 @@
                                                   (list
                                                    (CId 'self (LocalId))
                                                    (CId 'idx (LocalId)))))))
+                  (def '__setattr__
+                    (CFunc (list 'self 'idx 'val) (none)
+                           (CReturn (CBuiltinPrim 'list-setitem
+                                                  (list
+                                                   (CId 'self (LocalId))
+                                                   (CId 'idx (LocalId))
+                                                   (CId 'val (LocalId)))))))
                   (def '__cmp__
                     (CFunc (list 'self 'other) (none)
                            (CLet 'listcmp (CNone)
@@ -148,6 +161,10 @@
   (check-types args env sto 'list
          (some (make-builtin-list (MetaList-v mval1)))))
 
+(define (list-tuple [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'list
+         (some (VObject 'tuple (some (MetaTuple (MetaList-v mval1))) (make-hash empty)))))
+
 (define (list-in [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
  (letrec ([self-list (MetaList-v (some-v (VObject-mval (first args))))]
           [test (second args)]
@@ -182,3 +199,9 @@
                     (some (VObject 'set
                                    (some (MetaSet (make-set values)))
                                    (hash empty))))))
+(define (list-setitem [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal) 
+  (check-types args env sto 'list 'num 'num
+               (some (make-builtin-list
+                       (list-replace (MetaNum-n mval2) 
+                                     (third args)
+                                     (MetaList-v mval1))))))

@@ -7,6 +7,7 @@
          "builtins/tuple.rkt"
          "builtins/dict.rkt"
          "builtins/set.rkt"
+         "builtins/num.rkt"
          "builtins/object.rkt"
          "builtins/bool.rkt"
          (typed-in racket/string (string-join : ((listof string) string -> string)))
@@ -49,16 +50,12 @@ primitives here.
                       [env : Env] [sto : Store]) : (optionof CVal)
   (case op
     ['num+ (check-types args env sto 'num 'num 
-                        (some (VObject 'num (some (MetaNum 
-                                                    (+ (MetaNum-n mval1) 
-                                                       (MetaNum-n mval2))))
-                                        (make-hash empty))))]
+                        (some (make-builtin-numv (+ (MetaNum-n mval1) 
+                                                   (MetaNum-n mval2)))))]
     ['num- (check-types args env sto 'num 'num 
-                        (some (VObject 'num (some (MetaNum 
-                                                    (- (MetaNum-n mval1) 
-                                                       (MetaNum-n mval2))))
-                                        (make-hash empty))))]
-    ['num* 
+                        (some (make-builtin-numv (- (MetaNum-n mval1) 
+                                                   (MetaNum-n mval2)))))]
+    ['num*
         (if (and (some? (VObject-mval (second args)))
               (MetaStr? (some-v (VObject-mval (second args)))))
           (builtin-prim 'str* (reverse args) env sto)
@@ -137,15 +134,19 @@ primitives here.
     ['strin (strin args env sto)]
     ['strattr (strattr args env sto)]
     ['strlist (strlist args env sto)]
+    ['str-tuple (str-tuple args env sto)]
+    ['strslice (strslice args env sto)]
 
     ;list
     ['list+ (list+ args env sto)]
     ['list-len (list-len args env sto)]
     ['list-in (list-in args env sto)]
     ['list-attr (list-attr args env sto)]
+    ['list-setitem (list-setitem args env sto)]
     ['list-str (list-str args env sto)]
     ['list-cpy (list-cpy args env sto)]
     ['list-set (list-set args env sto)]
+    ['list-tuple (list-tuple args env sto)]
 
     ;tuple
     ['tuple+ (tuple+ args env sto)]
@@ -155,6 +156,7 @@ primitives here.
     ['tuple-attr (tuple-attr args env sto)]
     ['tuple-str (tuple-str args env sto)]
     ['tuple-list (tuple-list args env sto)]
+    ['tuple-tuple (tuple-tuple args env sto)]
 
     ;dict
     ['dict-len (dict-len args env sto)]
@@ -168,6 +170,8 @@ primitives here.
     ['dict-values (dict-values args env sto)]
     ['dict-items (dict-items args env sto)]
     ['dict-attr (dict-attr args env sto)]
+    ['dict-setattr (dict-setattr args env sto)]
+    ['dict-delitem (dict-delitem args env sto)]
 
     ;set
     ['set-set (set-set args env sto)]

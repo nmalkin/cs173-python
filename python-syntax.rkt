@@ -22,6 +22,10 @@
   [PyExceptAs (types : (listof PyExpr)) (name : symbol) (body : PyExpr)]
   [PyTryExceptElseFinally (try : PyExpr) (except : (listof PyExpr))
                           (orelse : PyExpr) (finally : PyExpr)]
+
+  ;loops 
+  [PyWhile (test : PyExpr) (body : PyExpr) (orelse : PyExpr)]
+  [PyFor (target : PyExpr) (iter : PyExpr) (body : PyExpr)]
   
   ; pass
   [PyPass]
@@ -48,6 +52,8 @@
   [PyApp (fun : PyExpr) (args : (listof PyExpr))]
   [PyAppStarArg (fun : PyExpr) (args : (listof PyExpr)) (stararg : PyExpr)]
 
+  [PyDelete (targets : (listof PyExpr))]
+
   ;
   [PySubscript (left : PyExpr) (context : symbol) (slice : PyExpr)]
 
@@ -55,8 +61,12 @@
   [PyStr (s : string)]
   [PyDict (keys : (listof PyExpr)) (values : (listof PyExpr))]
   [PyList (values : (listof PyExpr))]
+  [PySlice (lower : PyExpr) (upper : PyExpr) (step : PyExpr)]
   [PyTuple (values : (listof PyExpr))]
   [PyUndefined]
   [PySet (elts : (listof PyExpr))]
+  [PyNone]
+  [PyBreak]
+
 )
 

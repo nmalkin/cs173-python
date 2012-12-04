@@ -169,12 +169,39 @@ structure that you define in python-syntax.rkt
                  ('ctx ctx))
      (PyDotField (get-structured-python value)
                  (string->symbol attr))]
+
+    [(hash-table ('nodetype "Slice")
+                 ('upper upper)
+                 ('lower lower)
+                 ('step step))
+     (PySlice (get-structured-python lower)
+              (get-structured-python upper)
+              (get-structured-python step))]
+
     
     [(hash-table ('nodetype "Dict")
                  ('values values)
                  ('keys keys))
      (PyDict (map get-structured-python keys)
              (map get-structured-python values))]
+
+    [(hash-table ('nodetype "While")
+                 ('test test)
+                 ('body body)
+                 ('orelse else))
+     (PyWhile (get-structured-python test)
+              (get-structured-python body)
+              (get-structured-python else))]
+
+    [(hash-table ('nodetype "For")
+                 ('target target)
+                 ('iter iter)
+                 ('body body)
+                 ('orelse else))
+     (PyFor (get-structured-python target)
+            (get-structured-python iter)
+            (get-structured-python body))]
+
 
     [(hash-table ('nodetype "Set")
                  ('elts elts))
@@ -218,6 +245,7 @@ structure that you define in python-syntax.rkt
            [orelse (get-structured-python else-expr)])
        (PyTryExceptElseFinally try excepts orelse (PyPass)))]
 
+    [(hash-table ('nodetype "Break")) (PyBreak)]
     [(hash-table ('nodetype "ExceptHandler")
                  ('type type)
                  ('name name)
@@ -254,6 +282,10 @@ structure that you define in python-syntax.rkt
      (PyNonlocal
        (map string->symbol names))]
 
+    [(hash-table ('nodetype "Delete")
+                 ('targets targets))
+     (PyDelete (map get-structured-python targets))]
+
     [(list (hash-table (k v) ...) ..2)
      (PySeq (map get-structured-python pyjson))]
     
@@ -262,7 +294,7 @@ structure that you define in python-syntax.rkt
 
     [(list) (PyPass)] 
     
-    [empty (PyPass)]
+    [empty (PyNone)]
 
     [_ (error 'parse "Haven't handled a case yet: ")])))
 

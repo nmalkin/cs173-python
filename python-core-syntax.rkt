@@ -26,6 +26,7 @@ ParselTongue.
   [CLet (x : symbol) (bind : CExpr) (body : CExpr)]
   [CApp (fun : CExpr) (args : (listof CExpr)) (stararg : (optionof CExpr))]
   [CFunc (args : (listof symbol)) (varargs : (optionof symbol)) (body : CExpr)]
+  [CWhile (test : CExpr) (body : CExpr) (orelse : CExpr)]
   [CReturn (value : CExpr)]
   [CPrim1 (prim : symbol) (arg : CExpr)]
   [CPrim2 (prim : symbol) (arg1 : CExpr) (arg2 : CExpr)]
@@ -39,6 +40,7 @@ ParselTongue.
                          (orelse : CExpr) (finally : CExpr)]
   [CExcept (types : (listof CExpr)) (name : (optionof symbol)) (body : CExpr)]
   [CUndefined]
+  [CBreak]
   [CModule (prelude : CExpr) (body : CExpr)])
 
 (define-type IdType
@@ -83,7 +85,8 @@ ParselTongue.
 (define-type Result
   [v*s*e (v : CVal) (s : Store) (e : Env)]
   [Return (v : CVal) (s : Store) (e : Env)]
-  [Exception (v : CVal) (s : Store) (e : Env)])
+  [Exception (v : CVal) (s : Store) (e : Env)]
+  [Break (s : Store) (e : Env)])
 
 (define-type-alias object-dict (hashof symbol Address))
 

@@ -221,6 +221,7 @@ that calls the primitive `print`.
         (bind 'Exception exception)
         (bind 'NameError (make-exception-class 'NameError))
         (bind 'TypeError (make-exception-class 'TypeError))
+        (bind 'ValueError (make-exception-class 'ValueError))
         (bind 'SyntaxError (make-exception-class 'SyntaxError))
         (bind 'AttributeError (make-exception-class 'AttributeError))
         (bind 'RuntimeError (make-exception-class 'RuntimeError))
@@ -228,6 +229,7 @@ that calls the primitive `print`.
         (bind 'UnboundLocalError (make-exception-class 'UnboundLocalError))
         (bind 'IndexError (make-exception-class 'IndexError))
         (bind 'ZeroDivisionError (make-exception-class 'ZeroDivisionError))
+        (bind 'StopIteration (make-exception-class 'StopIteration))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
@@ -243,6 +245,7 @@ that calls the primitive `print`.
            lib-functions)
       (list (bind 'all (CNone))
             (bind 'any (CNone))
+            (bind 'range (CNone))
             (bind 'filter (CNone)))
       empty empty empty))
 ;; these are builtin functions that we have written in actual python files which
@@ -256,6 +259,7 @@ that calls the primitive `print`.
                python-path))))
        (list "pylib/any.py"
              "pylib/all.py"
+             "pylib/range.py"
              "pylib/filter.py"
              "pylib/assertraises.py")))
              

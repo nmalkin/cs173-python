@@ -33,7 +33,7 @@
                                                      (list (CId 'self (LocalId)))))))
 
               (def 'update
-                   (CFunc (list 'self 'other) (none)
+                   (CFunc (list 'self) (some 'other)
                           (CReturn (CBuiltinPrim 'dict-update
                                                      (list (CId 'self (LocalId))
                                                            (CId 'other (LocalId)))))))
@@ -78,7 +78,22 @@
                    (CFunc (list 'self 'other) (none)
                           (CReturn (CBuiltinPrim 'dict-attr
                                                      (list (CId 'self (LocalId))
-                                                           (CId 'other (LocalId)))))))))))
+                                                           (CId 'other (LocalId)))))))
+
+              (def '__setattr__
+                   (CFunc (list 'self 'target 'value) (none)
+                          (CReturn (CBuiltinPrim 'dict-setattr
+                                                     (list (CId 'self (LocalId))
+                                                           (CId 'target (LocalId))
+                                                           (CId 'value (LocalId)))))))
+
+              (def '__delitem__
+                   (CFunc (list 'self 'slice) (none)
+                          (CReturn (CBuiltinPrim 'dict-delitem
+                                                     (list (CId 'self (LocalId))
+                                                           (CId 'slice (LocalId)))))))
+
+))))
 
 
 (define (dict-len (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
@@ -125,14 +140,17 @@
                  (some vnone))))))
 
 (define (dict-update (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
-  (check-types args env sto 'dict 'dict
+  (let ([extras (MetaTuple-v (some-v (VObject-mval (second args))))])
+    (if (= 1 (length extras))
+        (check-types args env sto 'dict
                (let ([target (MetaDict-contents mval1)]
-                     [extras (MetaDict-contents mval2)])
+                     [extras (MetaDict-contents (some-v (VObject-mval (first extras))))])
                  (begin
                    (map (lambda (pair)
                           (hash-set! target (car pair) (cdr pair)))
                         (hash->list extras))
-                   (some vnone)))))
+                   (some vnone))))
+        (some vnone))))
 
 (define (dict-eq (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'dict 'dict
@@ -193,3 +211,19 @@
                    mayb-val
                    (some vnone)))))
 
+(define (dict-setattr [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (letrec ([contents (MetaDict-contents mval1)]
+                        [target (second args)]
+                        [value (third args)])
+                 (begin
+                   (hash-set! contents target value)
+                   (some vnone)))))
+
+(define (dict-delitem [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'dict
+               (letrec ([contents (MetaDict-contents mval1)]
+                        [target (second args)])
+                 (begin
+                   (hash-remove! contents target)
+                   (some vnone)))))

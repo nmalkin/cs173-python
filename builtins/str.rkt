@@ -11,7 +11,9 @@
          (typed-in racket/base (make-string : (number char -> string)))
          (typed-in racket/base (string->list : (string -> (listof char))))
          (typed-in racket/base (char->integer : (char -> number)))
-         (typed-in racket/base (integer->char : (number -> char))))
+         (typed-in racket/base (abs : (number -> number)))
+         (typed-in racket/base (integer->char : (number -> char)))
+         (typed-in racket/base (andmap : ( ('a -> boolean) (listof 'a) -> boolean))))
 
 (define str-class : CExpr
   (CClass
@@ -73,9 +75,15 @@
                             (CReturn (CBuiltinPrim 'strlen
                                          (list
                                            (CId 'self (LocalId)))))))
+
                   (def '__list__
                      (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'strlist
+                                         (list
+                                           (CId 'self (LocalId)))))))
+                  (def '__tuple__
+                     (CFunc (list 'self) (none)
+                            (CReturn (CBuiltinPrim 'str-tuple
                                          (list
                                            (CId 'self (LocalId)))))))
                   (def '__attr__
@@ -83,26 +91,40 @@
                             (CReturn (CBuiltinPrim 'strattr
                                          (list
                                            (CId 'self (LocalId))
-                                           (CId 'idx (LocalId)))))))))))
+                                           (CId 'idx (LocalId)))))))
+                 (def '__slice__
+                    (CFunc (list 'self 'lower 'upper 'step) (none)
+                        (CReturn (CBuiltinPrim 'strslice
+                                    (list 
+                                      (CId 'self (LocalId))
+                                      (CId 'lower (LocalId))
+                                      (CId 'upper (LocalId))
+                                      (CId 'step (LocalId))))))))))) 
 
 (define (make-builtin-str [s : string]) : CExpr
   (CObject
    'str
    (some (MetaStr s))))
 
+(define (string->charlist [str : string]) : (listof CVal)
+  (map (lambda (s)
+               (VObject 'str
+                        (some (MetaStr (make-string 1 s)))
+                        (make-hash empty)))
+       (string->list str)))
+
 (define (strlist [args : (listof CVal)] [env : Env] [sto : Store])
   : (optionof CVal)
   (check-types args env sto 'str
                (some (VObject 'list
-                              (some (MetaList 
-                                      (map
-                                        (lambda(s)
-                                         (VObject 'str 
-                                                  (some (MetaStr (make-string 1 s)))
-                                                  (make-hash empty)))
-                                        (string->list (MetaStr-s mval1)))))
+                              (some (MetaList (string->charlist (MetaStr-s mval1))))
                               (make-hash empty)))))
-                                      
+
+(define (str-tuple [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'str
+               (some (VObject 'tuple
+                              (some (MetaTuple (string->charlist (MetaStr-s mval1))))
+                              (make-hash empty)))))
 
 (define (str+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'str 'str
@@ -220,4 +242,46 @@
                                            (MetaStr-s mval1)
                                            (MetaNum-n mval2)))))
                     (hash empty)))))
+;; compute a slice of a string, should have 4 args, the string and 3 nums for
+;; the start, end and step size of the slice
+(define (strslice [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+  (if (and (andmap (lambda(a) (VObject? a)) args)
+          (and (andmap (lambda(o) (some? (VObject-mval o))) args)
+               (and (MetaStr? (some-v (VObject-mval (first args))))
+                    (and (andmap (lambda(o) 
+                                   (or (MetaNum? (some-v (VObject-mval o)))
+                                       (MetaNone? (some-v (VObject-mval o)))))
+                                 (rest args))))))
+    (local [(define str (MetaStr-s (some-v (VObject-mval (first args)))))
+            (define step (if (MetaNum? (some-v (VObject-mval (fourth args))))
+                           (MetaNum-n (some-v (VObject-mval (fourth args))))
+                           1))
 
+            (define start-i (if (MetaNum? (some-v (VObject-mval (second args))))
+                              (MetaNum-n (some-v (VObject-mval (second args))))
+                              (if (> step 0)
+                                0
+                                (+ 1 (string-length str)))))
+
+            (define end-i (if (MetaNum? (some-v (VObject-mval (third args))))
+                              (MetaNum-n (some-v (VObject-mval (third args))))
+                              (if (> step 0)
+                                (+ 1 (string-length str))
+                                -1)))
+
+            (define indices (filter (lambda(n) (and (< n (string-length str))
+                                                    (>= n 0)))
+                              (build-list (abs (- end-i start-i))
+                                            (lambda(n) (+ (* n step) start-i)))))
+
+            (define char-list (if (> step 0)
+                                (string->list str)
+                                (string->list str)))]
+
+           (some (VObject 'str 
+                    (some 
+                      (MetaStr (list->string (map 
+                                             (lambda(i) (list-ref char-list i))
+                                             indices))))
+                    (make-hash empty))))
+    (none)))

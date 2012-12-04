@@ -40,6 +40,13 @@
           (hash-set! h "c" 3) 
           h)))
 
+(define (list-replace [i : number] [val : 'a] [l : (listof 'a)]) : (listof 'a)
+  (cond
+    [(empty? l) (error 'util "list-replace out of range")]
+    [(= 0 i) (cons val (rest l))]
+    [else (cons (first l) (list-replace (- i 1) val (rest l)))]))
+(test (list-replace 2 63 (list 1 2 3 4)) (list 1 2 63 4))
+
 (define (immutable-hash-copy h)
   (let ([r (hash empty)])
     (begin
@@ -55,6 +62,7 @@
 (define (def (name : symbol) (expr : CExpr)) : CExpr
   (CAssign (CId name (LocalId)) expr))
 
+;; the copypasta here is bad but we aren't clever enough with macros
 (define-syntax (check-types x)
   (syntax-case x ()
     [(check-types args env sto t1 body)
@@ -80,6 +88,30 @@
                  (if (and (some? mayb-mval1) (some? mayb-mval2))
                      (let ([mval1 (some-v mayb-mval1)]
                            [mval2 (some-v mayb-mval2)])
+                       body)
+                     (none)))
+               (none))))]
+    [(check-types args env sto t1 t2 t3 body)
+     (with-syntax ([mval1 (datum->syntax x 'mval1)]
+                   [mval2 (datum->syntax x 'mval2)]
+                   [mval3 (datum->syntax x 'mval3)])
+       #'(let ([arg1 (first args)]
+               [arg2 (second args)]
+               [arg3 (third args)])
+           (if (and (VObject? arg1) (VObject? arg2)
+                    (VObject? arg3)
+                    (object-is? arg1 t1 env sto)
+                    (object-is? arg2 t2 env sto)
+                    (object-is? arg3 t3 env sto))
+               (let ([mayb-mval1 (VObject-mval arg1)]
+                     [mayb-mval2 (VObject-mval arg2)]
+                     [mayb-mval3 (VObject-mval arg3)])
+                 (if (and (some? mayb-mval1) 
+                          (some? mayb-mval2)
+                          (some? mayb-mval3))
+                     (let ([mval1 (some-v mayb-mval1)]
+                           [mval2 (some-v mayb-mval2)]
+                           [mval3 (some-v mayb-mval3)])
                        body)
                      (none)))
                (none))))]))

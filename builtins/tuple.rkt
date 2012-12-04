@@ -2,6 +2,8 @@
 
 (require "../python-core-syntax.rkt")
 (require "../util.rkt"
+         "none.rkt"
+         "num.rkt"
          "list.rkt")
 
 (define tuple-class : CExpr
@@ -14,6 +16,29 @@
                                                   (list
                                                    (CId 'self (LocalId))
                                                    (CId 'other (LocalId)))))))
+
+                   (def '__init__
+                        (CFunc (list 'self) (some 'args)
+                          (CReturn
+                          (CIf ; Did we get any args?
+                            (CBuiltinPrim 'num=
+                                          (list
+                                            (CApp (CGetField (CId 'args (LocalId)) '__len__)
+                                                  (list (CId 'args (LocalId)))
+                                                  (none))
+                                            (CObject 'num (some (MetaNum 0)))))
+                            ; No. Return an empty tuple.
+                            (CTuple empty)
+                            ; Yes. Call __tuple__ on the first argument.
+                            (CLet 'first-arg
+                                  (CApp (CGetField (CId 'args (LocalId)) '__attr__)
+                                        (list (CId 'args (LocalId))
+                                              (CObject 'num (some (MetaNum 0))))
+                                        (none))
+                                  (CApp (CGetField (CId 'first-arg (LocalId)) '__tuple__)
+                                        (list (CId 'first-arg (LocalId)))
+                                        (none)))))))
+
                   (def '__mult__
                     (CFunc (list 'self 'other) (none)
                            (CReturn (CBuiltinPrim 'tuple*
@@ -38,6 +63,12 @@
                                          (list
                                            (CId 'self (LocalId)))))))
 
+                  (def '__tuple__
+                     (CFunc (list 'self) (none)
+                            (CReturn (CBuiltinPrim 'tuple-tuple
+                                         (list
+                                           (CId 'self (LocalId)))))))
+
                   (def '__str__
                        (CFunc (list 'self) (none)
                               (CReturn (CBuiltinPrim 'tuple-str
@@ -48,6 +79,80 @@
                                                   (list
                                                    (CId 'self (LocalId))
                                                    (CId 'idx (LocalId)))))))
+
+                  ;;; tuple comparisons - taken verbatim from list comparisons ;;;
+                  (def '__cmp__
+                    (CFunc (list 'self 'other) (none)
+                           (CLet 'listcmp (CNone)
+                             (seq-ops (list
+                               (def 'listcmp
+                                    (CFunc (list 'self 'other 'idx) (none)
+                                           (seq-ops (list
+                                             (def 'li1
+                                                  (CApp (CGetField (CId 'self (LocalId))
+                                                                   '__attr__)
+                                                        (list (CId 'self (LocalId))
+                                                              (CId 'idx (LocalId)))
+                                                        (none)))
+                                             (def 'li2
+                                                  (CApp (CGetField (CId 'other (LocalId))
+                                                                   '__attr__)
+                                                        (list (CId 'other (LocalId))
+                                                              (CId 'idx (LocalId)))
+                                                        (none)))
+                                             (CIf (CPrim2 'Is (CId 'li1 (LocalId)) (CNone))
+                                                  (CIf (CPrim2 'Is (CId 'li2 (LocalId)) (CNone))
+                                                       (CReturn (make-builtin-num 0))
+                                                       (CReturn (make-builtin-num -1)))
+                                                  (CIf (CPrim2 'Is (CId 'li2 (LocalId)) (CNone))
+                                                       (CReturn (make-builtin-num 1))
+                                           (seq-ops (list
+                                             (def 'cmpval
+                                                  (CApp (CGetField (CId 'li1 (LocalId))
+                                                                   '__cmp__)
+                                                        (list (CId 'li1 (LocalId))
+                                                              (CId 'li2 (LocalId)))
+                                                        (none)))
+                                             (CIf (CApp (CGetField (CId 'cmpval (LocalId))
+                                                                   '__eq__)
+                                                        (list (CId 'cmpval (LocalId))
+                                                              (make-builtin-num 0))
+                                                        (none))
+                                                  (seq-ops (list 
+                                                    (def 'nidx
+                                                         (CApp (CGetField (CId 'idx (LocalId))
+                                                                          '__add__)
+                                                               (list (CId 'idx (LocalId))
+                                                                     (make-builtin-num 1))
+                                                               (none)))
+                                                    (CReturn 
+                                                      (CApp (CId 'listcmp (LocalId))
+                                                          (list (CId 'self (LocalId))
+                                                                (CId 'other (LocalId))
+                                                                (CId 'nidx (LocalId)))
+                                                          (none)))))
+                                                  (CReturn (CId 'cmpval (LocalId))))))))))))
+                               (CReturn 
+                                 (CApp (CId 'listcmp (LocalId))
+                                     (list (CId 'self (LocalId))
+                                           (CId 'other (LocalId))
+                                           (make-builtin-num 0))
+                                     (none))))))))
+                  (def '__eq__
+                    (CFunc (list 'self 'other) (none)
+                           (seq-ops (list
+                                      (def '_cmpresult
+                                           (CApp (CGetField (CId 'self (LocalId)) '__cmp__)
+                                                 (list (CId 'self (LocalId))
+                                                       (CId 'other (LocalId)))
+                                                 (none)))
+                                      (CReturn (CApp (CGetField (CId '_cmpresult (LocalId))
+                                                                '__eq__)
+                                                     (list (CId '_cmpresult (LocalId))
+                                                           (make-builtin-num 0))
+                                                     (none)))))))
+
+                  ;;; end tuple comparisons ;;;
 ))))
 
 (define (make-builtin-tuple [l : (listof CVal)]) : CVal
@@ -61,6 +166,12 @@
   (check-types args env sto 'tuple
               (some 
                 (make-builtin-list (MetaTuple-v mval1)))))
+
+; returns the tuple itself
+; that way, tuple.__tuple__() "is" itself
+(define (tuple-tuple (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'tuple
+               (some (first args))))
 
 (define (tuple+ (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'tuple 'tuple
@@ -105,7 +216,9 @@
 (define (tuple-attr (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   ; TODO: slicing
   (check-types args env sto 'tuple 'num
-               (some (list-ref (MetaTuple-v mval1) (MetaNum-n mval2)))))
+               (some
+                 (try (list-ref (MetaTuple-v mval1) (MetaNum-n mval2))
+                      (lambda () vnone)))))
 
 (define (tuple-str (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'tuple

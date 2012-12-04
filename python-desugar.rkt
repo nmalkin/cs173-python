@@ -77,9 +77,6 @@
                                 empty
                                 targets)
                            empty)]
-   [PyAugAssign (o t v) (if (not global?)
-                          (get-names t global? env)
-                          empty)]
    [PyExcept (t body) (get-names body global? env)]
    [PyTryExceptElseFinally (t e o f)
                            (append (get-names t global? env)
@@ -198,6 +195,7 @@
                    last-env))]))]
     (rec-map-desugar exprs global? env)))
 
+
 ;; for the body of some local scope level like a class or function, hoist
 ;; all the assignments and defs to the top as undefineds
 (define (desugar-local-body [expr : PyExpr] [args : (listof symbol)]
@@ -216,6 +214,31 @@
       false
       g/ns-env)))
 
+(define (desugar-for [target : PyExpr] [iter : PyExpr] [body : PyExpr]
+                     [global? : boolean] [env : IdEnv]) : DesugarResult
+  (local [(define iter-pyid (PyId (new-id) 'Load))]
+     (rec-desugar
+       (PySeq
+         (list (PyAssign (list iter-pyid) (PyApp (PyDotField iter '__iter__) empty))
+           (PyWhile (PyBool true)
+                  (PySeq 
+                    (list 
+                       (PyAssign (list target) (PyNone))
+                       (PyTryExceptElseFinally
+
+                           (PyAssign (list target) 
+                                     (PyApp (PyDotField iter-pyid '__next__) empty))
+
+                           (list (PyExcept (list (PyId 'StopIteration 'Load))
+                                           (PyBreak)))
+                           (PyPass)
+                           (PyPass))
+                       body))
+                       (PyPass))))
+       global?
+       env)))
+
+
 (define (rec-desugar [expr : PyExpr] [global? : boolean] [env : IdEnv]) : DesugarResult 
   (begin ;(display expr) (display "\n\n")
     (type-case PyExpr expr
@@ -228,17 +251,44 @@
                     last-env))]
     [PyModule (es) (desugar-pymodule es global? env)]
     [PyAssign (targets value) 
-              (local [(define-values (targets-r mid-env)
-                        (map-desugar targets global? env))
-                      (define value-r (rec-desugar value global? mid-env))]
-                (DResult
-                  (foldl (lambda (t so-far) (CSeq so-far (CAssign t (DResult-expr value-r))))
-                         (CAssign (first targets-r) (DResult-expr value-r))
-                         (rest targets-r))
-                  (DResult-env value-r)))]
+              (type-case PyExpr (first targets) 
+                ; TODO: deal with multiple targets (ignoring all but the first one for now)
+                ; We handle two kinds of assignments.
+                ; An assignment to a subscript is desugared as a __setattr__ call.
+                [PySubscript (left ctx slice)
+                             (letrec ([desugared-target (rec-desugar left global? env)]
+                                      [desugared-slice 
+                                        (rec-desugar slice global?
+                                                     (DResult-env desugared-target))]
+                                      [desugared-value
+                                        (rec-desugar value global?
+                                                     (DResult-env desugared-slice))]
+                                      [target-id (new-id)])
+                               (DResult
+                                 (CLet target-id (DResult-expr desugared-target)
+                                       (CApp (CGetField (CId target-id (LocalId)) '__setattr__)
+                                             (list (CId target-id (LocalId))
+                                                   (DResult-expr desugared-slice)
+                                                   (DResult-expr desugared-value))
+                                             (none)))
+                                 (DResult-env desugared-value)))]
+                ; The others become a CAssign.
+                [else
+                  (local [(define-values (targets-r mid-env)
+                            (map-desugar targets global? env))
+                          (define value-r (rec-desugar value global? mid-env))]
+                         (DResult
+                           (foldl (lambda (t so-far)
+                                    (CSeq so-far (CAssign t (DResult-expr value-r))))
+                                  (CAssign (first targets-r) (DResult-expr value-r))
+                                  (rest targets-r))
+                           (DResult-env value-r)))
+                  ])]
 
     [PyNum (n) (DResult (make-builtin-num n) env)]
+    [PySlice (lower upper step) (error 'desugar "Shouldn't desugar slice directly")]
     [PyBool (b) (DResult (if b (CTrue) (CFalse)) env)]
+    [PyNone () (DResult (CNone) env)]
     [PyStr (s) (DResult (make-builtin-str s) env)]
     [PyId (x ctx) (local [(define type (lookup-idtype x env))]
                     (begin
@@ -441,19 +491,40 @@
                         (DResult (CTuple results) last-env))]
 
     [PySubscript (left ctx slice)
-                 (if (symbol=? ctx 'Load)
-                   (local [(define left-id (new-id))
-                           (define left-r (rec-desugar left global? env))
-                           (define slice-r (rec-desugar slice global? (DResult-env left-r)))]
-                     (DResult
-                       (CLet left-id 
-                             (DResult-expr left-r)
-                             (CApp (CGetField (CId left-id (LocalId))
-                                              '__attr__)
-                                   (list (CId left-id (LocalId)) (DResult-expr slice-r))
-                                   (none)))
-                       (DResult-env slice-r)))
-                   (DResult (CNone) env))]
+      (cond
+        [(symbol=? ctx 'Load)
+         (local [(define left-id (new-id))
+                 (define left-r (rec-desugar left global? env))]
+                (if (PySlice? slice)
+                  (local [(define slice-low (rec-desugar (PySlice-lower slice) global? env))
+                          (define slice-up (rec-desugar (PySlice-upper slice) global? env))
+                          (define slice-step (rec-desugar (PySlice-step slice) global? env))]
+                    (DResult
+                      (CLet left-id
+                            (DResult-expr left-r)
+                            (CApp (CGetField (CId left-id (LocalId))
+                                             '__slice__)
+                                  (list 
+                                    (CId left-id (LocalId))
+                                    (DResult-expr slice-low)
+                                    (DResult-expr slice-up)
+                                    (DResult-expr slice-step))
+                                  (none)))
+                      (DResult-env slice-step)))
+                  (local [(define slice-r (rec-desugar slice global? (DResult-env left-r)))] 
+                         (DResult 
+                    (CLet left-id 
+                          (DResult-expr left-r)
+                          (CApp (CGetField (CId left-id (LocalId))
+                                           '__attr__)
+                                (list (CId left-id (LocalId)) (DResult-expr slice-r))
+                                (none)))
+                    (DResult-env slice-r)))))]
+        [(symbol=? ctx 'Store)
+         (error 'desugar "bad syntax: PySubscript has context 'Store' outside a PyAssign")]
+        [else (error 'desugar "unrecognized context in PySubscript")])]
+
+    [PyBreak () (DResult (CBreak) env)]
 
     [PyApp (fun args)
            (local [(define f (rec-desugar fun global? env))
@@ -521,6 +592,17 @@
                            (none)
                            (DResult-expr body-r))
                   (DResult-env body-r)))]
+    
+    [PyWhile (test body orelse)
+             (local [(define test-r (rec-desugar test global? env))
+                     (define body-r (rec-desugar body global? (DResult-env test-r)))
+                     (define orelse-r (rec-desugar orelse global? (DResult-env body-r)))]
+             (DResult 
+                 (CWhile (DResult-expr test-r)
+                         (DResult-expr body-r)
+                         (DResult-expr orelse-r))
+                 (DResult-env orelse-r)))]
+    [PyFor (target iter body) (desugar-for target iter body global? env)]
 
     [PyExceptAs (types name body)
                 (local [(define-values (types-r mid-env)
@@ -543,6 +625,22 @@
     ; XXX: target is interpreted twice, independently.
     ; Is there any case where this might cause problems?
 
+    [PyDelete (targets)
+              (let ([target (first targets)]) ; TODO: handle deletion of more than one target
+                (type-case PyExpr target
+                  [PySubscript (left ctx slice)
+                    (letrec ([desugared-target (rec-desugar left global? env)]
+                             [desugared-slice (rec-desugar slice global?
+                                                           (DResult-env desugared-target))]
+                             [target-id (new-id)])
+                      (DResult
+                        (CLet target-id (DResult-expr desugared-target)
+                              (CApp (CGetField (CId target-id (LocalId)) '__delitem__)
+                                    (list (CId target-id (LocalId))
+                                          (DResult-expr desugared-slice))
+                                    (none)))
+                        (DResult-env desugared-slice)))]
+                  [else (error 'desugar "We don't know how to delete identifiers yet.")]))]
 )))
 
 (define (desugar [expr : PyExpr]) : CExpr
