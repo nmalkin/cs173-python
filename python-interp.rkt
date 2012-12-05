@@ -20,9 +20,17 @@
          (typed-in racket/base (raise-user-error : (string -> 'a)))
          (typed-in racket/base (ormap : (('a -> boolean) (listof 'a) -> 'a)))
          (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
-         (typed-in racket/base (car : (('a * 'b)  -> 'a)))
-         (typed-in racket/base (cdr : (('a * 'b)  -> 'b))))
+         (typed-in racket/base (car : (('a * 'b) -> 'a)))
+         (typed-in racket/base (cdr : (('a * 'b) -> 'b)))
+         (typed-in racket/list (last : ((listof 'a) -> 'a)))
+         (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof'a))))
+         (typed-in racket/list (drop-right : ((listof 'a) number -> (listof 'a))))
+         (typed-in racket/list (drop : ((listof 'a) number -> (listof 'a))))
+         (typed-in racket/list (take : ((listof 'a) number -> (listof 'a))))
+         )
 
+(define (append3 a b c)
+  (append a (append b c)))
 
 ;; interp-cascade, interprets a list of expressions with an initial store,
 ;; environment and produces the list of results and the final environment and
@@ -200,7 +208,6 @@
                              tsto
                              tenv
                              (some (first exn?)))
-                     (begin ;(display (map v*s*e-v except-types-results)) (display "\n\n\n")
                      (local [(define actual-except-types
                                (if (and (> (length except-types-results) 0)
                                         (VObject? (v*s*e-v (first except-types-results)))
@@ -241,7 +248,7 @@
                                             tsto
                                             tenv
                                             (none))
-                                    (find-match type (rest exps) tsto tenv)))))))]))
+                                    (find-match type (rest exps) tsto tenv))))))]))
           (define-values (match? hsto henv exn?) (find-match exn-type excepts sto env))]
 
     ; we might have found a matching except clause
@@ -393,20 +400,25 @@
 
     ;; deal with pythonic scope here
     ;; only for ids!
-    [CAssign (t v) (begin ;(display "assign: ") (display t) (display " ")
-                          ;(display v) (display "\n")
-             (type-case Result (interp-env v env sto)
+    [CAssign (t v) (type-case Result (interp-env v env sto)
                      [v*s*e (vv sv venv)
+                            (begin 
+                              ;(if (and (CId? t) (symbol=? (CId-x t) 'x))
+                              ;    (begin
+                              ;      (display "assign: ") (display t) (display " ")
+                              ;      (display vv) (display "\n")
+                              ;      (display env) (display "\n\n"))
+                              ;    (display ""))
                             (type-case CExpr t
                               [CId (x type) (assign-to-id t vv venv sv)]
                               [CGetField (o a) (assign-to-field o a vv venv sv)]
                               [else (mk-exception 'SyntaxError
                                                   "can't assign to literals"
                                                   venv
-                                                  sv)])]
+                                                  sv)]))]
                      [Return (vv sv ev) (return-exception ev sv)]
                      [Break (sv ev) (break-exception ev sv)]
-                     [Exception (vv sv ev) (Exception vv sv ev)]))]
+                     [Exception (vv sv ev) (Exception vv sv ev)])]
     
     [CError (e) (type-case Result (interp-env e env sto)
                   [v*s*e (ve se ee)
@@ -601,21 +613,49 @@
     ;[else (error 'interp "haven't implemented a case yet")]))
 
 (define (assign-to-id id v e s)
-  (type-case (optionof Address) (hash-ref (first e) (CId-x id)) 
-    [some (w) (begin 
-               (v*s*e vnone
-                      (hash-set s w v) 
-                      (cons 
-                        (hash-set (first e)
-                                  (CId-x id) w)
-                        (rest e))))] 
-    [none () (let ([w (new-loc)]) 
-               (begin 
-                (v*s*e vnone
-                       (hash-set s w v) 
-                       (cons 
-                         (hash-set (first e) (CId-x id) w)
-                         (rest e)))))]))
+  (local [(define-values (before scope after error)
+            (type-case IdType (CId-type id)
+              [GlobalId () (values (drop-right e 1) (last e) empty (none))]
+              [NonlocalId ()
+                (local [(define (find-scope-level [x : symbol] [env : Env] [idx : number])
+                          (cond
+                            [(empty? (rest env)) (none)]
+                            [else (if (some? (hash-ref (first env) x))
+                                      (some idx)
+                                      (find-scope-level x (rest env) (add1 idx)))]))
+                        (define level-idx (find-scope-level (CId-x id) (rest e) 1))]
+                  (if (none? level-idx)
+                      (values empty (hash empty) empty
+                              (some
+                                (mk-exception 'SyntaxError
+                                   (string-append "no binding for nonlocal '"
+                                                  (string-append (symbol->string (CId-x id))
+                                                                 "' found"))
+                                   e s)))
+                       (local [(define-values (left right)
+                                 (values (take e (some-v level-idx))
+                                         (drop e (some-v level-idx))))]
+                        (begin ;(display "left: ") (display left) (display "\n")
+                               ;(display "right: ") (display right) (display "\n")
+                              (values left (first right) (rest right) (none))))))]
+              [LocalId () (values empty (first e) (rest e) (none))]))]
+    (if (some? error)
+        (some-v error)
+        (local [(define mayb-w (hash-ref scope (CId-x id)))
+                (define w (if (some? mayb-w) (some-v mayb-w) (new-loc)))]
+          (begin 
+            ;(if (symbol=? 'x (CId-x id))
+            ;  (begin
+            ;     (display scope) (display "\n")
+            ;     (display w) (display "\n\n"))
+            ;  (display ""))
+          (v*s*e vnone
+                 (hash-set s w v) 
+                 (append3
+                   before
+                   (list (hash-set scope 
+                             (CId-x id) w))
+                   after)))))))
 
 ;; handles lookup chain for function calls on objects
 ;; looks in object dict, then class dict, then base class dicts, then default class
