@@ -12,8 +12,6 @@
          (typed-in racket/list (last : ((listof 'a) -> 'a)))
          (typed-in racket/list (count : (('a -> boolean) (listof 'a) -> number))))
 
-
-
 (define (desugar-boolop [op : symbol] [values : (listof PyExpr)]
                         [global? : boolean]
                         [env : IdEnv]) : DesugarResult
@@ -252,9 +250,8 @@
     [PyModule (es) (desugar-pymodule es global? env)]
     [PyAssign (targets value) 
               (type-case PyExpr (first targets) 
-                ; TODO: deal with multiple targets (ignoring all but the first one for now)
-                ; We handle two kinds of assignments.
-                ; An assignment to a subscript is desugared as a __setattr__ call.
+                ; We handle three kinds of assignments.
+                ; An assignment to a subscript is desugared as a __setitem__ call.
                 [PySubscript (left ctx slice)
                              (letrec ([desugared-target (rec-desugar left global? env)]
                                       [desugared-slice 
@@ -272,6 +269,26 @@
                                                    (DResult-expr desugared-value))
                                              (none)))
                                  (DResult-env desugared-value)))]
+                ; An assignment to a tuple is desugared as multiple __setitem__ calls.
+                [PyTuple (vals)
+                  (local [(define-values (targets-r mid-env) (map-desugar vals global? env))
+                          (define value-r (rec-desugar value global? mid-env))
+                          (define assigns
+                            (map2 (λ (t n) 
+                                     (CAssign t (CApp
+                                                  (CGetField (CId '$tuple_result (LocalId)) 
+                                                             '__getitem__)
+                                                  (list (CId '$tuple_result (LocalId))
+                                                        (make-builtin-num n))
+                                                  (none))))
+                                  targets-r
+                                  (build-list (length targets-r) identity)))]
+                    (DResult
+                      (CLet '$tuple_result (DResult-expr value-r) 
+                            (foldl (λ (a so-far) (CSeq so-far a))
+                                   (first assigns) (rest assigns)))
+                      (DResult-env value-r)))]
+
                 ; The others become a CAssign.
                 [else
                   (local [(define-values (targets-r mid-env)

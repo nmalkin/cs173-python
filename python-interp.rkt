@@ -502,7 +502,7 @@
                 [result (interp-env bind env sto)])
             (interp-let x result body))]
 
-    [CApp (fun arges sarg)
+    [CApp (fun arges sarg) 
           (interp-capp fun
                        arges
                        (if (none? sarg)
@@ -734,7 +734,15 @@
 
 
         [(or (empty? args) (empty? vals))
-         (values ext sto (some (mk-exception 'TypeError "Arity mismatch" env
+         (values ext sto (some (mk-exception 'TypeError 
+                                             (string-join
+                                               (list "Arity mismatch: "
+                                                     "expected "
+                                                     (to-string args)
+                                                     ", received "
+                                                     (to-string vals))
+                                               "")
+                                             env
                                              sto)))]
         [(and (cons? args) (cons? vals))
          (let ([val (first vals)]
