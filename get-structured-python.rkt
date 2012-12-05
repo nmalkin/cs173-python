@@ -150,6 +150,9 @@ structure that you define in python-syntax.rkt
                (map (lambda(arg) 
                       (string->symbol (hash-ref arg 'arg))) 
                     (hash-ref args 'args)) 
+               (map (lambda(arg) 
+                      (get-structured-python arg))
+                    (hash-ref args 'defaults)) 
              (get-structured-python body))
 
        (PyFuncVarArg (string->symbol name) 
