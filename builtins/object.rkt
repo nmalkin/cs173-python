@@ -32,6 +32,7 @@
                            ;TODO: MAKE THIS AN EXCEPTION
                            (CError (CStr "NotImplemented"))))
 
+
               (def '__gt__
                     (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult (LocalId))

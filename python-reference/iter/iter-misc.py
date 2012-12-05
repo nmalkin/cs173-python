@@ -13,7 +13,6 @@ def check_iterator(it, seq):
 def check_for_loop(expr, seq):
     res = []
     for val in expr:
-        print(val)
         res.append(val)
     ___assertEqual(res, seq)
 
@@ -25,4 +24,5 @@ check_for_loop(iter("abcde"), ["a", "b", "c", "d", "e"])
 dict = {}
 for i in range(10):
     dict[i] = None
+
 check_for_loop(dict, list(dict.keys()))

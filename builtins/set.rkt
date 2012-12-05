@@ -10,6 +10,7 @@
   (typed-in racket/set (set-member? : (set? 'a -> boolean)))
   (typed-in racket/set (set-subtract : (set? set? -> set?)))
   (typed-in racket/set (set-intersect : (set? set? -> set?)))
+  (typed-in racket/set (set->list : (set? -> (listof 'a))))
   (typed-in racket/set (set-union : (set? set? -> set?)))
   (typed-in racket/set (set-symmetric-difference : (set? set? -> set?)))
 )
@@ -67,6 +68,17 @@
                                                            (CId 'other))))))
               |#
 
+              (def '__iter__
+                   (CFunc (list 'self) (none)
+                       (CReturn (CApp (CGetField (CId 'SeqIter (LocalId)) '__init__)
+                                      (list (CObject 'SeqIter (none)) 
+                                            (CApp (CGetField (CId 'self
+                                                                  (LocalId))
+                                                             '__list__)
+                                                  (list (CId 'self
+                                                             (LocalId)))
+                                                  (none))) 
+                                      (none)))))
               (def '__in__
                 (CFunc (list 'self 'other) (none)
                        (CReturn (CBuiltinPrim 'set-in
@@ -105,6 +117,10 @@
                        (CReturn (CBuiltinPrim 'set-xor
                                               (list (CId 'self (LocalId))
                                                     (CId 'other (LocalId)))))))
+              (def '__list__
+                (CFunc (list 'self) (none)
+                       (CReturn (CBuiltinPrim 'set-list
+                                              (list (CId 'self (LocalId)))))))
 ))))
 
 ; returns a copy of this set
@@ -114,6 +130,11 @@
                     (some (VObject 'set
                                    (some (MetaSet elts))
                                    (hash empty))))))
+
+(define (set-list (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
+  (check-types args env sto 'set
+    (some (VObject 'list (some (MetaList (set->list (MetaSet-elts mval1))))
+             (hash empty)))))
 
 (define (set-len (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)
   (check-types args env sto 'set

@@ -183,6 +183,7 @@ primitives here.
     ['set-and (set-and args env sto)]
     ['set-or (set-or args env sto)]
     ['set-xor (set-xor args env sto)]
+    ['set-list (set-list args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]

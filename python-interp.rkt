@@ -330,7 +330,7 @@
                                       lst))])
              (begin
                (interp-pairs (hash->list contents))
-               (v*s*e (VObject 'dict
+               (v*s*e (VObject '$dict
                                 (some (MetaDict interped-hash))
                                 (make-hash empty))
                       sto env)))]
@@ -637,8 +637,7 @@
 
 
         [(or (empty? args) (empty? vals))
-         (values ext sto (some (mk-exception 'TypeError "Arity mismatch" env
-                                             sto)))]
+         (values ext sto (some (mk-exception 'TypeError "Arity mismatch" env sto)))]
         [(and (cons? args) (cons? vals))
          (let ([val (first vals)]
                [where -1]

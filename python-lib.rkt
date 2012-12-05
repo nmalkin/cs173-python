@@ -205,7 +205,10 @@ that calls the primitive `print`.
         (bind 'str str-class)
         (bind 'list list-class)
         (bind 'tuple tuple-class)
-        (bind 'dict dict-class)
+        ; this is a hack because one test overrides the dict name, 
+        ; we should do this $ thing for all builtin names for this reason
+        (bind '$dict dict-class) 
+        (bind 'dict (CId '$dict (LocalId)))
         (bind 'bool bool-class)
         (bind 'set set-class)
         (bind 'len len-lambda)
