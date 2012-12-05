@@ -120,7 +120,7 @@
 ;; subclass of that one 
 (define (object-is? [o : CVal] [c : symbol] [env : Env] [s : Store]) : boolean
   (cond
-    [(symbol=? (VObject-antecedent o) 'none) false]
+    [(symbol=? (VObject-antecedent o) 'no-super) false]
     [(symbol=? (VObject-antecedent o) c) true]
     [else (object-is?
             (fetch (some-v (lookup (VObject-antecedent o) env)) s)

@@ -147,6 +147,7 @@ primitives here.
     ['list-cpy (list-cpy args env sto)]
     ['list-set (list-set args env sto)]
     ['list-tuple (list-tuple args env sto)]
+    ['list-append (list-append args env sto)]
 
     ;tuple
     ['tuple+ (tuple+ args env sto)]
@@ -182,6 +183,7 @@ primitives here.
     ['set-and (set-and args env sto)]
     ['set-or (set-or args env sto)]
     ['set-xor (set-xor args env sto)]
+    ['set-list (set-list args env sto)]
 
     ;object 
     ['obj-str (obj-str args)]

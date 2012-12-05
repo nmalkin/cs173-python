@@ -24,4 +24,5 @@ check_for_loop(iter("abcde"), ["a", "b", "c", "d", "e"])
 dict = {}
 for i in range(10):
     dict[i] = None
+
 check_for_loop(dict, list(dict.keys()))

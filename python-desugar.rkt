@@ -10,7 +10,9 @@
          (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
          (typed-in racket/base (car : (('a * 'b)  -> 'a)))
          (typed-in racket/list (last : ((listof 'a) -> 'a)))
-         (typed-in racket/list (count : (('a -> boolean) (listof 'a) -> number))))
+         (typed-in racket/list (count : (('a -> boolean) (listof 'a) -> number)))
+         (typed-in racket/list (take : ((listof 'a) number -> (listof 'a))))
+         (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a)))))
 
 (define (desugar-boolop [op : symbol] [values : (listof PyExpr)]
                         [global? : boolean]
@@ -64,7 +66,8 @@
 ;; definitions and assignments
 (define (get-names [expr : PyExpr] [global? : boolean] [env : IdEnv]) : (listof symbol)
   (type-case PyExpr expr
-   [PyIf (t b e) (get-names e global? env)]
+   [PyIf (t b e) (append (get-names b global? env)
+                         (get-names e global? env))]
    [PySeq (es) (foldl (lambda(e so-far) (append (get-names e global? env) so-far))
                       empty
                       es)]
@@ -91,7 +94,7 @@
    [PyBinOp (l o r) (append (get-names l global? env)
                       (get-names r global? env))]
    [PyUnaryOp (o operand) (get-names operand global? env)]
-   [PyFunc (name args body) (list name)]
+   [PyFunc (name args defargs body) (list name)]
    [PyFuncVarArg (name args sarg body) (list name)]
    [else empty]))
 
@@ -140,7 +143,7 @@
       [PyBinOp (l o r) (get-globals/nonlocals r global?
                          (get-globals/nonlocals l global? env))]
       [PyUnaryOp (o operand) (get-globals/nonlocals operand global? env)]
-      [PyFunc (name args body) (local [(define type (lookup-idtype name env))]
+      [PyFunc (name args defargs body) (local [(define type (lookup-idtype name env))]
                                  (if (some? type)
                                      env 
                                      (add-id name (if global?
@@ -323,7 +326,11 @@
 
     ; for now just desugar raise as error
     ; TODO: implement real exceptions
-    [PyRaise (expr) (local [(define expr-r (rec-desugar expr global? env))]
+    [PyRaise (expr) (local [(define expr-r (if (PyId? expr)
+                                             ;;handle the implicit construction case
+                                             (rec-desugar (PyApp expr empty)
+                                                          global? env) 
+                                             (rec-desugar expr global? env)))]
                             (DResult
                               (CRaise 
                                 (if (PyPass? expr)
@@ -468,13 +475,39 @@
                            (DResult-expr rbody)))
                     (DResult-env rbody)))]
     
-    [PyFunc (name args body)
+    [PyFunc (name args defargs body)
+            (if (> (length defargs) 0)
+              (local [(define last-arg (first (reverse args)))]
+                (rec-desugar
+                  ; assuming 1 defarg for now, generalize later
+                    (PyFuncVarArg name (take args (- (length args) 1))
+                            'stararg 
+                            (PySeq
+                              (list
+                                  (PyIf (PyCompOp (PyApp
+                                                    (PyDotField (PyId 'stararg 'Load)
+                                                              '__len__)
+                                                    empty)
+                                                  (list 'Gt)
+                                                  (list (PyNum 0)))
+                                        (PyAssign (list (PyId last-arg 'Load))
+                                                  (PySubscript (PyId 'stararg 'Load)
+                                                               'Load
+                                                               (PyNum 0)))
+                                        (PyAssign (list (PyId last-arg 'Load))
+                                                  (first (reverse defargs))))
+                                   body))) 
+                    global? 
+                    env))
+
+
+
             (local [(define body-r (desugar-local-body body args env))]
              (DResult
                (CLet name (CNone)
                      (CAssign (CId name (LocalId))
                               (CFunc args (none) (DResult-expr body-r))))
-             (merge-globals env (DResult-env body-r))))]
+             (merge-globals env (DResult-env body-r)))))]
 
     [PyFuncVarArg (name args sarg body)
                   (local [(define body-r 

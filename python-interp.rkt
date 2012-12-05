@@ -96,11 +96,12 @@
                                                                  (lambda(x)
                                                                    (make-builtin-num 0))
                                                                  l))
-                                                 efun cenv 
+                                                 (v*s*e-e sarg-r)
+                                                 cenv 
                                                  (v*s*e-s sarg-r))) 
                                              (bind-and-execute body argxs
                                                                vararg argvs
-                                                               arges efun
+                                                               arges ec
                                                                cenv sc)))]
                               (type-case Result result
                                 [v*s*e (vb sb eb) (v*s*e vnone sb env)]
@@ -129,7 +130,7 @@
                                                                   (cons o argvs)
                                                                   (cons (CId 'init (LocalId)) 
                                                                         arges)
-                                                                  efun cenv sc))]
+                                                                  ec cenv sc))]
                                         (type-case Result result
                                           [v*s*e (vb sb eb) 
                                                  (v*s*e 
@@ -355,7 +356,7 @@
                                       lst))])
              (begin
                (interp-pairs (hash->list contents))
-               (v*s*e (VObject 'dict
+               (v*s*e (VObject '$dict
                                 (some (MetaDict interped-hash))
                                 (make-hash empty))
                       sto env)))]
@@ -404,10 +405,10 @@
                      [v*s*e (vv sv venv)
                             (begin 
                               ;(if (and (CId? t) (symbol=? (CId-x t) 'x))
-                              ;    (begin
-                              ;      (display "assign: ") (display t) (display " ")
-                              ;      (display vv) (display "\n")
-                              ;      (display env) (display "\n\n"))
+                                  (begin
+                                    (display "assign: ") (display t) (display " ")
+                                    (display vv) (display "\n")
+                                    (display env) (display "\n\n"))
                               ;    (display ""))
                             (type-case CExpr t
                               [CId (x type) (assign-to-id t vv venv sv)]
@@ -493,7 +494,7 @@
                    result)
                  result))]
 
-    [CObject (c mval) (v*s*e (VObject c mval (make-hash empty))
+    [CObject (c mval) (v*s*e (VObject c mval (hash empty))
                              sto
                              env)]
 

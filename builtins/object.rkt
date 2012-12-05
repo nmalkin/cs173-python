@@ -10,7 +10,7 @@
 (define object-class
   (CClass 
     'object
-    'none 
+    'no-super
     (seq-ops (list
                (def '__init__ 
                     (CFunc (list 'self) (none)
@@ -32,7 +32,8 @@
                            ;TODO: MAKE THIS AN EXCEPTION
                            (CError (CStr "NotImplemented"))))
 
-               (def '__gt__
+
+              (def '__gt__
                     (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult (LocalId))
                                     (CApp (CGetField (CId 'self (LocalId)) '__cmp__)
@@ -63,6 +64,12 @@
                                             (list (CId '_cmpresult (LocalId))
                                                   (make-builtin-num 0))
                                             (none))))))
+              (def '__iter__
+                   (CFunc (list 'self) (none)
+                       (CReturn (CApp (CGetField (CId 'SeqIter (LocalId)) '__init__)
+                                      (list (CObject 'SeqIter (none)) 
+                                            (CId 'self (LocalId)))
+                                      (none)))))
                (def '__gte__
                     (CFunc (list 'self 'other) (none)
                            (CSeq (CAssign (CId '_cmpresult (LocalId))

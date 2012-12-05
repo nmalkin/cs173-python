@@ -160,27 +160,26 @@ that calls the primitive `print`.
         (list (CId 'self (LocalId)))
         (none)))))
 
-#|
-(define int-lambda
+(define iter-lambda
   (CFunc (list 'self) (none)
     (CReturn
       (CApp
         (CGetField
           (CId 'self (LocalId))
-          '__int__)
+          '__iter__)
         (list (CId 'self (LocalId)))
         (none)))))
 
-(define float-lambda
+(define next-lambda
   (CFunc (list 'self) (none)
     (CReturn
       (CApp
         (CGetField
           (CId 'self (LocalId))
-          '__float__)
+          '__next__)
         (list (CId 'self (LocalId)))
         (none)))))
-|#
+
 
 (define isinstance-lambda
   (CFunc (list 'self 'type) (none)
@@ -206,12 +205,17 @@ that calls the primitive `print`.
         (bind 'str str-class)
         (bind 'list list-class)
         (bind 'tuple tuple-class)
-        (bind 'dict dict-class)
+        ; this is a hack because one test overrides the dict name, 
+        ; we should do this $ thing for all builtin names for this reason
+        (bind '$dict dict-class) 
+        (bind 'dict (CId '$dict (LocalId)))
         (bind 'bool bool-class)
         (bind 'set set-class)
         (bind 'len len-lambda)
         (bind 'min min-lambda)
         (bind 'max max-lambda)
+        (bind 'iter iter-lambda)
+        (bind 'next next-lambda)
         (bind 'abs abs-lambda)
         (bind 'isinstance isinstance-lambda)
         (bind 'print print-lambda)
@@ -226,6 +230,7 @@ that calls the primitive `print`.
         (bind 'AttributeError (make-exception-class 'AttributeError))
         (bind 'RuntimeError (make-exception-class 'RuntimeError))
         (bind 'KeyError (make-exception-class 'KeyError))
+        (bind 'IndexError (make-exception-class 'IndexError))
         (bind 'UnboundLocalError (make-exception-class 'UnboundLocalError))
         (bind 'IndexError (make-exception-class 'IndexError))
         (bind 'ZeroDivisionError (make-exception-class 'ZeroDivisionError))
@@ -246,7 +251,8 @@ that calls the primitive `print`.
       (list (bind 'all (CNone))
             (bind 'any (CNone))
             (bind 'range (CNone))
-            (bind 'filter (CNone)))
+            (bind 'filter (CNone))
+            (bind 'SeqIter (CNone)))
       empty empty empty))
 ;; these are builtin functions that we have written in actual python files which
 ;; are pulled in here and desugared for lib purposes
@@ -261,6 +267,7 @@ that calls the primitive `print`.
              "pylib/all.py"
              "pylib/range.py"
              "pylib/filter.py"
+             "pylib/seq_iter.py"
              "pylib/assertraises.py")))
              
 
