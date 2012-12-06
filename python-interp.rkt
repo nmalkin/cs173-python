@@ -62,6 +62,7 @@
 
 (define (interp-capp [fun : CExpr] [arges : (listof CExpr)] 
                      [stararg : (optionof CExpr)] [env : Env] [sto : Store]) : Result
+  (begin ;(display fun) (display "\n") (display arges) (display "\n\n\n")
  (type-case Result (interp-env fun env sto)
    [v*s*e (vfun sfun efun) 
     (type-case CVal vfun
@@ -88,9 +89,10 @@
                                                                  (lambda(x)
                                                                    (make-builtin-num 0))
                                                                  l))
-                                                 efun cenv 
+                                                 (v*s*e-e sarg-r) cenv 
                                                  (v*s*e-s sarg-r))) 
-                                             (bind-and-execute body argxs vararg argvs arges efun
+                                             (bind-and-execute body argxs vararg
+                                                               argvs arges ec
                                                                cenv sc)))]
                               (type-case Result result
                                 [v*s*e (vb sb eb) (v*s*e vnone sb env)]
@@ -138,7 +140,7 @@
       [else (error 'interp "Not a closure or constructor")])]
    [Return (vfun sfun efun) (return-exception efun sfun)]
    [Break (sfun efun) (break-exception efun sfun)]
-   [Exception (vfun sfun efun) (Exception vfun sfun efun)]))
+   [Exception (vfun sfun efun) (Exception vfun sfun efun)])))
 
 (define (interp-while [test : CExpr] [body : CExpr] 
                       [env : Env] [sto : Store])
@@ -433,7 +435,7 @@
             (interp-let x result body))]
 
     [CApp (fun arges sarg)
-          ;(begin (display fun) (display "\n")
+          ;(begin (display fun) (display "\n") (display arges) (display "\n")
           (interp-capp fun
                        arges
                        (if (none? sarg)

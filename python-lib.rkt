@@ -224,7 +224,6 @@ that calls the primitive `print`.
         (bind 'len len-lambda)
         (bind 'min min-lambda)
         (bind 'max max-lambda)
-        (bind 'iter iter-lambda)
         (bind 'next next-lambda)
         (bind 'abs abs-lambda)
         (bind 'isinstance isinstance-lambda)
@@ -264,6 +263,8 @@ that calls the primitive `print`.
             (bind 'any (CNone))
             (bind 'range (CNone))
             (bind 'filter (CNone))
+            (bind 'iter (CNone))
+            (bind 'FuncIter (CNone))
             (bind 'SeqIter (CNone)))
       empty empty empty))
 ;; these are builtin functions that we have written in actual python files which

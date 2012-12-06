@@ -68,7 +68,7 @@
                       empty
                       es)]
    [PyId (id ctx) (list id)]
-   [PyAssign (targets v) (if (not global?)
+   [PyAssign (targets v) (if (and (not global?) (not (PySubscript? (first targets))))
                            (foldl (lambda(t so-far) (append (get-names t global?)
                                                           so-far))
                                 empty
@@ -129,7 +129,18 @@
                    last-env))])))]
     (rec-map-desugar exprs global? env)))
 
-
+(define (assign-undef [s : symbol]) : PyExpr
+  #|
+  this seems like a good idea but it breaks a test so i don't know
+  (PyTryExceptElseFinally 
+    (PyId s 'Load)
+    (list 
+      (PyExcept (list (PyId 'NameError 'Load))
+                (PyAssign (list (PyId s 'Load))
+                          (PyUndefined))))
+    (PyPass)
+    (PyPass)))|#
+    (PyAssign (list (PyId s 'Load)) (PyUndefined)))
 ;; for the body of some local scope level like a class or function, hoist
 ;; all the assignments and defs to the top as undefineds
 (define (desugar-local-body [expr : PyExpr] [args : (listof symbol)] [env : IdEnv]) : DesugarResult
@@ -137,8 +148,7 @@
     (rec-desugar
       (PySeq (append 
                (if (not (empty? names))
-                 (map (lambda(n) (PyAssign (list (PyId n 'Load))
-                                               (PyUndefined)))
+                 (map assign-undef
                       (filter (lambda(n) (not (member n args)))
                           names)) 
                  (list (PyPass))) 
@@ -151,7 +161,7 @@
   (local [(define iter-pyid (PyId (new-id) 'Load))]
      (rec-desugar
        (PySeq
-         (list (PyAssign (list iter-pyid) (PyApp (PyDotField iter '__iter__) empty))
+         (list (PyAssign (list iter-pyid) (PyApp (PyId 'iter 'Load) (list iter)))
            (PyWhile (PyBool true)
                   (PySeq 
                     (list 
@@ -192,12 +202,11 @@
                                                [desugared-value (rec-desugar value global? (DResult-env desugared-slice))]
                                                [target-id (new-id)])
                                         (DResult
-                                            (CLet target-id (DResult-expr desugared-target)
-                                              (CApp (CGetField (CId target-id (LocalId)) '__setitem__)
-                                                    (list (CId target-id (LocalId))
+                                              (CApp (CGetField (DResult-expr desugared-target) '__setitem__)
+                                                    (list (DResult-expr desugared-target)
                                                           (DResult-expr desugared-slice)
                                                           (DResult-expr desugared-value))
-                                                    (none)))
+                                                    (none))
                                             (DResult-env desugared-value)))]
                          ; The others become a CAssign.
                          [else
@@ -377,7 +386,11 @@
               (local [(define last-arg (first (reverse args)))]
                 (rec-desugar
                   ; assuming 1 defarg for now, generalize later
-                    (PyFuncVarArg name (take args (- (length args) 1))
+                    (PySeq 
+                      (list
+                        (PyAssign (list (PyId last-arg 'Load))
+                                                  (first (reverse defargs)))
+                    (PyFuncVarArg name empty
                             'stararg 
                             (PySeq
                               (list
@@ -391,9 +404,8 @@
                                                   (PySubscript (PyId 'stararg 'Load)
                                                                'Load
                                                                (PyNum 0)))
-                                        (PyAssign (list (PyId last-arg 'Load))
-                                                  (first (reverse defargs))))
-                                   body))) 
+                                      (PyPass))
+                                   body))))) 
                     global? 
                     env))
 
