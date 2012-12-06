@@ -106,6 +106,41 @@
    [PyFuncVarArg (name args sarg body) (list name)]
    [else empty]))
 
+(define (get-right-names [expr : PyExpr] [global? : boolean] [env : IdEnv]) : (listof symbol)
+  (type-case PyExpr expr
+   [PyIf (t b e) (append (get-right-names b global? env)
+                         (get-right-names e global? env))]
+   [PySeq (es) (foldl (lambda(e so-far) (append (get-right-names e global? env) so-far))
+                      empty
+                      es)]
+   ; ignore special variables that we've defined in desugaring for which 
+   ; we have specially constructed the scope manually for purposes of 
+   ; desugaring
+   [PyId (id ctx) (if (not (symbol=? ctx 'DesugarVar)) 
+                    (list id)
+                    empty)]
+   [PyAssign (targets v) (begin
+                           ;(display targets) (display "\n")  (display v) (display "\n\n")
+                           (if (not global?)
+                               (get-right-names v global? env)
+                               empty))]
+   [PyExcept (t body) (get-right-names body global? env)]
+   [PyTryExceptElseFinally (t e o f)
+                           (append (get-right-names t global? env)
+                              (append (foldl (lambda(e so-far) (append
+                                                                 (get-right-names e
+                                                                            global?
+                                                                            env)
+                                                                 so-far))
+                                             empty 
+                                             e)
+                                (append (get-right-names o global? env)
+                                  (get-right-names f global? env))))]
+   [PyBinOp (l o r) (append (get-right-names l global? env)
+                      (get-right-names r global? env))]
+   [PyUnaryOp (o operand) (get-right-names operand global? env)]
+   [else empty]))
+
 (define (get-globals/nonlocals [expr : PyExpr] [global? : boolean]
                                [env : IdEnv]) : IdEnv
   (local [(define (rec-get-g/ns [exprs : (listof PyExpr)]
@@ -217,20 +252,26 @@
     (PyPass)))|#
     (PyAssign (list (PyId s 'Load)) (PyUndefined)))
 
+(define (assign-val [s : symbol]) : PyExpr
+  (PyAssign (list (PyId s 'Load)) (PyId s 'Load)))
+
 ;; for the body of some local scope level like a class or function, hoist
 ;; all the assignments and defs to the top as undefineds
 (define (desugar-local-body [expr : PyExpr] [args : (listof symbol)]
                             [env : IdEnv]) : DesugarResult
   (local [(define g/ns-env (get-globals/nonlocals expr false empty))
-          (define names (get-names expr false g/ns-env))]
+          (define names (get-names expr false g/ns-env))
+          (define right-names (filter (λ (n) (not (member n names)))
+                                         (get-right-names expr false g/ns-env)))]
 (begin 
     (rec-desugar
       (if (not (empty? names))
           (PySeq (append 
                    (map assign-undef
                         (filter (lambda(n) (not (member n args)))
-                                names)) 
-                   (list expr)))
+                                names))
+                   (append (map assign-val right-names)
+                           (list expr))))
           expr)
       false
       g/ns-env

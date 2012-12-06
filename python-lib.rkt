@@ -286,7 +286,8 @@ that calls the primitive `print`.
             (bind 'any (CNone))
             (bind 'range (CNone))
             ;(bind '___assertRaises (CNone))
-            (bind 'filter (CNone)))
+            (bind 'filter (CNone))
+            (bind 'dicteq (CNone)))
       empty empty empty))
 ;; these are builtin functions that we have written in actual python files which
 ;; are pulled in here and desugared for lib purposes
@@ -302,6 +303,7 @@ that calls the primitive `print`.
              "pylib/filter.py"
              "pylib/any.py"
              "pylib/all.py"
+             "pylib/dicteq.py"
             ; "pylib/assertraises.py"
             )))
              
