@@ -188,6 +188,16 @@ that calls the primitive `print`.
                     (list (CId 'self (LocalId))
                           (CId 'type (LocalId)))))))
 
+; Returns the $class of self's $class.
+; self's $class is the class of the given instance.
+; the $class of that is its antecedent.
+; So this function returns the super-class of the instance.
+(define super-lambda
+  (CFunc (list 'self) (none)
+         (CReturn
+             (CBuiltinPrim '$super (list
+                 (CBuiltinPrim '$super (list (CId 'self (LocalId)))))))))
+
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
 
@@ -208,19 +218,20 @@ that calls the primitive `print`.
         ; this is a hack because one test overrides the dict name, 
         ; we should do this $ thing for all builtin names for this reason
         (bind '$dict dict-class) 
-        (bind 'dict (CId '$dict (LocalId)))
+        (bind 'dict (CId '$dict (GlobalId)))
         (bind 'bool bool-class)
         (bind 'set set-class)
         (bind 'len len-lambda)
         (bind 'min min-lambda)
         (bind 'max max-lambda)
-        (bind 'iter iter-lambda)
         (bind 'next next-lambda)
         (bind 'abs abs-lambda)
         (bind 'isinstance isinstance-lambda)
         (bind 'print print-lambda)
 
         (bind 'callable callable-lambda)
+
+        (bind 'super super-lambda)
 
         (bind 'Exception exception)
         (bind 'NameError (make-exception-class 'NameError))
@@ -252,7 +263,10 @@ that calls the primitive `print`.
             (bind 'any (CNone))
             (bind 'range (CNone))
             (bind 'filter (CNone))
-            (bind 'SeqIter (CNone)))
+            (bind 'iter (CNone))
+            (bind 'FuncIter (CNone))
+            (bind 'SeqIter (CNone))
+            (bind '___assertRaises (CNone)))
       empty empty empty))
 ;; these are builtin functions that we have written in actual python files which
 ;; are pulled in here and desugared for lib purposes

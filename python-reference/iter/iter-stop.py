@@ -18,8 +18,8 @@ b = iter(a)
 ___assertEqual(list(b), ['a', 'b', 'c', 'd', 'e'])
 ___assertEqual(list(b), [])
 
-# test_sinkstate_callable
-# This used to fail
+#test_sinkstate_callable
+#This used to fail
 def spam(state=[0]):
     i = state[0]
     state[0] = i+1
@@ -27,6 +27,7 @@ def spam(state=[0]):
         raise AssertionError("shouldn't have gotten this far")
     return i
 b = iter(spam, 5)
+
 ___assertEqual(list(b), list(range(5)))
 ___assertEqual(list(b), [])
 

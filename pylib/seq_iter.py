@@ -41,18 +41,38 @@ class SeqIter:
         self.i += 1
         return ret
 
-#def iter(l, *args):
-    #if len(args) == 1:
-        #stopwhen = args[0]
-        #while True:
+def iter(l, *args):
+    if len(args) == 1:
+        stopwhen = args[0]
+        return FuncIter(l, stopwhen)
+    else:
+        return l.__iter__()
 
-        #return l.__iter__()
+class FuncIter:
+    def __init__(self, func, stopwhen):
+        self.func = func
+        self.stopwhen = stopwhen
+        self.stopped = False
+        return self
+
+    def __list__(self):
+        l = []
+        while not self.stopped:
+            try:
+                l.append(self.__next__())
+            except StopIteration:
+                break
+        return l
+
+    def __next__(self):
+        f = self.func
+        v = f()
+
+        if v == self.stopwhen:
+            self.stopped = True
+            raise StopIteration("Stop")
+        else:
+            return v
 
 
-
-#class FuncIter:
-    #def __init__(self, func, stopwhen):
-        #self.func = func
-        #self.stopwhen = stopwhen
-        #self
 

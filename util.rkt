@@ -190,7 +190,7 @@
 
 (define (make-exception [name : symbol] [error : string]) : CExpr
   (CApp
-    (CId name (LocalId))
+    (CId name (GlobalId))
     (list (CStr error))
     (none)))
 

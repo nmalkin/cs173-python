@@ -14,6 +14,14 @@
                            (CReturn (CBuiltinPrim 'list+
                                                   (list
                                                    (CId 'self (LocalId))
+                                (CId 'other (LocalId)))))))
+
+                   (def 'extend
+                    (CFunc (list 'self 'other) (none)
+                           (CAssign (CId 'self (LocalId))
+                                 (CBuiltinPrim 'list+
+                                                  (list
+                                                   (CId 'self (LocalId))
                                                    (CId 'other (LocalId)))))))
                   (def '__init__
                        (CFunc (list 'self 'other) (none) 
@@ -67,7 +75,9 @@
                                                    (CId 'idx (LocalId)))))))
                   (def '__setitem__
                     (CFunc (list 'self 'idx 'val) (none)
-                           (CReturn (CBuiltinPrim 'list-setitem
+                           (CAssign
+                             (CId 'self (LocalId))
+                             (CBuiltinPrim 'list-setitem
                                                   (list
                                                    (CId 'self (LocalId))
                                                    (CId 'idx (LocalId))

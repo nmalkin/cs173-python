@@ -227,4 +227,10 @@ primitives here.
              me
              antecedent-class)))]
 
+    ['$super
+     (letrec ([me (first args)]
+              [my-antecedent (VObject-antecedent me)]
+              [antecedent-class (fetch (some-v (lookup my-antecedent env)) sto)])
+       (some antecedent-class))]
+
 ))

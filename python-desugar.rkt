@@ -72,11 +72,11 @@
                       empty
                       es)]
    [PyId (id ctx) (list id)]
-   [PyAssign (targets v) (if (not global?)
+   [PyAssign (targets v) (if (and (not global?) (not (PySubscript? (first targets))))
                            (foldl (lambda(t so-far) (append (get-names t global? env)
-                                                          so-far))
-                                empty
-                                targets)
+                                                            so-far))
+                                  empty
+                                  targets)
                            empty)]
    [PyExcept (t body) (get-names body global? env)]
    [PyTryExceptElseFinally (t e o f)
@@ -91,9 +91,9 @@
                                 (append (get-names o global? env)
                                   (get-names f global? env))))]
    [PyClass (name bases body) (list name)]
-   [PyBinOp (l o r) (append (get-names l global?)
-                      (get-names r global?))]
-   [PyUnaryOp (o operand) (get-names operand global?)]
+   [PyBinOp (l o r) (append (get-names l global? env)
+                      (get-names r global? env))]
+   [PyUnaryOp (o operand) (get-names operand global? env)]
    [PyFunc (name args defvargs body) (list name)]
    [PyClassFunc (name args body) (list name)]
    [PyFuncVarArg (name args sarg body) (list name)]
@@ -197,7 +197,18 @@
                    last-env))]))]
     (rec-map-desugar exprs global? env)))
 
-
+(define (assign-undef [s : symbol]) : PyExpr
+  #|
+  this seems like a good idea but it breaks a test so i don't know
+  (PyTryExceptElseFinally 
+    (PyId s 'Load)
+    (list 
+      (PyExcept (list (PyId 'NameError 'Load))
+                (PyAssign (list (PyId s 'Load))
+                          (PyUndefined))))
+    (PyPass)
+    (PyPass)))|#
+    (PyAssign (list (PyId s 'Load)) (PyUndefined)))
 ;; for the body of some local scope level like a class or function, hoist
 ;; all the assignments and defs to the top as undefineds
 (define (desugar-local-body [expr : PyExpr] [args : (listof symbol)]
@@ -207,8 +218,7 @@
     (rec-desugar
       (PySeq (append 
                (if (not (empty? names))
-                 (map (lambda(n) (PyAssign (list (PyId n 'Load))
-                                               (PyUndefined)))
+                 (map assign-undef
                       (filter (lambda(n) (not (member n args)))
                           names)) 
                  (list (PyPass))) 
@@ -221,7 +231,7 @@
   (local [(define iter-pyid (PyId (new-id) 'Load))]
      (rec-desugar
        (PySeq
-         (list (PyAssign (list iter-pyid) (PyApp (PyDotField iter '__iter__) empty))
+         (list (PyAssign (list iter-pyid) (PyApp (PyId 'iter 'Load) (list iter)))
            (PyWhile (PyBool true)
                   (PySeq 
                     (list 
@@ -257,22 +267,19 @@
                 ; We handle three kinds of assignments.
                 ; An assignment to a subscript is desugared as a __setitem__ call.
                 [PySubscript (left ctx slice)
-                             (letrec ([desugared-target (rec-desugar left global? env)]
-                                      [desugared-slice 
-                                        (rec-desugar slice global?
-                                                     (DResult-env desugared-target))]
-                                      [desugared-value
-                                        (rec-desugar value global?
-                                                     (DResult-env desugared-slice))]
-                                      [target-id (new-id)])
-                               (DResult
-                                 (CLet target-id (DResult-expr desugared-target)
-                                       (CApp (CGetField (CId target-id (LocalId)) '__setitem__)
-                                             (list (CId target-id (LocalId))
-                                                   (DResult-expr desugared-slice)
-                                                   (DResult-expr desugared-value))
-                                             (none)))
-                                 (DResult-env desugared-value)))]
+                   (letrec ([desugared-target (rec-desugar left global? env)]
+                            [desugared-slice 
+                              (rec-desugar slice global? (DResult-env desugared-target))]
+                            [desugared-value
+                              (rec-desugar value global? (DResult-env desugared-slice))]
+                            [target-id (new-id)])
+                     (DResult
+                       (CApp (CGetField (DResult-expr desugared-target) '__setitem__)
+                             (list (DResult-expr desugared-target)
+                                   (DResult-expr desugared-slice)
+                                   (DResult-expr desugared-value))
+                             (none))
+                       (DResult-env desugared-value)))]
                 ; An assignment to a tuple is desugared as multiple __setitem__ calls.
                 [PyTuple (vals)
                   (local [(define-values (targets-r mid-env) (map-desugar vals global? env))
@@ -325,8 +332,6 @@
     [PyNonlocal (ids) (DResult (CNone) env)]
     [PyUndefined () (DResult (CUndefined) env)]  
 
-    ; for now just desugar raise as error
-    ; TODO: implement real exceptions
     [PyRaise (expr) (local [(define expr-r (if (PyId? expr)
                                              ;;handle the implicit construction case
                                              (rec-desugar (PyApp expr empty)
@@ -481,7 +486,11 @@
               (local [(define last-arg (first (reverse args)))]
                 (rec-desugar
                   ; assuming 1 defarg for now, generalize later
-                    (PyFuncVarArg name (take args (- (length args) 1))
+                    (PySeq 
+                      (list
+                        (PyAssign (list (PyId last-arg 'Load))
+                                                  (first (reverse defargs)))
+                    (PyFuncVarArg name empty
                             'stararg 
                             (PySeq
                               (list
@@ -495,9 +504,8 @@
                                                   (PySubscript (PyId 'stararg 'Load)
                                                                'Load
                                                                (PyNum 0)))
-                                        (PyAssign (list (PyId last-arg 'Load))
-                                                  (first (reverse defargs))))
-                                   body))) 
+                                      (PyPass))
+                                   body))))) 
                     global? 
                     env))
 
@@ -506,7 +514,7 @@
             (local [(define body-r (desugar-local-body body args env))]
              (DResult
                (CLet name (CNone)
-                     (CAssign (CId name (LocalId))
+                     (CAssign (CId name (if global? (GlobalId) (LocalId)))
                               (CFunc args (none) (DResult-expr body-r))))
              (merge-globals env (DResult-env body-r)))))]
 
@@ -534,7 +542,7 @@
                             (desugar-local-body body (append args (list sarg)) env))]
                     (DResult
                       (CLet name (CNone)
-                            (CAssign (CId name (LocalId))
+                            (CAssign (CId name (if global? (GlobalId) (LocalId)))
                                      (CFunc args (some sarg) (DResult-expr body-r))))
                       (merge-globals env (DResult-env body-r))))]
 
@@ -571,10 +579,10 @@
                     (DResult
                       (CLet left-id
                             (DResult-expr left-r)
-                            (CApp (CGetField (CId left-id (LocalId))
+                            (CApp (CGetField (CId left-id (if global? (GlobalId) (LocalId)))
                                              '__slice__)
                                   (list 
-                                    (CId left-id (LocalId))
+                                    (CId left-id (if global? (GlobalId) (LocalId)))
                                     (DResult-expr slice-low)
                                     (DResult-expr slice-up)
                                     (DResult-expr slice-step))
@@ -584,9 +592,10 @@
                          (DResult 
                     (CLet left-id 
                           (DResult-expr left-r)
-                          (CApp (CGetField (CId left-id (LocalId))
+                          (CApp (CGetField (CId left-id (if global? (GlobalId) (LocalId)))
                                            '__getitem__)
-                                (list (CId left-id (LocalId)) (DResult-expr slice-r))
+                                (list (CId left-id (if global? (GlobalId) (LocalId)))
+                                      (DResult-expr slice-r))
                                 (none)))
                     (DResult-env slice-r)))))]
         [(symbol=? ctx 'Store)
@@ -597,16 +606,23 @@
 
     [PyApp (fun args)
            (local [(define f (rec-desugar fun global? env))
+                   (define f-expr (DResult-expr f))
                    (define-values (results last-env)
                      (map-desugar args global? (DResult-env f)))]
              (begin
                ;(display args) (display "\n")
                ;(display results) (display "\n\n")
                (DResult
-               (if (CGetField? (DResult-expr f))
-                 (local [(define o (CGetField-value (DResult-expr f)))]
-                   (CApp (DResult-expr f) (cons o results) (none)))
-                 (CApp (DResult-expr f) results (none)))
+               (cond
+                [(CGetField? f-expr)
+                 (local [(define o (CGetField-value f-expr))]
+                   (CApp f-expr (cons o results) (none)))]
+                ; special case: "super" application gets extra 'self' argument
+                [(and (CId? f-expr)
+                      (symbol=? 'super (CId-x f-expr)))
+                 (CApp f-expr (cons (CId 'self (LocalId)) results) (none))
+                 ]
+                [else (CApp f-expr results (none))])
                last-env)))]
 
     [PyAppStarArg (fun args sarg)
@@ -624,7 +640,7 @@
     [PyClass (name bases body)
              (local [(define body-r (rec-desugar body false (extract-globals env)))]
                (DResult
-                 (CAssign (CId name (LocalId))
+                 (CAssign (CId name (if global? (GlobalId) (LocalId)))
                           (CClass name
                                   (if (empty? bases) 
                                     'object
@@ -704,8 +720,9 @@
                              [target-id (new-id)])
                       (DResult
                         (CLet target-id (DResult-expr desugared-target)
-                              (CApp (CGetField (CId target-id (LocalId)) '__delitem__)
-                                    (list (CId target-id (LocalId))
+                              (CApp (CGetField (CId target-id (if global? (GlobalId) (LocalId)))
+                                               '__delitem__)
+                                    (list (CId target-id (if global? (GlobalId) (LocalId)))
                                           (DResult-expr desugared-slice))
                                     (none)))
                         (DResult-env desugared-slice)))]
