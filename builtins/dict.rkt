@@ -2,11 +2,12 @@
 
 (require "../python-core-syntax.rkt")
 (require "../util.rkt"
-         "none.rkt")
+         "none.rkt"
+         "str.rkt")
 (require
   (typed-in racket/base (andmap : (('a -> boolean) (listof 'a) -> 'b)))
   (typed-in racket/base (hash->list : ((hashof 'a 'b)  -> (listof 'c))))
-  (typed-in racket/base (car : (('a * 'b)  -> 'b)))
+  (typed-in racket/base (car : (('a * 'b)  -> 'a)))
   (typed-in racket/base (cdr : (('a * 'b)  -> 'b)))
   (typed-in racket/base (hash-has-key? : ((hashof 'a 'b) 'a -> boolean)))
   (typed-in racket/base (hash-values : ((hashof 'a 'b) -> (listof 'b))))
@@ -116,6 +117,18 @@
                           true))
 
 ))))
+
+
+(define (make-under-dict [h : (hashof symbol Address)] [sto : Store]) : CVal
+  (local [(define filledhash (make-hash empty))
+          (define dicthash (map (λ (pair)
+                                   (hash-set! filledhash
+                                              (make-str-value (symbol->string (car pair)))
+                                              (fetch (cdr pair) sto)))
+                                (hash->list h)))]
+  (VObject '$dict
+           (some (MetaDict filledhash))
+           (hash empty))))
 
 
 (define (dict-len (args : (listof CVal)) [env : Env] [sto : Store]) : (optionof CVal)

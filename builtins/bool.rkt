@@ -55,9 +55,6 @@
      (if (= (length meta-startuple) 0)
        (some false-val) 
        (type-case CVal (first meta-startuple) 
-                  [VStr (s) (if (string=? "" s) 
-                              (some false-val) 
-                              (some true-val))] 
                   [VClosure (e a s b) (some true-val)] 
                   [VObject (a mval d) (if (truthy-object? (VObject a mval d)) 
                                         (some true-val) 

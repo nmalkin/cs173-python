@@ -127,6 +127,12 @@
    'str
    (some (MetaStr s))))
 
+(define (make-str-value [s : string]) : CVal
+  (VObject
+    'str
+    (some (MetaStr s))
+    (hash empty)))
+
 (define (string->charlist [str : string]) : (listof CVal)
   (map (lambda (s)
                (VObject 'str

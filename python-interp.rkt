@@ -7,6 +7,7 @@
          "builtins/tuple.rkt"
          "builtins/num.rkt"
          "builtins/none.rkt"
+         "builtins/dict.rkt"
          "util.rkt"
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
          (typed-in racket/base (hash-count : ((hashof 'a 'b) -> number)))
@@ -389,10 +390,14 @@
     [CClass (name base body) (begin ;(display "Class ") (display env) (display "\n")
                (type-case Result (interp-env body (cons (hash empty) env) sto)
                  [v*s*e (vbody sbody ebody)
-                        (v*s*e (VObject base 
-                                        (some (MetaClass name)) 
-                                        (first ebody)) 
-                               sbody env)]
+                        (local [(define w (new-loc))]
+                          (v*s*e (VObject base 
+                                          (some (MetaClass name)) 
+                                          (hash-set (first ebody)
+                                                    '__dict__
+                                                    w))
+                                 (hash-set sbody w (make-under-dict (first ebody) sbody))
+                                 env))]
                  [Return (vval sval eval) (return-exception eval sval)]
                  [Break (sval eval) (break-exception eval sval)]
                  [Exception (vval sval eval) (Exception vval sval eval)]))]
@@ -738,6 +743,7 @@
 ;; left-to-right, depth-second if super = #t
 (define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : Result
   (begin ;(display "GET: ") (display n) (display " ") (display c) (display "\n")
+         ;(display e) (display "\n\n")
   (type-case CVal c
     [VObject (antecedent mval d) 
                     (let ([w (hash-ref (VObject-dict c) n)])
@@ -884,9 +890,6 @@
 
 (define (truthy? [val : CVal]) : boolean
   (type-case CVal val
-    [VStr (s) (if (string=? "" s)
-              false 
-              true)]
     [VClosure (e a s b) true]
     [VObject (a mval d) (truthy-object? (VObject a mval d))]
     [VUndefined () false]))
