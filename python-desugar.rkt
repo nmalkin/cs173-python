@@ -638,26 +638,45 @@
 
     [PyBreak () (DResult (CBreak) env)]
 
+    ;; very hacky solution for assertRaises: it needs laziness built into it, so instead
+    ;; of defining it as a function, we'll special case it as a macro.
     [PyApp (fun args)
-           (local [(define f (rec-desugar fun global? env false))
-                   (define f-expr (DResult-expr f))
-                   (define-values (results last-env)
-                     (map-desugar args global? (DResult-env f) false))]
-             (begin
-               ;(display args) (display "\n")
-               ;(display results) (display "\n\n")
-               (DResult
-               (cond
-                [(CGetField? f-expr)
-                 (local [(define o (CGetField-value f-expr))]
-                   (CApp f-expr (cons o results) (none)))]
-                ; special case: "super" application gets extra 'self' argument
-                [(and (CId? f-expr)
-                      (symbol=? 'super (CId-x f-expr)))
-                 (CApp f-expr (cons (CId 'self (LocalId)) results) (none))
-                 ]
-                [else (CApp f-expr results (none))])
-               last-env)))]
+           (if (and (PyId? fun) (symbol=? (PyId-x fun) '___assertRaises))
+               (local [(define f (rec-desugar (second args) global? env false))
+                       (define-values (as as-env)
+                         (map-desugar (rest (rest args)) global? (DResult-env f) false))
+                       (define exns (rec-desugar (first args) global? as-env false))
+                       (define pass (rec-desugar (PyPass) global? (DResult-env exns) false))]
+                 (DResult
+                   (CApp
+                     (CFunc empty (none)
+                            (CTryExceptElseFinally
+                              (CApp (DResult-expr f) as (none))
+                              (list
+                                (CExcept (list (DResult-expr exns)) (none) (DResult-expr pass))
+                                (CExcept empty (none) (DResult-expr pass)))
+                              (CApp (CId 'print (GlobalId))
+                                    (list (make-builtin-str "Assert failure!"))
+                                    (none))
+                              (DResult-expr pass))
+                            false)
+                     empty
+                     (none))
+                   (DResult-env pass)))
+               (local [(define f (rec-desugar fun global? env false))
+                       (define f-expr (DResult-expr f))
+                       (define-values (results last-env)
+                         (map-desugar args global? (DResult-env f) false))]
+                 (DResult
+                   (cond
+                     [(CGetField? f-expr)
+                      (local [(define o (CGetField-value f-expr))]
+                        (CApp f-expr (cons o results) (none)))]
+                     ; special case: "super" application gets extra 'self' argument
+                     [(and (CId? f-expr) (symbol=? 'super (CId-x f-expr)))
+                      (CApp f-expr (cons (CId 'self (LocalId)) results) (none))]
+                     [else (CApp f-expr results (none))])
+                   last-env)))]
 
     [PyAppStarArg (fun args sarg)
            (local [(define f (rec-desugar fun global? env false))

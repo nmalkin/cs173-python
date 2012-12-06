@@ -683,7 +683,6 @@
                          (interp-env finally (v*s*e-e result) (v*s*e-s
                                                                 result)))))])]
 
-    ;; add names to this
     [CExcept (types name body) (interp-env body env sto)]
     
     [CBreak () (Break sto env)]))
