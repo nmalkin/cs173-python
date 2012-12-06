@@ -72,7 +72,7 @@
                       empty
                       es)]
    [PyId (id ctx) (list id)]
-   [PyAssign (targets v) (if (not (PySubscript? (first targets)))
+   [PyAssign (targets v) (if (and (not global?) (not (PySubscript? (first targets))))
                            (foldl (lambda(t so-far) (append (get-names t global? env)
                                                             so-far))
                                   empty
@@ -209,6 +209,7 @@
     (PyPass)
     (PyPass)))|#
     (PyAssign (list (PyId s 'Load)) (PyUndefined)))
+
 ;; for the body of some local scope level like a class or function, hoist
 ;; all the assignments and defs to the top as undefineds
 (define (desugar-local-body [expr : PyExpr] [args : (listof symbol)]

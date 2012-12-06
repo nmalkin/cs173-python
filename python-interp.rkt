@@ -707,11 +707,11 @@
 ;; depth-first, left-to-right if super = #f
 ;; left-to-right, depth-second if super = #t
 (define (get-field [n : symbol] [c : CVal] [e : Env] [s : Store]) : Result
-  (begin ;(display "GET: ") (display n) (display " ") (display c) (display "\n\n")
+  (begin ;(display "GET: ") (display n) (display " ") (display c) (display "\n")
   (type-case CVal c
     [VObject (antecedent mval d) 
                     (let ([w (hash-ref (VObject-dict c) n)])
-              (begin ;(display "loc: ") (display w) (display "\n")
+              (begin ;(display "loc: ") (display w) (display "\n\n")
                 (type-case (optionof Address) w
                 [some (w) (v*s*e (fetch w s) s e)]
                 [none () (local [(define __class__w (hash-ref (VObject-dict c) '__class__))]
