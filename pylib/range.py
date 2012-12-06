@@ -1,5 +1,6 @@
 def range(arg1, *starargs):
     l = []
+    end = 0
 
     if not isinstance(arg1, int):
         raise TypeError("Bad type in range")

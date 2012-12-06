@@ -71,13 +71,20 @@
    [PySeq (es) (foldl (lambda(e so-far) (append (get-names e global? env) so-far))
                       empty
                       es)]
-   [PyId (id ctx) (list id)]
-   [PyAssign (targets v) (if (and (not global?) (not (PySubscript? (first targets))))
+   ; ignore special variables that we've defined in desugaring for which 
+   ; we have specially constructed the scope manually for purposes of 
+   ; desugaring
+   [PyId (id ctx) (if (not (symbol=? ctx 'DesugarVar)) 
+                    (list id)
+                    empty)]
+   [PyAssign (targets v) (begin
+                           ;(display targets) (display "\n")  (display v) (display "\n\n")
+                           (if (and (not global?) (not (PySubscript? (first targets))))
                            (foldl (lambda(t so-far) (append (get-names t global? env)
                                                             so-far))
                                   empty
                                   targets)
-                           empty)]
+                           empty))]
    [PyExcept (t body) (get-names body global? env)]
    [PyTryExceptElseFinally (t e o f)
                            (append (get-names t global? env)
@@ -216,6 +223,7 @@
                             [env : IdEnv]) : DesugarResult
   (local [(define g/ns-env (get-globals/nonlocals expr false empty))
           (define names (get-names expr false g/ns-env))]
+(begin 
     (rec-desugar
       (if (not (empty? names))
           (PySeq (append 
@@ -226,7 +234,7 @@
           expr)
       false
       g/ns-env
-      false)))
+      false))))
 
 (define (desugar-for [target : PyExpr] [iter : PyExpr] [body : PyExpr]
                      [global? : boolean] [env : IdEnv]) : DesugarResult
@@ -518,7 +526,7 @@
                   ; assuming 1 defarg for now, generalize later
                     (PySeq 
                       (list
-                        (PyAssign (list (PyId last-arg 'Load))
+                        (PyAssign (list (PyId last-arg 'DesugarVar))
                                                   (first (reverse defargs)))
                     (PyFuncVarArg name empty
                             'stararg 
@@ -530,7 +538,8 @@
                                                     empty)
                                                   (list 'Gt)
                                                   (list (PyNum 0)))
-                                        (PyAssign (list (PyId last-arg 'Load))
+                                        (PyAssign (list (PyId last-arg
+                                                              'DesugarVar))
                                                   (PySubscript (PyId 'stararg 'Load)
                                                                'Load
                                                                (PyNum 0)))
