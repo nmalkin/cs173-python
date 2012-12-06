@@ -218,6 +218,27 @@ structure that you define in python-syntax.rkt
             (get-structured-python iter)
             (get-structured-python body))]
 
+    [(hash-table ('nodetype "ListComp")
+                 ('elt elt)
+                 ('generators gens))
+     (PyListComp
+       (get-structured-python elt)
+       (map get-structured-python gens))]
+
+    [(hash-table ('nodetype "GeneratorExp")
+                 ('elt elt)
+                 ('generators gens))
+     (PyListComp
+       (get-structured-python elt)
+       (map get-structured-python gens))]
+
+    [(hash-table ('nodetype "comprehension")
+                 ('iter iter)
+                 ('target target)
+                 ('ifs ifs))
+     (PyComprehen
+       (get-structured-python target)
+       (get-structured-python iter))]
 
     [(hash-table ('nodetype "Set")
                  ('elts elts))

@@ -250,6 +250,26 @@
        global?
        env)))
 
+(define (desugar-listcomp [body : PyExpr] [gens : (listof PyExpr)] 
+                          [global? : boolean] [env : IdEnv]) : DesugarResult
+  (local [(define list-id (PyId (new-id) 'Load))
+          (define (make-comploop gens)
+            (cond 
+              [(empty? gens) (PyApp (PyDotField list-id 'append) 
+                                    (list body))]
+              [(cons? gens)
+               (PyFor (PyComprehen-target (first gens))
+                      (PyComprehen-iter (first gens))
+                      (make-comploop (rest gens)))]))
+          (define full-expr
+            (PySeq
+              (list 
+                  (PyAssign (list list-id) (PyList empty))
+                  (make-comploop gens)
+                  list-id)))]
+         (rec-desugar full-expr global? env)))
+
+
 
 (define (rec-desugar [expr : PyExpr] [global? : boolean] [env : IdEnv]) : DesugarResult 
   (begin ;(display expr) (display "\n\n")
@@ -472,6 +492,9 @@
                               (begin ;(display c) (display "\n")
                                      c))]
 
+    [PyListComp (elt gens) (desugar-listcomp elt gens global? env)]
+    [PyComprehen (target iter) (error 'desugar "Can't desugar PyComprehen")]
+
 
     [PyLam (args body)
            (local [(define rbody (rec-desugar body global? env))]
@@ -513,16 +536,14 @@
 
             (local [(define body-r (desugar-local-body body args env))]
              (DResult
-               (CLet name (CNone)
-                     (CAssign (CId name (if global? (GlobalId) (LocalId)))
-                              (CFunc args (none) (DResult-expr body-r))))
+                     (CAssign (CId name (LocalId))
+                              (CFunc args (none) (DResult-expr body-r)))
              (merge-globals env (DResult-env body-r)))))]
 
     ; a PyClassFunc is a method whose first argument should be the class rather than self
     [PyClassFunc (name args body)
             (local [(define body-r (desugar-local-body body args env))]
              (DResult
-               (CLet name (CNone)
                      (CAssign (CId name (LocalId))
                               (CFunc args (none)
                                      ; We do this by, inside the function body,
@@ -531,19 +552,21 @@
                                      ; "overwriting" the first argument with that value.
                                      ; The result is that, in the function body, the first
                                      ; argument is the class, as expected.
-                                     (CLet (first args) (CBuiltinPrim '$class
-                                                                      (list (CId (first args)
-                                                                                 (LocalId))))
-                                           (DResult-expr body-r)))))
+                                     (CSeq (CAssign (CId (first args) (LocalId))
+                                                    (CBuiltinPrim '$class
+                                                                      (list (CId
+                                                                              (first
+                                                                                args)
+                                                                              (LocalId)))))
+                                           (DResult-expr body-r))))
                (merge-globals env (DResult-env body-r))))]
 
     [PyFuncVarArg (name args sarg body)
                   (local [(define body-r 
                             (desugar-local-body body (append args (list sarg)) env))]
                     (DResult
-                      (CLet name (CNone)
-                            (CAssign (CId name (if global? (GlobalId) (LocalId)))
-                                     (CFunc args (some sarg) (DResult-expr body-r))))
+                            (CAssign (CId name (LocalId))
+                                     (CFunc args (some sarg) (DResult-expr body-r)))
                       (merge-globals env (DResult-env body-r))))]
 
     [PyReturn (value)

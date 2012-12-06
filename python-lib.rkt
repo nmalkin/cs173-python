@@ -259,14 +259,14 @@ that calls the primitive `print`.
   (append
       (map (lambda(b) (bind (bind-left b) (CNone)))
            lib-functions)
-      (list (bind 'all (CNone))
-            (bind 'any (CNone))
-            (bind 'range (CNone))
-            (bind 'filter (CNone))
-            (bind 'iter (CNone))
+      (list (bind 'iter (CNone))
             (bind 'FuncIter (CNone))
             (bind 'SeqIter (CNone))
-            (bind '___assertRaises (CNone)))
+            (bind 'all (CNone))
+            (bind 'any (CNone))
+            (bind 'range (CNone))
+            (bind '___assertRaises (CNone))
+            (bind 'filter (CNone)))
       empty empty empty))
 ;; these are builtin functions that we have written in actual python files which
 ;; are pulled in here and desugared for lib purposes
@@ -277,11 +277,11 @@ that calls the primitive `print`.
              (parse-python/port 
                (open-input-file file)
                python-path))))
-       (list "pylib/any.py"
-             "pylib/all.py"
-             "pylib/range.py"
-             "pylib/filter.py"
+       (list "pylib/range.py"
              "pylib/seq_iter.py"
+             "pylib/filter.py"
+             "pylib/any.py"
+             "pylib/all.py"
              "pylib/assertraises.py")))
              
 

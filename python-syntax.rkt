@@ -58,6 +58,9 @@
   ;
   [PySubscript (left : PyExpr) (context : symbol) (slice : PyExpr)]
 
+  [PyListComp (body : PyExpr) (generators : (listof PyExpr))]
+  [PyComprehen (target : PyExpr) (iter : PyExpr)]
+
   ; builtin data structures
   [PyStr (s : string)]
   [PyDict (keys : (listof PyExpr)) (values : (listof PyExpr))]

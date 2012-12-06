@@ -57,6 +57,12 @@
                                                    (CId 'self (LocalId))
                                                    (CId 'test (LocalId))
                                                    )))))
+                  (def '__iter__
+                       (CFunc (list 'self) (none)
+                           (CReturn (CApp (CGetField (CId 'SeqIter (LocalId)) '__init__)
+                                          (list (CObject 'SeqIter (none)) 
+                                                (CId 'self (LocalId)))
+                                          (none)))))
                   (def '__list__
                      (CFunc (list 'self) (none)
                             (CReturn (CBuiltinPrim 'tuple-list

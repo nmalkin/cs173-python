@@ -1,15 +1,17 @@
 def filter(f, l):
-    new_l = []
-    def rec_filter(f, l, i):
-        if i == len(l):
-            return
 
-        if f:
-            new_l += f(l[i])
-        else:
-            new_l += l[i]
-        i += 1
-    rec_filter(f, l, 0)
+    new_l = []
+    if f is None:
+        for x in l:
+            if x:
+                new_l.append(x)
+    else:
+        for x in l:
+            try:
+                if f(x):
+                    new_l.append(x)
+            except TypeError:
+                raise TypeError("Arity")
 
     return new_l
 

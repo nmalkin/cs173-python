@@ -39,6 +39,12 @@
                                          (list
                                           (CId 'self (LocalId))
                                           (CId 'other (LocalId)))))))
+                  (def '__iter__
+                       (CFunc (list 'self) (none)
+                           (CReturn (CApp (CGetField (CId 'SeqIter (LocalId)) '__init__)
+                                          (list (CObject 'SeqIter (none)) 
+                                                (CId 'self (LocalId)))
+                                          (none)))))
                   (def '__str__
                        (CFunc (list 'self) (none)
                               (CReturn (CId 'self (LocalId)))))
