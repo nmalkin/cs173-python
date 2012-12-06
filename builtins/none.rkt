@@ -12,7 +12,8 @@
     (seq-ops (list 
                (def '__str__
                     (CFunc (list 'self) (none)
-                           (CReturn (make-builtin-str "None"))))))))
+                           (CReturn (make-builtin-str "None"))
+                           true))))))
 (define cnone
   (CObject 
     'none

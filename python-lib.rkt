@@ -38,21 +38,25 @@ that calls the primitive `print`.
                        (CGetField (CId 'to-print (LocalId)) '__str__) 
                        (list (CId 'to-print (LocalId)))
                        (none)))
-      (CNone))))
+      (CNone))
+    false))
 
 (define callable-lambda
   (CFunc (list 'to-check) (none)
       (CReturn
-        (CPrim1 'callable (CId 'to-check (LocalId))))))
+        (CPrim1 'callable (CId 'to-check (LocalId))))
+      false))
 
 
 (define assert-true-lambda
   (CFunc (list 'check-true) (none)
-    (CIf (CId 'check-true (LocalId)) (CNone) (CError (CStr "Assert failed")))))
+    (CIf (CId 'check-true (LocalId)) (CNone) (CError (CStr "Assert failed")))
+    false))
 
 (define assert-false-lambda
   (CFunc (list 'check-false) (none)
-    (CIf (CId 'check-false (LocalId)) (CError (CStr "Assert failed")) (CTrue))))
+    (CIf (CId 'check-false (LocalId)) (CError (CStr "Assert failed")) (CTrue))
+    false))
 
 (define assert-equal-lambda
   (CFunc (list 'check1 'check2)  (none)
@@ -60,35 +64,41 @@ that calls the primitive `print`.
                (list (CId 'check1 (LocalId)) (CId 'check2 (LocalId)))
                (none))
          (CNone)
-         (CError (CStr "Assert failed")))))
+         (CError (CStr "Assert failed")))
+    false))
 
 (define assert-is-lambda
   (CFunc (list 'check1 'check2) (none)
     (CIf (CPrim2 'Is (CId 'check1 (LocalId)) (CId 'check2 (LocalId)))
          (CNone)
-         (CError (CStr "Assert failed")))))
+         (CError (CStr "Assert failed")))
+    false))
 
 (define assert-isnot-lambda
   (CFunc (list 'check1 'check2) (none)
     (CIf (CPrim2 'Is (CId 'check1 (LocalId)) (CId 'check2 (LocalId)))
          (CError (CStr "Assert failed"))
-         (CNone))))
+         (CNone))
+    false))
 
 (define assert-in-lambda
   (CFunc (list 'check1 'check2) (none)
     (CIf (desugar (PyBinOp (PyId 'check1 'DUMMY) 'In (PyId 'check2 'DUMMY)))
          (CNone)
-         (CError (CStr "Assert failed")))))
+         (CError (CStr "Assert failed")))
+    false))
 
 (define assert-notin-lambda
   (CFunc (list 'check1 'check2) (none)
     (CIf (desugar (PyBinOp (PyId 'check1 'DUMMY) 'In (PyId 'check2 'DUMMY)))
          (CError (CStr "Assert failed"))
-         (CNone))))
+         (CNone))
+    false))
 
 (define fail-lambda
   (CFunc (list 'arg) (none)
-    (CError (CId 'arg (LocalId)))))
+    (CError (CId 'arg (LocalId)))
+    false))
 
 (define exception
   (CClass
@@ -107,12 +117,14 @@ that calls the primitive `print`.
                                (CGetField
                                  (CId 'self (LocalId))
                                  '__class__)
-                               (CId 'Exception (LocalId))))))
+                               (CId 'Exception (LocalId))))
+                           true))
                (def '__str__
                     (CFunc (list 'self) (none)
                            (CReturn
                                (CBuiltinPrim 'exception-str
-                                 (list (CId 'self (LocalId)))))))))))
+                                 (list (CId 'self (LocalId)))))
+                           true))))))
 
 (define (make-exception-class [name : symbol]) : CExpr
   (CClass
@@ -128,7 +140,8 @@ that calls the primitive `print`.
           (CId 'self (LocalId))
           '__len__)
         (list (CId 'self (LocalId)))
-        (none)))))
+        (none)))
+    false))
 
 (define min-lambda
   (CFunc (list 'self) (none)
@@ -138,7 +151,8 @@ that calls the primitive `print`.
           (CId 'self (LocalId))
           '__min__)
         (list (CId 'self (LocalId)))
-        (none)))))
+        (none)))
+    false))
 
 (define max-lambda
   (CFunc (list 'self) (none)
@@ -148,7 +162,8 @@ that calls the primitive `print`.
           (CId 'self (LocalId))
           '__max__)
         (list (CId 'self (LocalId)))
-        (none)))))
+        (none)))
+    false))
 
 (define abs-lambda
   (CFunc (list 'self) (none)
@@ -158,7 +173,8 @@ that calls the primitive `print`.
           (CId 'self (LocalId))
           '__abs__)
         (list (CId 'self (LocalId)))
-        (none)))))
+        (none)))
+    false))
 
 (define iter-lambda
   (CFunc (list 'self) (none)
@@ -168,7 +184,8 @@ that calls the primitive `print`.
           (CId 'self (LocalId))
           '__iter__)
         (list (CId 'self (LocalId)))
-        (none)))))
+        (none)))
+    false))
 
 (define next-lambda
   (CFunc (list 'self) (none)
@@ -178,7 +195,8 @@ that calls the primitive `print`.
           (CId 'self (LocalId))
           '__next__)
         (list (CId 'self (LocalId)))
-        (none)))))
+        (none)))
+    false))
 
 
 (define isinstance-lambda
@@ -186,7 +204,8 @@ that calls the primitive `print`.
     (CReturn
       (CBuiltinPrim 'isinstance
                     (list (CId 'self (LocalId))
-                          (CId 'type (LocalId)))))))
+                          (CId 'type (LocalId)))))
+    false))
 
 ; Returns the $class of self's $class.
 ; self's $class is the class of the given instance.
@@ -196,7 +215,8 @@ that calls the primitive `print`.
   (CFunc (list 'self) (none)
          (CReturn
              (CBuiltinPrim '$super (list
-                 (CBuiltinPrim '$super (list (CId 'self (LocalId)))))))))
+                 (CBuiltinPrim '$super (list (CId 'self (LocalId)))))))
+         false))
 
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])

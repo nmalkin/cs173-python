@@ -31,12 +31,12 @@ class SeqIter:
 
         try:
             if has_length and self.i >= len(self.l):
-                raise StopIteration("Stop")
+                raise StopIteration()
             ret = self.l[self.i]
         except IndexError:
-            raise StopIteration("Stop")
+            raise StopIteration()
         except StopIteration:
-            raise StopIteration("Stop")
+            raise StopIteration()
 
         self.i += 1
         return ret
@@ -73,7 +73,7 @@ class FuncIter:
 
         if v == self.stopwhen:
             self.stopped = True
-            raise StopIteration("Stop")
+            raise StopIteration()
         else:
             return v
 

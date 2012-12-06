@@ -18,7 +18,7 @@
                         [global? : boolean]
                         [env : IdEnv]) : DesugarResult
   (begin ;(display "binop: ") (display values) (display "\n\n")
-  (local [(define first-val (rec-desugar (first values) global? env))]
+  (local [(define first-val (rec-desugar (first values) global? env false))]
     (if (> (length values) 1)
       (local [(define rest-val
                 (desugar-boolop op (rest values) global? (DResult-env first-val)))]
@@ -47,7 +47,7 @@
                  ;(define l-expr (rec-desugar l global? (DResult-env first-right)))
                  (define first-comp (rec-desugar (PyBinOp l (first ops) (first
                                                                           comparators))
-                                                 global? env))]
+                                                 global? env false))]
                 (if (> (length comparators) 1) 
                   (local [(define rest-comp (desugar-compop (first comparators)
                                                             (rest ops)
@@ -72,7 +72,7 @@
                       empty
                       es)]
    [PyId (id ctx) (list id)]
-   [PyAssign (targets v) (if (and (not global?) (not (PySubscript? (first targets))))
+   [PyAssign (targets v) (if (not (PySubscript? (first targets)))
                            (foldl (lambda(t so-far) (append (get-names t global? env)
                                                             so-far))
                                   empty
@@ -172,9 +172,9 @@
               (rec-desugar (PySeq (map (lambda (n) (PyAssign (list (PyId n 'Load))
                                                              (PyUndefined)))
                                        names))
-                           global? g/ns-env)
-              (rec-desugar (PyPass) global? g/ns-env)))
-          (define body (rec-desugar (PySeq es) global? (DResult-env prelude)))]
+                           global? g/ns-env false)
+              (rec-desugar (PyPass) global? g/ns-env false)))
+          (define body (rec-desugar (PySeq es) global? (DResult-env prelude) false))]
     (DResult
       (CModule
         (DResult-expr prelude)
@@ -183,12 +183,12 @@
 
 (define (map-desugar [exprs : (listof PyExpr)]
                      [global? : boolean]
-                     [env : IdEnv]): ((listof CExpr) * IdEnv)
+                     [env : IdEnv] [inclass? : boolean]): ((listof CExpr) * IdEnv)
   (local [(define (rec-map-desugar exps g e)
             (cond
               [(empty? exps) (values empty e)]
               [(cons? exps)
-               (local [(define first-r (rec-desugar (first exps) g e))
+               (local [(define first-r (rec-desugar (first exps) g e inclass?))
                        (define-values (results last-env)
                          (rec-map-desugar (rest exps) g (DResult-env first-r)))]
                  (values
@@ -216,15 +216,16 @@
   (local [(define g/ns-env (get-globals/nonlocals expr false empty))
           (define names (get-names expr false g/ns-env))]
     (rec-desugar
-      (PySeq (append 
-               (if (not (empty? names))
-                 (map assign-undef
-                      (filter (lambda(n) (not (member n args)))
-                          names)) 
-                 (list (PyPass))) 
-               (list expr)))
+      (if (not (empty? names))
+          (PySeq (append 
+                   (map assign-undef
+                        (filter (lambda(n) (not (member n args)))
+                                names)) 
+                   (list expr)))
+          expr)
       false
-      g/ns-env)))
+      g/ns-env
+      false)))
 
 (define (desugar-for [target : PyExpr] [iter : PyExpr] [body : PyExpr]
                      [global? : boolean] [env : IdEnv]) : DesugarResult
@@ -248,7 +249,8 @@
                        body))
                        (PyPass))))
        global?
-       env)))
+       env
+       false)))
 
 (define (desugar-listcomp [body : PyExpr] [gens : (listof PyExpr)] 
                           [global? : boolean] [env : IdEnv]) : DesugarResult
@@ -267,15 +269,16 @@
                   (PyAssign (list list-id) (PyList empty))
                   (make-comploop gens)
                   list-id)))]
-         (rec-desugar full-expr global? env)))
+         (rec-desugar full-expr global? env false)))
 
 
 
-(define (rec-desugar [expr : PyExpr] [global? : boolean] [env : IdEnv]) : DesugarResult 
+(define (rec-desugar [expr : PyExpr] [global? : boolean]
+                     [env : IdEnv] [inclass? : boolean]) : DesugarResult 
   (begin ;(display expr) (display "\n\n")
     (type-case PyExpr expr
     [PySeq (es) (local [(define-values (exprs-r last-env)
-                          (map-desugar es global? env))]
+                          (map-desugar es global? env inclass?))]
                   (DResult
                     (foldl (lambda (e1 so-far) (CSeq so-far e1))
                            (first exprs-r)
@@ -287,11 +290,11 @@
                 ; We handle three kinds of assignments.
                 ; An assignment to a subscript is desugared as a __setitem__ call.
                 [PySubscript (left ctx slice)
-                   (letrec ([desugared-target (rec-desugar left global? env)]
+                   (letrec ([desugared-target (rec-desugar left global? env false)]
                             [desugared-slice 
-                              (rec-desugar slice global? (DResult-env desugared-target))]
+                              (rec-desugar slice global? (DResult-env desugared-target) false)]
                             [desugared-value
-                              (rec-desugar value global? (DResult-env desugared-slice))]
+                              (rec-desugar value global? (DResult-env desugared-slice) false)]
                             [target-id (new-id)])
                      (DResult
                        (CApp (CGetField (DResult-expr desugared-target) '__setitem__)
@@ -302,8 +305,9 @@
                        (DResult-env desugared-value)))]
                 ; An assignment to a tuple is desugared as multiple __setitem__ calls.
                 [PyTuple (vals)
-                  (local [(define-values (targets-r mid-env) (map-desugar vals global? env))
-                          (define value-r (rec-desugar value global? mid-env))
+                  (local [(define-values (targets-r mid-env) (map-desugar vals global?
+                                                                          env false))
+                          (define value-r (rec-desugar value global? mid-env false))
                           (define assigns
                             (map2 (λ (t n) 
                                      (CAssign t (CApp
@@ -323,8 +327,8 @@
                 ; The others become a CAssign.
                 [else
                   (local [(define-values (targets-r mid-env)
-                            (map-desugar targets global? env))
-                          (define value-r (rec-desugar value global? mid-env))]
+                            (map-desugar targets global? env false))
+                          (define value-r (rec-desugar value global? mid-env false))]
                          (DResult
                            (foldl (lambda (t so-far)
                                     (CSeq so-far (CAssign t (DResult-expr value-r))))
@@ -355,8 +359,8 @@
     [PyRaise (expr) (local [(define expr-r (if (PyId? expr)
                                              ;;handle the implicit construction case
                                              (rec-desugar (PyApp expr empty)
-                                                          global? env) 
-                                             (rec-desugar expr global? env)))]
+                                                          global? env false) 
+                                             (rec-desugar expr global? env false)))]
                             (DResult
                               (CRaise 
                                 (if (PyPass? expr)
@@ -365,12 +369,12 @@
                               (DResult-env expr-r)))]
 
     ; PyPass is an empty lambda
-    [PyPass () (DResult (CApp (CFunc empty (none) (CNone)) empty (none)) env)] 
+    [PyPass () (DResult (CApp (CFunc empty (none) (CNone) false) empty (none)) env)] 
 
     [PyIf (test body orelse)
-          (local [(define test-r (rec-desugar test global? env))
-                  (define body-r (rec-desugar body global? (DResult-env test-r)))
-                  (define orelse-r (rec-desugar orelse global? (DResult-env body-r)))]
+          (local [(define test-r (rec-desugar test global? env false))
+                  (define body-r (rec-desugar body global? (DResult-env test-r) false))
+                  (define orelse-r (rec-desugar orelse global? (DResult-env body-r) false))]
           (DResult 
             (CIf (DResult-expr test-r)
                  (DResult-expr body-r)
@@ -378,9 +382,9 @@
             (DResult-env orelse-r)))]
 
     [PyBinOp (left op right)
-             (local [(define left-r (rec-desugar left global? env))
+             (local [(define left-r (rec-desugar left global? env false))
                      (define left-c (DResult-expr left-r))
-                     (define right-r (rec-desugar right global? (DResult-env left-r)))
+                     (define right-r (rec-desugar right global? (DResult-env left-r) false))
                      (define right-c (DResult-expr right-r))] 
                (case op 
                  ['Add (DResult (CApp (CGetField left-c '__add__) 
@@ -440,7 +444,7 @@
                                       (none))
                                 (DResult-env right-r))]
                  ['NotEq (rec-desugar (PyUnaryOp 'Not (PyBinOp left 'Eq right)) 
-                                      global? env)]
+                                      global? env false)]
                  ['In (DResult 
                         (CApp (CFunc (list 'self 'test) (none)
                                      (CSeq
@@ -461,27 +465,28 @@
                                                                   (string-append
                                                                     "argument of type '___'" 
                                                                     "is not iterable")))))
-                                                  (none)))))
+                                                  (none))))
+                                     false)
                               (list right-c left-c)
                               (none))
                         (DResult-env right-r))]
                  ['NotIn (rec-desugar (PyUnaryOp 'Not (PyBinOp left 'In right))
-                                      global? env)]
+                                      global? env false)]
                  [else (DResult
                          (CPrim2 op left-c right-c)
                          (DResult-env right-r))]))]
 
     [PyUnaryOp (op operand)
                (case op
-                 ['USub (rec-desugar (PyBinOp (PyNum 0) 'Sub operand) global? env)]
-                 ['UAdd (rec-desugar (PyBinOp (PyNum 0) 'Add operand) global? env)]
-                 ['Invert (local [(define roperand (rec-desugar operand global? env))]
+                 ['USub (rec-desugar (PyBinOp (PyNum 0) 'Sub operand) global? env false)]
+                 ['UAdd (rec-desugar (PyBinOp (PyNum 0) 'Add operand) global? env false)]
+                 ['Invert (local [(define roperand (rec-desugar operand global? env false))]
                             (DResult 
                               (CApp (CGetField (DResult-expr roperand) '__invrt__)
                                 (list (DResult-expr roperand))
                                 (none))
                               (DResult-env roperand)))]
-                 [else (local [(define roperand (rec-desugar operand global? env))]
+                 [else (local [(define roperand (rec-desugar operand global? env false))]
                               (DResult (CPrim1 op 
                                                (DResult-expr roperand)) 
                                        (DResult-env roperand)))])]
@@ -497,11 +502,12 @@
 
 
     [PyLam (args body)
-           (local [(define rbody (rec-desugar body global? env))]
+           (local [(define rbody (rec-desugar body global? env false))]
                   (DResult 
                     (CFunc args (none)
                          (CReturn                   
-                           (DResult-expr rbody)))
+                           (DResult-expr rbody))
+                         false)
                     (DResult-env rbody)))]
     
     [PyFunc (name args defargs body)
@@ -530,15 +536,14 @@
                                       (PyPass))
                                    body))))) 
                     global? 
-                    env))
-
-
+                    env
+                    false))
 
             (local [(define body-r (desugar-local-body body args env))]
              (DResult
-                     (CAssign (CId name (LocalId))
-                              (CFunc args (none) (DResult-expr body-r)))
-             (merge-globals env (DResult-env body-r)))))]
+               (CAssign (CId name (LocalId))
+                        (CFunc args (none) (DResult-expr body-r) inclass?))
+               env)))]
 
     ; a PyClassFunc is a method whose first argument should be the class rather than self
     [PyClassFunc (name args body)
@@ -558,47 +563,52 @@
                                                                               (first
                                                                                 args)
                                                                               (LocalId)))))
-                                           (DResult-expr body-r))))
-               (merge-globals env (DResult-env body-r))))]
+                                           (DResult-expr body-r))
+                                     inclass?))
+               env))]
 
     [PyFuncVarArg (name args sarg body)
                   (local [(define body-r 
                             (desugar-local-body body (append args (list sarg)) env))]
                     (DResult
                             (CAssign (CId name (LocalId))
-                                     (CFunc args (some sarg) (DResult-expr body-r)))
-                      (merge-globals env (DResult-env body-r))))]
+                                     (CFunc args (some sarg) (DResult-expr body-r) inclass?))
+                      env))]
 
     [PyReturn (value)
-              (local [(define value-r (rec-desugar value global? env))]
+              (local [(define value-r (rec-desugar value global? env false))]
                      (DResult (CReturn (DResult-expr value-r)) (DResult-env value-r)))]
 
     [PyDict (keys values) 
-            (local [(define-values (keys-r mid-env) (map-desugar keys global? env))
-                    (define-values (values-r last-env) (map-desugar values global? mid-env))]
+            (local [(define-values (keys-r mid-env) (map-desugar keys global? env false))
+                    (define-values (values-r last-env)
+                      (map-desugar values global? mid-env false))]
               (DResult (CDict (lists->hash keys-r values-r)) last-env))]
 
     [PySet (elts) (local [(define-values (results last-env)
-                            (map-desugar elts global? env))]
+                            (map-desugar elts global? env false))]
                     (DResult (CSet results) last-env))]
 
     [PyList (values) (local [(define-values (results last-env)
-                               (map-desugar values global? env))]
+                               (map-desugar values global? env false))]
                        (DResult (CList results) last-env))]
 
     [PyTuple (values) (local [(define-values (results last-env)
-                                (map-desugar values global? env))]
+                                (map-desugar values global? env false))]
                         (DResult (CTuple results) last-env))]
 
     [PySubscript (left ctx slice)
       (cond
         [(symbol=? ctx 'Load)
          (local [(define left-id (new-id))
-                 (define left-r (rec-desugar left global? env))]
+                 (define left-r (rec-desugar left global? env false))]
                 (if (PySlice? slice)
-                  (local [(define slice-low (rec-desugar (PySlice-lower slice) global? env))
-                          (define slice-up (rec-desugar (PySlice-upper slice) global? env))
-                          (define slice-step (rec-desugar (PySlice-step slice) global? env))]
+                  (local [(define slice-low (rec-desugar (PySlice-lower slice)
+                                                         global? env false))
+                          (define slice-up (rec-desugar (PySlice-upper slice)
+                                                        global? env false))
+                          (define slice-step (rec-desugar (PySlice-step slice)
+                                                          global? env false))]
                     (DResult
                       (CLet left-id
                             (DResult-expr left-r)
@@ -611,7 +621,8 @@
                                     (DResult-expr slice-step))
                                   (none)))
                       (DResult-env slice-step)))
-                  (local [(define slice-r (rec-desugar slice global? (DResult-env left-r)))] 
+                  (local [(define slice-r (rec-desugar slice global?
+                                                       (DResult-env left-r) false))] 
                          (DResult 
                     (CLet left-id 
                           (DResult-expr left-r)
@@ -628,10 +639,10 @@
     [PyBreak () (DResult (CBreak) env)]
 
     [PyApp (fun args)
-           (local [(define f (rec-desugar fun global? env))
+           (local [(define f (rec-desugar fun global? env false))
                    (define f-expr (DResult-expr f))
                    (define-values (results last-env)
-                     (map-desugar args global? (DResult-env f)))]
+                     (map-desugar args global? (DResult-env f) false))]
              (begin
                ;(display args) (display "\n")
                ;(display results) (display "\n\n")
@@ -649,10 +660,10 @@
                last-env)))]
 
     [PyAppStarArg (fun args sarg)
-           (local [(define f (rec-desugar fun global? env))
+           (local [(define f (rec-desugar fun global? env false))
                    (define-values (results mid-env)
-                     (map-desugar args global? (DResult-env f)))
-                   (define s (rec-desugar sarg global? mid-env))]
+                     (map-desugar args global? (DResult-env f) false))
+                   (define s (rec-desugar sarg global? mid-env false))]
              (DResult
                (if (CGetField? (DResult-expr f))
                  (local [(define o (CGetField-value (DResult-expr f)))]
@@ -661,28 +672,49 @@
                (DResult-env s)))]
     
     [PyClass (name bases body)
-             (local [(define body-r (rec-desugar body false (extract-globals env)))]
+             (local [(define newenv (get-globals/nonlocals body false env))
+                     (define names (get-names body false newenv))
+                     (define body-r (rec-desugar body false newenv true))
+                     (define modbody
+                       (if (member '__init__ names)
+                           (DResult-expr body-r)
+                           (CSeq (DResult-expr body-r)
+                                 (CAssign 
+                                   (CId '__init__ (LocalId))
+                                   (CFunc (list 'self) (none)
+                                          (CAssign 
+                                            (CGetField
+                                              (CId 'self (LocalId))
+                                              '__class__)
+                                            (CBuiltinPrim '$class
+                                                          (list (CId 'self (LocalId)))))
+                                          true)))))
+                     (define modenv 
+                       (if (member '__init__ names)
+                           (DResult-env body-r)
+                           (add-id '__init__ (LocalId) (DResult-env body-r))))]
                (DResult
                  (CAssign (CId name (if global? (GlobalId) (LocalId)))
                           (CClass name
-                                  (if (empty? bases) 
+                                  (if (empty? bases)
                                     'object
-                                    (first bases))  
-                                  (DResult-expr body-r)))
-                 (DResult-env body-r)))]
+                                    (first bases))
+                                  modbody))
+                 modenv))]
     
     [PyDotField (value attr)
-                (local [(define value-r (rec-desugar value global? env))]
+                (local [(define value-r (rec-desugar value global? env false))]
                    (DResult
                      (CGetField (DResult-expr value-r) attr)
                      (DResult-env value-r)))]
     
     [PyTryExceptElseFinally (try excepts orelse finally)
-                (local [(define try-r (rec-desugar try global? env))
+                (local [(define try-r (rec-desugar try global? env false))
                         (define-values (excepts-r mid-env)
-                          (map-desugar excepts global? (DResult-env try-r)))
-                        (define orelse-r (rec-desugar orelse global? mid-env))
-                        (define finally-r (rec-desugar finally global? (DResult-env orelse-r)))]
+                          (map-desugar excepts global? (DResult-env try-r) false))
+                        (define orelse-r (rec-desugar orelse global? mid-env false))
+                        (define finally-r (rec-desugar finally global?
+                                                       (DResult-env orelse-r) false))]
                   (DResult
                     (CTryExceptElseFinally 
                       (DResult-expr try-r)
@@ -693,8 +725,8 @@
     
     [PyExcept (types body)
               (local [(define-values (types-r mid-env)
-                        (map-desugar types global? env))
-                      (define body-r (rec-desugar body global? mid-env))]
+                        (map-desugar types global? env false))
+                      (define body-r (rec-desugar body global? mid-env false))]
                 (DResult
                   (CExcept types-r 
                            (none)
@@ -702,9 +734,9 @@
                   (DResult-env body-r)))]
     
     [PyWhile (test body orelse)
-             (local [(define test-r (rec-desugar test global? env))
-                     (define body-r (rec-desugar body global? (DResult-env test-r)))
-                     (define orelse-r (rec-desugar orelse global? (DResult-env body-r)))]
+             (local [(define test-r (rec-desugar test global? env false))
+                     (define body-r (rec-desugar body global? (DResult-env test-r) false))
+                     (define orelse-r (rec-desugar orelse global? (DResult-env body-r) false))]
              (DResult 
                  (CWhile (DResult-expr test-r)
                          (DResult-expr body-r)
@@ -714,8 +746,8 @@
 
     [PyExceptAs (types name body)
                 (local [(define-values (types-r mid-env)
-                          (map-desugar types global? env))
-                        (define body-r (rec-desugar body global? mid-env))]
+                          (map-desugar types global? env false))
+                        (define body-r (rec-desugar body global? mid-env false))]
                   (DResult
                     (CExcept types-r
                              (some name)
@@ -723,9 +755,9 @@
                     (DResult-env body-r)))]
 
     [PyAugAssign (op target value)
-                 (local [(define target-r (rec-desugar target global? env))
+                 (local [(define target-r (rec-desugar target global? env false))
                          (define aug-r (rec-desugar (PyBinOp target op value)
-                                                       global? (DResult-env target-r)))]
+                                                       global? (DResult-env target-r) false))]
                  (DResult
                    (CAssign (DResult-expr target-r)
                           (DResult-expr aug-r))
@@ -737,9 +769,9 @@
               (let ([target (first targets)]) ; TODO: handle deletion of more than one target
                 (type-case PyExpr target
                   [PySubscript (left ctx slice)
-                    (letrec ([desugared-target (rec-desugar left global? env)]
-                             [desugared-slice (rec-desugar slice global?
-                                                           (DResult-env desugared-target))]
+                    (letrec ([desugared-target (rec-desugar left global? env false)]
+                             [desugared-slice
+                               (rec-desugar slice global? (DResult-env desugared-target) false)]
                              [target-id (new-id)])
                       (DResult
                         (CLet target-id (DResult-expr desugared-target)
@@ -753,7 +785,7 @@
 )))
 
 (define (desugar [expr : PyExpr]) : CExpr
-  (type-case DesugarResult (rec-desugar expr true empty)
+  (type-case DesugarResult (rec-desugar expr true empty false)
     [DResult (expr env) expr]))
 
 (define-type DesugarResult

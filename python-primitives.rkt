@@ -217,11 +217,11 @@ primitives here.
     ; If it is an object (i.e., an instance), it is its antecedent.
     ; Otherwise, it is itself.
     ['$class
-     (letrec ([me (first args)]
-              [my-antecedent (VObject-antecedent me)]
-              [antecedent-class (fetch (some-v (lookup my-antecedent env)) sto)]
-              [am-class (and (some? (VObject-mval me))
-                             (MetaClass? (some-v (VObject-mval me))))])
+     (local [(define me (first args))
+            (define my-antecedent (VObject-antecedent me))
+            (define antecedent-class (fetch (some-v (lookup my-antecedent env)) sto))
+            (define am-class (and (some? (VObject-mval me))
+                             (MetaClass? (some-v (VObject-mval me)))))]
        (some
          (if am-class
              me

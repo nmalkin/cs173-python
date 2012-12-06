@@ -174,19 +174,19 @@
     ))
 
 (define (pretty-exception [exn : CVal] [sto : Store]) : string
-  (string-join
-    (list
-      (symbol->string (VObject-antecedent exn))
-      (string-join
-        (map pretty
-             (MetaTuple-v
-               (some-v (VObject-mval
-                         (fetch (some-v
-                                  (hash-ref
-                                    (VObject-dict exn) 'args))
-                                sto)))))
-        " "))
-    ": "))
+  (local [(define name (symbol->string (VObject-antecedent exn)))
+          (define args 
+            (string-join 
+              (map pretty
+                   (MetaTuple-v
+                     (some-v (VObject-mval
+                               (fetch (some-v (hash-ref (VObject-dict exn) 'args)) sto)))))
+              " "))]
+    (if (not (string=? args ""))
+        (string-append name 
+                       (string-append ": "
+                                      args))
+        name)))
 
 (define (make-exception [name : symbol] [error : string]) : CExpr
   (CApp
