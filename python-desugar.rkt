@@ -516,8 +516,10 @@
               (local [(define last-arg (first (reverse args)))]
                 (rec-desugar
                   ; assuming 1 defarg for now, generalize later
-                  (PyApp
-                  (PyLam (list last-arg)
+                    (PySeq 
+                      (list
+                        (PyAssign (list (PyId last-arg 'Load))
+                                                  (first (reverse defargs)))
                     (PyFuncVarArg name empty
                             'stararg 
                             (PySeq
@@ -533,8 +535,7 @@
                                                                'Load
                                                                (PyNum 0)))
                                       (PyPass))
-                                   body))))
-                  defargs) 
+                                   body))))) 
                     global? 
                     env
                     false))
