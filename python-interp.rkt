@@ -136,10 +136,12 @@
                                              ; bind the interpreted arguments to the constructor
                                               (define result 
                                                 (bind-and-execute body argxs vararg
-                                                                  (cons o argvs)
-                                                                  (cons (CId 'init (LocalId)) 
-                                                                        arges)
-                                                                  ec cenv sc))]
+                                                                (cons o argvs)
+                                                                (cons (CId 'init (LocalId)) 
+                                                                      arges)
+                                                                ec
+                                                                (replace-global-scope? cenv ec)
+                                                                sc))]
                                         (type-case Result result
                                           [v*s*e (vb sb eb) 
                                                  (v*s*e 
@@ -170,11 +172,13 @@
                                                                 (map v*s*e-v argvs-r))
                                              ; bind the interpreted arguments to the constructor
                                                         (define result 
-                                                          (bind-and-execute body argxs vararg
-                                                                            (cons vfun argvs)
-                                                                            (cons (make-builtin-num 0) 
-                                                                                  arges)
-                                                                            ec cenv sc))]
+                                                    (bind-and-execute body argxs vararg
+                                                             (cons vfun argvs)
+                                                             (cons (make-builtin-num 0) 
+                                                                   arges)
+                                                             ec
+                                                             (replace-global-scope? cenv ec)
+                                                             sc))]
                                        (type-case Result result
                                          [v*s*e (vb sb eb) 
                                                 (v*s*e vb sb env)]
