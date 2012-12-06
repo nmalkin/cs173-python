@@ -15,12 +15,12 @@
                (def '__init__ 
                     (CFunc (list 'self) (none)
                            (CId 'self (LocalId))))
+
                (def '__eq__
                     (CFunc (list 'self 'other) (none)
-                           (CReturn (CBuiltinPrim 'eq
-                                    (list 
-                                      (CId 'self (LocalId))
-                                      (CId 'other (LocalId)))))))
+                           (CReturn (CPrim2 'Is
+                                            (CId 'self (LocalId))
+                                            (CId 'other (LocalId))))))
 
                (def '__str__ 
                     (CFunc (list 'self)  (none)
@@ -29,9 +29,11 @@
 
                (def '__cmp__
                     (CFunc (list 'self 'other) (none)
-                           ;TODO: MAKE THIS AN EXCEPTION
-                           (CError (CStr "NotImplemented"))))
-
+                           (CReturn (CIf (CPrim2 'Is
+                                            (CId 'self (LocalId))
+                                            (CId 'other (LocalId)))
+                                         (make-builtin-num 0)
+                                         (make-builtin-num -1)))))
 
               (def '__gt__
                     (CFunc (list 'self 'other) (none)
