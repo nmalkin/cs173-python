@@ -500,16 +500,23 @@
 
     [PyApp (fun args)
            (local [(define f (rec-desugar fun global? env))
+                   (define f-expr (DResult-expr f))
                    (define-values (results last-env)
                      (map-desugar args global? (DResult-env f)))]
              (begin
                ;(display args) (display "\n")
                ;(display results) (display "\n\n")
                (DResult
-               (if (CGetField? (DResult-expr f))
-                 (local [(define o (CGetField-value (DResult-expr f)))]
-                   (CApp (DResult-expr f) (cons o results) (none)))
-                 (CApp (DResult-expr f) results (none)))
+               (cond
+                [(CGetField? f-expr)
+                 (local [(define o (CGetField-value f-expr))]
+                   (CApp f-expr (cons o results) (none)))]
+                ; special case: "super" application gets extra 'self' argument
+                [(and (CId? f-expr)
+                      (symbol=? 'super (CId-x f-expr)))
+                 (CApp f-expr (cons (CId 'self (LocalId)) results) (none))
+                 ]
+                [else (CApp f-expr results (none))])
                last-env)))]
 
     [PyAppStarArg (fun args sarg)

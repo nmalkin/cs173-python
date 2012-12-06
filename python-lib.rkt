@@ -188,6 +188,16 @@ that calls the primitive `print`.
                     (list (CId 'self (LocalId))
                           (CId 'type (LocalId)))))))
 
+; Returns the $class of self's $class.
+; self's $class is the class of the given instance.
+; the $class of that is its antecedent.
+; So this function returns the super-class of the instance.
+(define super-lambda
+  (CFunc (list 'self) (none)
+         (CReturn
+             (CBuiltinPrim '$super (list
+                 (CBuiltinPrim '$super (list (CId 'self (LocalId)))))))))
+
 (define-type LibBinding
   [bind (left : symbol) (right : CExpr)])
 
@@ -221,6 +231,8 @@ that calls the primitive `print`.
         (bind 'print print-lambda)
 
         (bind 'callable callable-lambda)
+
+        (bind 'super super-lambda)
 
         (bind 'Exception exception)
         (bind 'NameError (make-exception-class 'NameError))
