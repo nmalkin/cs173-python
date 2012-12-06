@@ -277,8 +277,8 @@ that calls the primitive `print`.
                (open-input-file file)
                python-path))))
        (list "pylib/range.py"
-             "pylib/filter.py"
              "pylib/seq_iter.py"
+             "pylib/filter.py"
              "pylib/any.py"
              "pylib/all.py"
              "pylib/assertraises.py")))

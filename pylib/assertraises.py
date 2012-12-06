@@ -3,6 +3,8 @@ def ___assertRaises(exc, fun, *args):
         fun(*args)
     except exc:
         pass
+    except TypeError:
+        print("type error??")
     except:
       	print("Assert failure!")
     else:
