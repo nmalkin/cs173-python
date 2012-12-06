@@ -46,7 +46,10 @@ def iter(l, *args):
         stopwhen = args[0]
         return FuncIter(l, stopwhen)
     else:
-        return l.__iter__()
+        try:
+            return l.__iter__()
+        except:
+            raise TypeError()
 
 class FuncIter:
     def __init__(self, func, stopwhen):

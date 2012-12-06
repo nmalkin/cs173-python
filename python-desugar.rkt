@@ -180,6 +180,26 @@
        global?
        env)))
 
+(define (desugar-listcomp [body : PyExpr] [gens : (listof PyExpr)] 
+                          [global? : boolean] [env : IdEnv]) : DesugarResult
+  (local [(define list-id (PyId (new-id) 'Load))
+          (define (make-comploop gens)
+            (cond 
+              [(empty? gens) (PyApp (PyDotField list-id 'append) 
+                                    (list body))]
+              [(cons? gens)
+               (PyFor (PyComprehen-target (first gens))
+                      (PyComprehen-iter (first gens))
+                      (make-comploop (rest gens)))]))
+          (define full-expr
+            (PySeq
+              (list 
+                  (PyAssign (list list-id) (PyList empty))
+                  (make-comploop gens)
+                  list-id)))]
+         (rec-desugar full-expr global? env)))
+
+
 
 (define (rec-desugar [expr : PyExpr] [global? : boolean] [env : IdEnv]) : DesugarResult 
   (begin ;(display expr) (display "\n\n")
@@ -371,6 +391,9 @@
     [PyCompOp (l op rights) (local [(define c (desugar-compop l op rights global? env))]
                               (begin ;(display c) (display "\n")
                                      c))]
+
+    [PyListComp (elt gens) (desugar-listcomp elt gens global? env)]
+    [PyComprehen (target iter) (error 'desugar "Can't desugar PyComprehen")]
 
 
     [PyLam (args body)

@@ -519,7 +519,7 @@
                       [Break (selse eelse) (Break selse eelse)]
                       [Exception (velse selse eelse)
                                  (Exception velse selse eelse)])]
-            [Return (vtry stry etry) (return-exception etry stry)]
+            [Return (vtry stry etry) (Return vtry stry etry)]
             [Break (stry etry) (Break stry etry)]
             ;; handle excepts here
             [Exception (vtry stry etry)
