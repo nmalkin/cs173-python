@@ -113,10 +113,15 @@
                                                                (replace-global-scope? cenv ec)
                                                                sc)))]
                               (type-case Result result
-                                [v*s*e (vb sb eb) (v*s*e vnone sb env)]
-                                [Return (vb sb eb) (v*s*e vb sb env)]
-                                [Break (sb eb) (break-exception eb sb)]
-                                [Exception (vb sb eb) (Exception vb sb env)])))))]
+                                [v*s*e (vb sb eb) (v*s*e vnone sb
+                                                         (replace-global-scope? env eb))]
+                                [Return (vb sb eb) (v*s*e vb sb 
+                                                          (replace-global-scope? env eb))]
+                                [Break (sb eb) (break-exception 
+                                                 (replace-global-scope? env eb) sb)]
+                                [Exception (vb sb eb)
+                                           (Exception vb sb
+                                                      (replace-global-scope? env eb))])))))]
       [VObject (b mval d)
                (if (and (some? mval) (MetaClass? (some-v mval)))
                   ; We're calling a class.
@@ -150,10 +155,15 @@
                                                                                eb))
                                                                      sb)])
                                                      obj)
-                                                   sb env)]
-                                         [Return (vb sb eb) (v*s*e vb sb env)]
-                                         [Break (sb eb) (break-exception eb sb)]
-                                         [Exception (vb sb eb) (Exception vb sb env)])))))]
+                                                   sb (replace-global-scope? env eb))]
+                                         [Return (vb sb eb)
+                                                 (v*s*e vb sb 
+                                                        (replace-global-scope? env eb))]
+                                         [Break (sb eb) (break-exception 
+                                                          (replace-global-scope? env eb) sb)]
+                                         [Exception (vb sb eb)
+                                                 (Exception vb sb 
+                                                        (replace-global-scope? env eb))])))))]
                       [else (error 'interp 
                                    "__init__ not found. THIS SHOULDN'T HAPPEN.")]))
                                      
@@ -180,11 +190,17 @@
                                                              (replace-global-scope? cenv ec)
                                                              sc))]
                                        (type-case Result result
-                                         [v*s*e (vb sb eb) 
-                                                (v*s*e vb sb env)]
-                                         [Return (vb sb eb) (v*s*e vb sb env)]
-                                         [Break (sb eb) (break-exception eb sb)]
-                                         [Exception (vb sb eb) (Exception vb sb env)])))))]
+                                         [v*s*e (vb sb eb)
+                                                (v*s*e vb sb
+                                                       (replace-global-scope? env eb))]
+                                         [Return (vb sb eb)
+                                                 (v*s*e vb sb (replace-global-scope? env eb))]
+                                         [Break (sb eb)
+                                                (break-exception (replace-global-scope? env eb)
+                                                                 sb)]
+                                         [Exception (vb sb eb)
+                                                    (Exception vb sb
+                                                         (replace-global-scope? env eb))])))))]
                       [else (error 'interp 
                                    "Not a closure or constructor.")])]
                       [Return (vfun sfun efun) (return-exception efun sfun)]
