@@ -9,6 +9,7 @@
          "builtins/none.rkt"
          "util.rkt"
          (typed-in racket/base (hash-copy : ((hashof 'a 'b) -> (hashof 'a 'b))))
+         (typed-in racket/base (hash-count : ((hashof 'a 'b) -> number)))
          (typed-in racket/base (expt : (number number -> number)))
          (typed-in racket/base (quotient : (number number -> number)))
          (typed-in racket/string (string-join : ((listof string) string -> string)))
@@ -68,6 +69,13 @@
                                (v*s*e-e (first (reverse result-list)))
                                init-e)))))))
 
+(define (replace-global-scope? [ext : Env] [curr : Env]) : Env
+  (if (and (cons? curr)
+           (cons? ext)
+           (> (hash-count (last curr)) (hash-count (last ext))))
+      (append (drop-right ext 1) (list (last curr)))
+      ext))
+
 (define (interp-capp [fun : CExpr] [arges : (listof CExpr)] 
                      [stararg : (optionof CExpr)] [env : Env] [sto : Store]) : Result
   (begin ;(display "APP: ") (display fun) (display "\n") (display arges) (display "\n\n\n")
@@ -97,11 +105,13 @@
                                                                  (lambda(x)
                                                                    (make-builtin-num 0))
                                                                  l))
-                                                 (v*s*e-e sarg-r) cenv 
+                                                 (v*s*e-e sarg-r)
+                                                 (replace-global-scope? cenv ec)
                                                  (v*s*e-s sarg-r))) 
                                              (bind-and-execute body argxs vararg
                                                                argvs arges ec
-                                                               cenv sc)))]
+                                                               (replace-global-scope? cenv ec)
+                                                               sc)))]
                               (type-case Result result
                                 [v*s*e (vb sb eb) (v*s*e vnone sb env)]
                                 [Return (vb sb eb) (v*s*e vb sb env)]
