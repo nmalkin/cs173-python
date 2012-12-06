@@ -142,26 +142,39 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "FunctionDef")
                  ('name name)
                  ('body body)
-                 ('decorator_list dl)
+                 ('decorator_list decorator-list)
                  ('args args)
                  ('returns returns))
-     (if (not (string?  (hash-ref args 'vararg)))
-       (PyFunc (string->symbol name) 
-               (map (lambda(arg) 
-                      (string->symbol (hash-ref arg 'arg))) 
-                    (hash-ref args 'args)) 
-               (map (lambda(arg) 
-                      (get-structured-python arg))
-                    (hash-ref args 'defaults)) 
-             (get-structured-python body))
-
-       (PyFuncVarArg (string->symbol name) 
+     (cond
+      ; varargs
+      [(string?  (hash-ref args 'vararg))
+       (PyFuncVarArg (string->symbol name)
                (map (lambda(arg) 
                       (string->symbol (hash-ref arg 'arg))) 
                     (hash-ref args 'args)) 
                (string->symbol (hash-ref args 'vararg))
-             (get-structured-python body)))]
-    
+             (get-structured-python body))]
+
+      ; special case: classmethod decorator
+      [(and (not (empty? decorator-list))
+            (string=? "classmethod" (hash-ref (first decorator-list) 'id)))
+       (PyClassFunc (string->symbol name)
+               (map (lambda(arg) 
+                      (string->symbol (hash-ref arg 'arg))) 
+                    (hash-ref args 'args)) 
+             (get-structured-python body))]
+
+      ; regular function
+      [else
+       (PyFunc (string->symbol name)
+               (map (lambda(arg)
+                      (string->symbol (hash-ref arg 'arg)))
+                    (hash-ref args 'args))
+               (map (lambda(arg) 
+                      (get-structured-python arg))
+                    (hash-ref args 'defaults)) 
+               (get-structured-python body))])]
+
     [(hash-table ('nodetype "Return")
                  ('value value))
      (PyReturn (get-structured-python value))]

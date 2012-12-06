@@ -399,7 +399,6 @@
                               new-s
                               new-e)))))]
 
-    ;; deal with pythonic scope here
     ;; only for ids!
     [CAssign (t v) (type-case Result (interp-env v env sto)
                      [v*s*e (vv sv venv)
