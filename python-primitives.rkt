@@ -173,6 +173,7 @@ primitives here.
     ['dict-getitem (dict-getitem args env sto)]
     ['dict-setitem (dict-setitem args env sto)]
     ['dict-delitem (dict-delitem args env sto)]
+    ['dict->list (dict->list args env sto)]
 
     ;set
     ['set-set (set-set args env sto)]
@@ -232,5 +233,9 @@ primitives here.
               [my-antecedent (VObject-antecedent me)]
               [antecedent-class (fetch (some-v (lookup my-antecedent env)) sto)])
        (some antecedent-class))]
+
+    ['$locals (begin
+               ; (display env) (display "\n\n")
+                (some (make-under-dict (first env) sto)))]
 
 ))

@@ -80,6 +80,7 @@
 (define (interp-capp [fun : CExpr] [arges : (listof CExpr)] 
                      [stararg : (optionof CExpr)] [env : Env] [sto : Store]) : Result
   (begin ;(display "APP: ") (display fun) (display "\n") (display arges) (display "\n\n\n")
+         ;(display env) (display "\n\n")
  (type-case Result (interp-env fun env sto)
    [v*s*e (vfun sfun efun) 
     (type-case CVal vfun

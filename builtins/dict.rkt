@@ -3,6 +3,7 @@
 (require "../python-core-syntax.rkt")
 (require "../util.rkt"
          "none.rkt"
+         "set.rkt"
          "str.rkt")
 (require
   (typed-in racket/base (andmap : (('a -> boolean) (listof 'a) -> 'b)))
@@ -28,6 +29,12 @@
                    (CFunc (list 'self) (none)
                           (CReturn (CBuiltinPrim 'dict-str
                                                      (list (CId 'self (LocalId)))))
+                          true))
+
+              (def '__list__
+                   (CFunc (list 'self) (none)
+                          (CReturn (CBuiltinPrim 'dict->list
+                                                 (list (CId 'self (LocalId)))))
                           true))
 
               (def 'clear
@@ -262,3 +269,11 @@
                  (begin
                    (hash-remove! contents target)
                    (some vnone)))))
+
+(define (dict->list [args : (listof CVal)] [env : Env] [sto : Store]) : (optionof CVal)
+     (check-types args env sto '$dict
+                  (local [(define contents (MetaDict-contents mval1))]
+                    (some
+                      (VObject 'list
+                               (some (MetaList (hash-keys contents)))
+                               (make-hash empty))))))

@@ -641,7 +641,8 @@
     ;; very hacky solution for assertRaises: it needs laziness built into it, so instead
     ;; of defining it as a function, we'll special case it as a macro.
     [PyApp (fun args)
-           (if (and (PyId? fun) (symbol=? (PyId-x fun) '___assertRaises))
+           (cond
+             [(and (PyId? fun) (symbol=? (PyId-x fun) '___assertRaises))
                (local [(define f (rec-desugar (second args) global? env false))
                        (define-values (as as-env)
                          (map-desugar (rest (rest args)) global? (DResult-env f) false))
@@ -662,7 +663,12 @@
                             false)
                      empty
                      (none))
-                   (DResult-env pass)))
+                   (DResult-env pass)))]
+             [(and (PyId? fun) (symbol=? (PyId-x fun) 'locals))
+                (DResult
+                  (CBuiltinPrim '$locals empty)
+                  env)]
+             [else
                (local [(define f (rec-desugar fun global? env false))
                        (define f-expr (DResult-expr f))
                        (define-values (results last-env)
@@ -676,7 +682,7 @@
                      [(and (CId? f-expr) (symbol=? 'super (CId-x f-expr)))
                       (CApp f-expr (cons (CId 'self (LocalId)) results) (none))]
                      [else (CApp f-expr results (none))])
-                   last-env)))]
+                   last-env))])]
 
     [PyAppStarArg (fun args sarg)
            (local [(define f (rec-desugar fun global? env false))
