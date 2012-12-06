@@ -45,7 +45,7 @@
 
   ; functions
   [PyLam (args : (listof symbol)) (body : PyExpr)]
-  [PyFunc (name : symbol) (args : (listof symbol)) (body : PyExpr)]
+  [PyFunc (name : symbol) (args : (listof symbol)) (defaults : (listof PyExpr)) (body : PyExpr)]
   [PyClassFunc (name : symbol) (args : (listof symbol)) (body : PyExpr)]
   [PyFuncVarArg (name : symbol) (args : (listof symbol)) 
                 (sarg : symbol) (body : PyExpr)]

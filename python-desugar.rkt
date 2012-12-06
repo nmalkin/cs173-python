@@ -6,6 +6,7 @@
          "builtins/num.rkt" 
          "builtins/str.rkt")
 (require (typed-in racket/base (number->string : (number -> string)))
+         (typed-in racket/list (take : ((listof 'a) number -> (listof 'a))))
          (typed-in racket/base (append : ((listof 'a) (listof 'a) -> (listof 'a)))))
 
 
@@ -88,7 +89,7 @@
    [PyBinOp (l o r) (append (get-names l global?)
                       (get-names r global?))]
    [PyUnaryOp (o operand) (get-names operand global?)]
-   [PyFunc (name args body) (list name)]
+   [PyFunc (name args defvargs body) (list name)]
    [PyClassFunc (name args body) (list name)]
    [PyFuncVarArg (name args sarg body) (list name)]
    [else empty]))
@@ -371,13 +372,39 @@
                            (DResult-expr rbody)))
                     (DResult-env rbody)))]
     
-    [PyFunc (name args body)
+    [PyFunc (name args defargs body)
+            (if (> (length defargs) 0)
+              (local [(define last-arg (first (reverse args)))]
+                (rec-desugar
+                  ; assuming 1 defarg for now, generalize later
+                    (PyFuncVarArg name (take args (- (length args) 1))
+                            'stararg 
+                            (PySeq
+                              (list
+                                  (PyIf (PyCompOp (PyApp
+                                                    (PyDotField (PyId 'stararg 'Load)
+                                                              '__len__)
+                                                    empty)
+                                                  (list 'Gt)
+                                                  (list (PyNum 0)))
+                                        (PyAssign (list (PyId last-arg 'Load))
+                                                  (PySubscript (PyId 'stararg 'Load)
+                                                               'Load
+                                                               (PyNum 0)))
+                                        (PyAssign (list (PyId last-arg 'Load))
+                                                  (first (reverse defargs))))
+                                   body))) 
+                    global? 
+                    env))
+
+
+
             (local [(define body-r (desugar-local-body body args env))]
              (DResult
                (CLet name (CNone)
                      (CAssign (CId name (LocalId))
                               (CFunc args (none) (DResult-expr body-r))))
-             (merge-globals env (DResult-env body-r))))]
+             (merge-globals env (DResult-env body-r)))))]
 
     ; a PyClassFunc is a method whose first argument should be the class rather than self
     [PyClassFunc (name args body)

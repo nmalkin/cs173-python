@@ -170,7 +170,10 @@ structure that you define in python-syntax.rkt
                (map (lambda(arg)
                       (string->symbol (hash-ref arg 'arg)))
                     (hash-ref args 'args))
-             (get-structured-python body))])]
+               (map (lambda(arg) 
+                      (get-structured-python arg))
+                    (hash-ref args 'defaults)) 
+               (get-structured-python body))])]
 
     [(hash-table ('nodetype "Return")
                  ('value value))
