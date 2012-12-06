@@ -89,6 +89,7 @@
                       (get-names r global?))]
    [PyUnaryOp (o operand) (get-names operand global?)]
    [PyFunc (name args body) (list name)]
+   [PyClassFunc (name args body) (list name)]
    [PyFuncVarArg (name args sarg body) (list name)]
    [else empty]))
 
@@ -377,6 +378,24 @@
                      (CAssign (CId name (LocalId))
                               (CFunc args (none) (DResult-expr body-r))))
              (merge-globals env (DResult-env body-r))))]
+
+    ; a PyClassFunc is a method whose first argument should be the class rather than self
+    [PyClassFunc (name args body)
+            (local [(define body-r (desugar-local-body body args env))]
+             (DResult
+               (CLet name (CNone)
+                     (CAssign (CId name (LocalId))
+                              (CFunc args (none)
+                                     ; We do this by, inside the function body,
+                                     ; taking the first argument, which is "self",
+                                     ; using that to look up the object's class, and then
+                                     ; "overwriting" the first argument with that value.
+                                     ; The result is that, in the function body, the first
+                                     ; argument is the class, as expected.
+                                     (CLet (first args) (CBuiltinPrim '$class
+                                                                      (list (CId (first args) (LocalId))))
+                                           (DResult-expr body-r)))))
+               (merge-globals env (DResult-env body-r))))]
 
     [PyFuncVarArg (name args sarg body)
                   (local [(define body-r (desugar-local-body body (append args (list sarg)) env))]
